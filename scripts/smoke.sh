@@ -15,6 +15,7 @@
 # 행 회피 설계:
 #   - npm run test:e2e / npm run test 직접 호출 금지
 #     ("test": "vitest" 같은 스크립트가 watch 모드로 진입해 무한 행 발생)
+#   - 빠른 E2E 스크립트(test:e2e:smoke/static/changed)가 있으면 test:e2e보다 우선 실행
 #   - test:e2e 스크립트가 있으면 그대로 실행하되 timeout으로 캡
 #   - 그 외에는 vitest/jest binary 직접 호출
 # ============================================================================
@@ -47,23 +48,34 @@ run_with_cap() {
 
 # 우선순위:
 #   1. HARNESS_SMOKE_CMD (명시 우회)
-#   2. test:e2e 스크립트 (있으면)
-#   3. vitest/jest binary 직접 호출
+#   2. 빠른 E2E 스크립트(test:e2e:smoke/static/changed)
+#   3. test:e2e 스크립트 (있으면)
+#   4. vitest/jest binary 직접 호출
 if [ -n "${HARNESS_SMOKE_CMD:-}" ]; then
   echo " Running HARNESS_SMOKE_CMD..."
   run_with_cap "$HARNESS_SMOKE_CMD"
-elif grep -q '"test:e2e"' package.json 2>/dev/null; then
-  echo " Running npm run test:e2e..."
-  run_with_cap "npm run test:e2e --silent"
-elif [ -x node_modules/.bin/vitest ]; then
-  echo " Running vitest run (smoke fallback)..."
-  run_with_cap "npx vitest run"
-elif [ -x node_modules/.bin/jest ]; then
-  echo " Running jest --runInBand --ci (smoke fallback)..."
-  run_with_cap "npx jest --runInBand --ci"
 else
-  echo "SKIPPED: no HARNESS_SMOKE_CMD, test:e2e script, or vitest/jest binary"
-  exit 0
+  e2e_script=""
+  for candidate in "test:e2e:smoke" "test:e2e:static" "test:e2e:changed" "test:e2e"; do
+    if grep -q "\"$candidate\"" package.json 2>/dev/null; then
+      e2e_script="$candidate"
+      break
+    fi
+  done
+
+  if [ -n "$e2e_script" ]; then
+    echo " Running npm run $e2e_script..."
+    run_with_cap "npm run $e2e_script --silent"
+  elif [ -x node_modules/.bin/vitest ]; then
+    echo " Running vitest run (smoke fallback)..."
+    run_with_cap "npx vitest run"
+  elif [ -x node_modules/.bin/jest ]; then
+    echo " Running jest --runInBand --ci (smoke fallback)..."
+    run_with_cap "npx jest --runInBand --ci"
+  else
+    echo "SKIPPED: no HARNESS_SMOKE_CMD, test:e2e script, or vitest/jest binary"
+    exit 0
+  fi
 fi
 
 echo ""

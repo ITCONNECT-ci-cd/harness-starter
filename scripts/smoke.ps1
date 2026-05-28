@@ -62,22 +62,30 @@ function Invoke-SmokeWithTimeout {
 
 # 우선순위:
 #   1. HARNESS_SMOKE_CMD (명시 우회)
-#   2. test:e2e 스크립트 (있으면)
-#   3. vitest/jest binary 직접 호출 (npm run test 호출은 watch 행 위험)
+#   2. 빠른 E2E 스크립트(test:e2e:smoke/static/changed)
+#   3. test:e2e 스크립트 (있으면)
+#   4. vitest/jest binary 직접 호출 (npm run test 호출은 watch 행 위험)
 $cmd = $null
 if (-not [string]::IsNullOrWhiteSpace($env:HARNESS_SMOKE_CMD)) {
   $cmd = $env:HARNESS_SMOKE_CMD
   Write-Host " Running HARNESS_SMOKE_CMD..."
-} elseif (Test-HarnessPackageScript -Name "test:e2e") {
-  $cmd = "$(Get-HarnessRunPrefix) test:e2e"
-  Write-Host " Running $cmd..."
-} elseif (Test-HarnessNodeBin -Name "vitest") {
+} else {
+  foreach ($scriptName in @("test:e2e:smoke", "test:e2e:static", "test:e2e:changed", "test:e2e")) {
+    if (Test-HarnessPackageScript -Name $scriptName) {
+      $cmd = "$(Get-HarnessRunPrefix) $scriptName"
+      Write-Host " Running $cmd..."
+      break
+    }
+  }
+}
+
+if ([string]::IsNullOrWhiteSpace($cmd) -and (Test-HarnessNodeBin -Name "vitest")) {
   $cmd = "npx vitest run"
   Write-Host " Running vitest run (smoke fallback)..."
-} elseif (Test-HarnessNodeBin -Name "jest") {
+} elseif ([string]::IsNullOrWhiteSpace($cmd) -and (Test-HarnessNodeBin -Name "jest")) {
   $cmd = "npx jest --runInBand --ci"
   Write-Host " Running jest (smoke fallback)..."
-} else {
+} elseif ([string]::IsNullOrWhiteSpace($cmd)) {
   Write-Host "SKIPPED: no HARNESS_SMOKE_CMD, test:e2e script, or vitest/jest binary"
   exit 0
 }
