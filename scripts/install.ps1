@@ -226,8 +226,8 @@ try {
   } elseif ($copied -gt 0) {
     Write-Host "다음 단계:"
     Write-Host "  1. ./scripts/setup/init-harness.ps1"
-    Write-Host "  2. npx bmad-method install"
-    Write-Host "  3. README.md 4단계 프롬프트를 Claude Code에서 실행"
+    Write-Host "  2. BMAD 산출물과 스킬 경로 확인"
+    Write-Host "  3. README.md의 새 프로젝트/기존 프로젝트 프롬프트를 Claude Code에서 실행"
   }
 } finally {
   if (Test-Path -LiteralPath $tempRoot) {

@@ -15,6 +15,13 @@ Set-Location (Get-HarnessRepoRoot)
 try {
   Initialize-HarnessValidation -RunType "quick"
 
+  $validateConfig = Get-HarnessValidateConfig
+  $validationMode = Get-HarnessValidationMode -Config $validateConfig
+  $projectMode = ($validationMode -eq "project")
+  if ($script:ValidateOutputMode -eq "summary") {
+    Write-Host " Validation mode: $validationMode"
+  }
+
   $baseRef = $env:VALIDATE_BASE_REF
   if ([string]::IsNullOrWhiteSpace($baseRef)) {
     foreach ($ref in @("origin/develop", "develop", "origin/main", "main")) {
@@ -26,44 +33,40 @@ try {
     }
   }
 
-  $hasPackageJson = Test-HarnessPackageJson
-
-  if (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "01" -StepName "typecheck" -Reason "no package.json (template state)"
-  } else {
-    $typecheck = Get-HarnessScriptCommand -ScriptName "typecheck" -OverrideEnvName "HARNESS_TYPECHECK_CMD"
-    if ([string]::IsNullOrWhiteSpace($typecheck)) {
-      Invoke-HarnessStepSkip -StepNumber "01" -StepName "typecheck" -Reason "no typecheck script"
+  $typecheck = Get-HarnessValidationCommand -Config $validateConfig -StepName "typecheck" -ScriptName "typecheck" -OverrideEnvName "HARNESS_TYPECHECK_CMD"
+  if ([string]::IsNullOrWhiteSpace($typecheck)) {
+    if (Get-HarnessStepRequired -Config $validateConfig -StepName "typecheck" -ProjectMode $projectMode -DefaultInProject $true) {
+      Invoke-HarnessStepMissingRequired -StepNumber "01" -StepName "typecheck" -Reason "no typecheck command configured"
     } else {
-      Invoke-HarnessStep -StepNumber "01" -StepName "typecheck" -Command $typecheck
+      Invoke-HarnessStepSkip -StepNumber "01" -StepName "typecheck" -Reason $(if ($projectMode) { "typecheck not required" } else { "no project marker (template state)" })
     }
+  } else {
+    Invoke-HarnessStep -StepNumber "01" -StepName "typecheck" -Command $typecheck
   }
 
-  if (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "02" -StepName "lint" -Reason "no package.json (template state)"
-  } else {
-    $lint = Get-HarnessScriptCommand -ScriptName "lint" -OverrideEnvName "HARNESS_LINT_CMD"
-    if ([string]::IsNullOrWhiteSpace($lint)) {
-      Invoke-HarnessStepSkip -StepNumber "02" -StepName "lint" -Reason "no lint script"
+  $lint = Get-HarnessValidationCommand -Config $validateConfig -StepName "lint" -ScriptName "lint" -OverrideEnvName "HARNESS_LINT_CMD"
+  if ([string]::IsNullOrWhiteSpace($lint)) {
+    if (Get-HarnessStepRequired -Config $validateConfig -StepName "lint" -ProjectMode $projectMode -DefaultInProject $true) {
+      Invoke-HarnessStepMissingRequired -StepNumber "02" -StepName "lint" -Reason "no lint command configured"
     } else {
-      Invoke-HarnessStep -StepNumber "02" -StepName "lint" -Command $lint
+      Invoke-HarnessStepSkip -StepNumber "02" -StepName "lint" -Reason $(if ($projectMode) { "lint not required" } else { "no project marker (template state)" })
     }
+  } else {
+    Invoke-HarnessStep -StepNumber "02" -StepName "lint" -Command $lint
   }
 
-  if (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "03" -StepName "related-tests" -Reason "no package.json (template state)"
-  } elseif ([string]::IsNullOrWhiteSpace($baseRef)) {
+  if ([string]::IsNullOrWhiteSpace($baseRef)) {
     Invoke-HarnessStepSkip -StepNumber "03" -StepName "related-tests" -Reason "no base ref found (develop/main)"
   } else {
     # 추적 파일 + 미추적 파일 모두 포함 (새로 추가된 .ts 누락 방지)
     $tracked = @(& git diff --name-only $baseRef -- "*.ts" "*.tsx" "*.js" "*.jsx" 2>$null)
     $untracked = @(& git ls-files --others --exclude-standard -- "*.ts" "*.tsx" "*.js" "*.jsx" 2>$null)
-    $changed = @($tracked + $untracked) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    $changed = @(@($tracked + $untracked) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
 
     if ($changed.Count -eq 0) {
       Invoke-HarnessStepSkip -StepNumber "03" -StepName "related-tests" -Reason "no changed source files vs $baseRef"
     } else {
-      $related = Get-HarnessRelatedTestCommand -BaseRef $baseRef -ChangedFiles $changed
+      $related = Get-HarnessRelatedTestCommand -Config $validateConfig -BaseRef $baseRef -ChangedFiles $changed
       if ([string]::IsNullOrWhiteSpace($related)) {
         throw "Story-level validation requires vitest/jest or HARNESS_RELATED_TEST_CMD. Full-suite fallback is intentionally disabled."
       }

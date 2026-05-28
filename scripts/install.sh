@@ -26,7 +26,7 @@
 #
 # 설치 후 다음 단계:
 #   1. ./scripts/setup/init-harness.sh  # git hooks + GitHub 보안 설정
-#   2. README.md Setup 1/2 프롬프트 실행 # 프로젝트 초기화
+#   2. README.md의 새 프로젝트/기존 프로젝트 프롬프트 실행
 # ============================================================================
 set -e
 
@@ -291,6 +291,6 @@ elif [ "$COPIED" -gt 0 ]; then
   echo "  1. ./scripts/setup/init-harness.sh"
   echo "     (git hooks + GitHub 보안 설정 자동화)"
   echo ""
-  echo "  2. README.md Setup 1/2 프롬프트를 Claude Code에서 실행"
+  echo "  2. README.md의 새 프로젝트/기존 프로젝트 프롬프트를 Claude Code에서 실행"
   echo "     (프로젝트 초기화 + 하네스 커스터마이징)"
 fi

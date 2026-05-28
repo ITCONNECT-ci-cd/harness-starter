@@ -39,6 +39,13 @@ switch ($from) {
 try {
   Initialize-HarnessValidation -RunType "epic"
 
+  $validateConfig = Get-HarnessValidateConfig
+  $validationMode = Get-HarnessValidationMode -Config $validateConfig
+  $projectMode = ($validationMode -eq "project")
+  if ($script:ValidateOutputMode -eq "summary") {
+    Write-Host " Validation mode: $validationMode"
+  }
+
   if (-not [string]::IsNullOrWhiteSpace($from)) {
     Write-Host " Resuming from: $from"
     Write-Host ""
@@ -48,20 +55,34 @@ try {
 
   if ($skipInstall) {
     Invoke-HarnessStepSkip -StepNumber "01" -StepName "install" -Reason "--from"
-  } elseif (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "01" -StepName "install" -Reason "no package.json (template state)"
   } else {
-    Invoke-HarnessStep -StepNumber "01" -StepName "install" -Command (Get-HarnessInstallCommand)
+    $configuredInstall = Get-HarnessConfigCommand -Config $validateConfig -StepName "install"
+    $install = $null
+    if ($hasPackageJson -or -not [string]::IsNullOrWhiteSpace($env:HARNESS_INSTALL_CMD) -or -not [string]::IsNullOrWhiteSpace($configuredInstall)) {
+      $install = Get-HarnessInstallCommand -Config $validateConfig
+    }
+
+    if ([string]::IsNullOrWhiteSpace($install)) {
+      if (Get-HarnessStepRequired -Config $validateConfig -StepName "install" -ProjectMode $projectMode -DefaultInProject $false) {
+        Invoke-HarnessStepMissingRequired -StepNumber "01" -StepName "install" -Reason "no install command configured"
+      } else {
+        Invoke-HarnessStepSkip -StepNumber "01" -StepName "install" -Reason $(if ($projectMode) { "no install command configured" } else { "no package.json (template state)" })
+      }
+    } else {
+      Invoke-HarnessStep -StepNumber "01" -StepName "install" -Command $install
+    }
   }
 
   if ($skipTypecheck) {
     Invoke-HarnessStepSkip -StepNumber "02" -StepName "typecheck" -Reason "--from"
-  } elseif (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "02" -StepName "typecheck" -Reason "no package.json (template state)"
   } else {
-    $typecheck = Get-HarnessScriptCommand -ScriptName "typecheck" -OverrideEnvName "HARNESS_TYPECHECK_CMD"
+    $typecheck = Get-HarnessValidationCommand -Config $validateConfig -StepName "typecheck" -ScriptName "typecheck" -OverrideEnvName "HARNESS_TYPECHECK_CMD"
     if ([string]::IsNullOrWhiteSpace($typecheck)) {
-      Invoke-HarnessStepSkip -StepNumber "02" -StepName "typecheck" -Reason "no typecheck script"
+      if (Get-HarnessStepRequired -Config $validateConfig -StepName "typecheck" -ProjectMode $projectMode -DefaultInProject $true) {
+        Invoke-HarnessStepMissingRequired -StepNumber "02" -StepName "typecheck" -Reason "no typecheck command configured"
+      } else {
+        Invoke-HarnessStepSkip -StepNumber "02" -StepName "typecheck" -Reason $(if ($projectMode) { "typecheck not required" } else { "no project marker (template state)" })
+      }
     } else {
       Invoke-HarnessStep -StepNumber "02" -StepName "typecheck" -Command $typecheck
     }
@@ -69,12 +90,14 @@ try {
 
   if ($skipLint) {
     Invoke-HarnessStepSkip -StepNumber "03" -StepName "lint" -Reason "--from"
-  } elseif (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "03" -StepName "lint" -Reason "no package.json (template state)"
   } else {
-    $lint = Get-HarnessScriptCommand -ScriptName "lint" -OverrideEnvName "HARNESS_LINT_CMD"
+    $lint = Get-HarnessValidationCommand -Config $validateConfig -StepName "lint" -ScriptName "lint" -OverrideEnvName "HARNESS_LINT_CMD"
     if ([string]::IsNullOrWhiteSpace($lint)) {
-      Invoke-HarnessStepSkip -StepNumber "03" -StepName "lint" -Reason "no lint script"
+      if (Get-HarnessStepRequired -Config $validateConfig -StepName "lint" -ProjectMode $projectMode -DefaultInProject $true) {
+        Invoke-HarnessStepMissingRequired -StepNumber "03" -StepName "lint" -Reason "no lint command configured"
+      } else {
+        Invoke-HarnessStepSkip -StepNumber "03" -StepName "lint" -Reason $(if ($projectMode) { "lint not required" } else { "no project marker (template state)" })
+      }
     } else {
       Invoke-HarnessStep -StepNumber "03" -StepName "lint" -Command $lint
     }
@@ -83,13 +106,14 @@ try {
   if ($skipTest) {
     Invoke-HarnessStepSkip -StepNumber "04a" -StepName "test" -Reason "--from"
     Invoke-HarnessStepSkip -StepNumber "04b" -StepName "regression-test" -Reason "--from"
-  } elseif (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "04a" -StepName "test" -Reason "no package.json (template state)"
-    Invoke-HarnessStepSkip -StepNumber "04b" -StepName "regression-test" -Reason "no package.json (template state)"
   } else {
-    $test = Get-HarnessTestCommand
+    $test = Get-HarnessTestCommand -Config $validateConfig
     if ([string]::IsNullOrWhiteSpace($test)) {
-      Invoke-HarnessStepSkip -StepNumber "04a" -StepName "test" -Reason "no test script"
+      if (Get-HarnessStepRequired -Config $validateConfig -StepName "test" -ProjectMode $projectMode -DefaultInProject $true) {
+        Invoke-HarnessStepMissingRequired -StepNumber "04a" -StepName "test" -Reason "no test command configured"
+      } else {
+        Invoke-HarnessStepSkip -StepNumber "04a" -StepName "test" -Reason $(if ($projectMode) { "test not required" } else { "no project marker (template state)" })
+      }
     } else {
       Invoke-HarnessStep -StepNumber "04a" -StepName "test" -Command $test
     }
@@ -102,7 +126,7 @@ try {
     if ($regressionFiles.Count -eq 0) {
       Invoke-HarnessStepSkip -StepNumber "04b" -StepName "regression-test" -Reason "no tests/regression/ found"
     } else {
-      $regression = Get-HarnessRegressionTestCommand
+      $regression = Get-HarnessRegressionTestCommand -Config $validateConfig
       if ([string]::IsNullOrWhiteSpace($regression)) {
         throw "Regression tests exist, but no vitest/jest runner or HARNESS_REGRESSION_TEST_CMD was found."
       }
@@ -112,12 +136,14 @@ try {
 
   if ($skipBuild) {
     Invoke-HarnessStepSkip -StepNumber "05" -StepName "build" -Reason "--from"
-  } elseif (-not $hasPackageJson) {
-    Invoke-HarnessStepSkip -StepNumber "05" -StepName "build" -Reason "no package.json (template state)"
   } else {
-    $build = Get-HarnessScriptCommand -ScriptName "build" -OverrideEnvName "HARNESS_BUILD_CMD"
+    $build = Get-HarnessValidationCommand -Config $validateConfig -StepName "build" -ScriptName "build" -OverrideEnvName "HARNESS_BUILD_CMD"
     if ([string]::IsNullOrWhiteSpace($build)) {
-      Invoke-HarnessStepSkip -StepNumber "05" -StepName "build" -Reason "no build script"
+      if (Get-HarnessStepRequired -Config $validateConfig -StepName "build" -ProjectMode $projectMode -DefaultInProject $true) {
+        Invoke-HarnessStepMissingRequired -StepNumber "05" -StepName "build" -Reason "no build command configured"
+      } else {
+        Invoke-HarnessStepSkip -StepNumber "05" -StepName "build" -Reason $(if ($projectMode) { "build not required" } else { "no project marker (template state)" })
+      }
     } else {
       Invoke-HarnessStep -StepNumber "05" -StepName "build" -Command $build
     }

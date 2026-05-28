@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 Repair-HarnessWindowsEnvironment
 
 function Stop-Setup2 {
-  Write-Host "README.md의 Setup 2를 먼저 완료하세요"
+  Write-Host "README.md의 프로젝트 초기화 프롬프트를 먼저 완료하세요"
   exit 1
 }
 
@@ -32,10 +32,32 @@ if (-not $remoteDevelop.Ok) { Stop-Setup2 }
 if (-not (Test-Path -LiteralPath ".agents/skills/bmad-create-story")) { Stop-Setup2 }
 if (-not (Test-Path -LiteralPath ".agents/skills/bmad-dev-story")) { Stop-Setup2 }
 
-$epicsPath = "_bmad-output/planning-artifacts/epics.md"
-if (-not (Test-Path -LiteralPath $epicsPath -PathType Leaf)) { Stop-Setup2 }
-$epics = Get-Content -LiteralPath $epicsPath -Raw
-if ($epics -notmatch "(?m)^#{1,6}\s*Epic\s+$Epic\b|Epic\s+$Epic\s*:") { Stop-Setup2 }
+$planningRoot = "_bmad-output/planning-artifacts"
+$epicPattern = "(?mi)^#{1,6}\s*Epic\s+$Epic\b|Epic\s+$Epic\s*:"
+$epicSources = New-Object System.Collections.Generic.List[string]
+
+$epicsFile = Join-Path $planningRoot "epics.md"
+if (Test-Path -LiteralPath $epicsFile -PathType Leaf) {
+  $epicSources.Add($epicsFile)
+}
+
+$epicsDir = Join-Path $planningRoot "epics"
+if (Test-Path -LiteralPath $epicsDir -PathType Container) {
+  Get-ChildItem -LiteralPath $epicsDir -Recurse -File -Filter "*.md" -ErrorAction SilentlyContinue |
+    ForEach-Object { $epicSources.Add($_.FullName) }
+}
+
+if ($epicSources.Count -eq 0) { Stop-Setup2 }
+
+$epicFound = $false
+foreach ($source in $epicSources) {
+  $content = Get-Content -LiteralPath $source -Raw
+  if ($content -match $epicPattern) {
+    $epicFound = $true
+    break
+  }
+}
+if (-not $epicFound) { Stop-Setup2 }
 
 if (-not (Test-Path -LiteralPath "_bmad-output/implementation-artifacts/sprint-status.yaml" -PathType Leaf)) { Stop-Setup2 }
 

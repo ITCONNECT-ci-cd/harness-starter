@@ -20,8 +20,8 @@
 
 name: Release
 
-# Temporarily manual-only: GitHub Actions minutes/plan limit is exhausted.
-# Restore tag push triggers only after CI/CD billing is available again.
+# Starter default: manual-only until release automation is enabled.
+# See docs/harness/ci-cd.md before restoring tag push triggers.
 on:
   workflow_dispatch:
 

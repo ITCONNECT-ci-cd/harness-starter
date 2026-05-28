@@ -45,7 +45,8 @@ done
 
 if [ "$found" = false ]; then
   echo "  No epic progress files found in state/"
-  echo "  Run: ./scripts/run-epic.sh <epic-number> to start"
+  echo "  Start from the README Epic implementation prompt."
+  echo "  scripts/run-epic.sh is a legacy CLI fallback only."
 fi
 
 echo "══════════════════════════════════════════════════════"

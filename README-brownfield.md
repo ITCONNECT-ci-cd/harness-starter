@@ -1,6 +1,8 @@
 # 기존 프로젝트에 Harness 입히기 (Brownfield)
 
 신규 프로젝트 셋업은 [README.md](README.md) 참고.
+짧은 비개발자용 안내는 [docs/harness/brownfield.md](docs/harness/brownfield.md)를 참고.
+이 파일은 상세 자동 통합 프롬프트를 보관하는 long-form 문서입니다.
 
 ---
 

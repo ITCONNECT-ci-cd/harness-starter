@@ -20,6 +20,8 @@ Epic 시작 전:
    - bash/WSL/macOS/Linux: README의 Loop A 사전 조건 또는 `scripts/phase-a/preflight.sh`가 있는 경우 해당 스크립트
 3. Windows/Codex에서 GitHub 원격 브랜치 존재 여부는 raw `git fetch origin develop`가 아니라 `gh api repos/<owner>/<repo>/git/ref/heads/develop` 경로로 확인한다.
 
+BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으로 한다. 프로젝트가 Epic을 sharding한 경우 `_bmad-output/planning-artifacts/epics/` 아래 markdown 파일도 허용한다.
+
 각 story마다 순서대로:
 1. `bmad-create-story` 스킬로 story 파일 생성 (풀 컨텍스트 엔진)
 2. `bmad-dev-story` 스킬로 구현 (TDD: red-green-refactor)
@@ -44,6 +46,8 @@ Epic의 모든 story 완료 후:
 **--from 옵션:** 테스트에서 실패했으면 `--from=test`, 빌드에서 실패했으면 `--from=build`로 해당 단계부터 재실행. 처음부터 다시 돌리지 않음.
 
 **검증 출력:** 기본 summary 모드로 단계별 성공/실패만 표시. 실패 시 `state/validate/latest/*.log`에서 해당 단계 로그를 확인. 전체 출력이 필요하면 bash는 `VALIDATE_OUTPUT_MODE=verbose`, PowerShell은 `$env:VALIDATE_OUTPUT_MODE='verbose'`를 설정.
+
+**Project mode 검증 계약:** 스택 마커(`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml` 등) 또는 실제 소스 루트가 있으면 PowerShell validate는 project mode로 동작한다. 이 모드에서 `typecheck`, `lint`, `test`, `build` 명령이 없으면 SKIP/PASS가 아니라 실패다. 예외는 `harness.validate.json`의 `required.<step>=false`로 명시한다.
 
 **Windows/Codex 원칙:** `.ps1` entrypoint는 native PowerShell 경로다. Git Bash 또는 WSL을 내부 필수 의존성으로 삼지 않는다. Bash 기반 hook이 실패하면 native validate/check 통과 후에만 no-verify fallback을 사용한다.
 
@@ -160,6 +164,7 @@ validate · smoke · PostToolUse hook의 모든 외부 명령은 hard cap timeou
 - `HARNESS_RELATED_TEST_CMD` — validate-quick의 03 related-tests 단계
 - `HARNESS_REGRESSION_TEST_CMD` — validate.sh의 04b regression 단계
 - `HARNESS_SMOKE_CMD` — smoke 전체
+- `harness.validate.json` — PowerShell validate의 `install`, `typecheck`, `lint`, `test`, `build`, `regression-test`, `related-tests` 명령과 필수 여부
 
 PostToolUse hook은 `.claude/settings.json`의 `async` 속성을 토글해 행동을
 바꿀 수 있습니다(기본 `false` = 즉시 피드백, `true` = 후행 알림). 60s cap이

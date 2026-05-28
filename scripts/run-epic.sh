@@ -2,15 +2,16 @@
 # ============================================================================
 # scripts/run-epic.sh
 #
-# Phase A CLI Fallback — Codex Desktop이 없을 때 사용
+# Legacy Phase A CLI Fallback — Codex Desktop이 없을 때만 사용
 #
-# ⚠️ 이 스크립트는 Codex Desktop을 사용할 수 없을 때만 사용하세요.
+# ⚠️ 이 스크립트는 Codex Desktop을 사용할 수 없을 때만 사용하는 legacy fallback입니다.
 # 기본 실행 방식은 Codex Desktop (Phase A) → Claude Code (Phase B)입니다.
-# (README.md의 "5단계, 6단계" 참고)
+# 루트 README의 Epic 구현 프롬프트를 우선 사용하세요.
 #
 # Codex Desktop vs. 이 스크립트:
 #   Desktop: BMAD 스킬(create-story, dev-story), TDD, 세션 내 학습
 #   스크립트: BMAD 스킬 불가, 단순 프롬프트 구현, 리뷰 없음 (Phase B에서 처리)
+#             sharded story 파일(epics/epic-N/story-*.md)이 있을 때만 사용
 #
 # 특징:
 #   - Epic 단위 배치 처리
@@ -37,6 +38,7 @@
 #   - claude CLI 설치 및 로그인 완료
 #   - git 설정 완료
 #   - _bmad-output/planning-artifacts/epics/ 아래 story 파일 존재
+#     (BMAD 기본 산출물 epics.md만 있는 경우 README의 Codex 프롬프트 사용)
 #
 # ============================================================================
 set -uo pipefail
@@ -58,6 +60,7 @@ fi
 
 # 경로 (BMAD 기본 구조에 맞춤)
 EPIC_DIR="_bmad-output/planning-artifacts/epics/epic-${EPIC_NUM}"
+BASE_BRANCH="${BASE_BRANCH:-develop}"
 STATE_DIR="state"
 STATE_FILE="${STATE_DIR}/epic-${EPIC_NUM}-progress.json"
 REVIEW_DIR="reviews/epic-${EPIC_NUM}"
@@ -210,8 +213,8 @@ wait_for_rate_limit() {
 # ============================================================================
 
 safe_checkout_main() {
-  git checkout main 2>/dev/null || git checkout master 2>/dev/null || {
-    log "  Cannot checkout main/master branch"
+  git checkout "$BASE_BRANCH" 2>/dev/null || {
+    log "  Cannot checkout base branch: $BASE_BRANCH"
     return 1
   }
   git pull --ff-only 2>/dev/null || true
@@ -317,7 +320,7 @@ IMPORTANT:
     fi
 
     # 커밋이 있는지 확인
-    local commit_count=$(git log main..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
+    local commit_count=$(git log "$BASE_BRANCH"..HEAD --oneline 2>/dev/null | wc -l | tr -d ' ')
     if [ "$commit_count" = "0" ]; then
       log "  Codex made no commits. Skipping."
       safe_checkout_main || true
@@ -327,7 +330,7 @@ IMPORTANT:
 
     log "  Codex completed ($commit_count commits)"
     log "  Changed files:"
-    git diff --name-only main..HEAD 2>/dev/null | sed 's/^/       /'
+    git diff --name-only "$BASE_BRANCH"..HEAD 2>/dev/null | sed 's/^/       /'
 
     # ── Step 3: Quick Validate (실시간 출력) ────────────────────
     log "  [3/3] Quick validating... (timeout: ${VALIDATE_TIMEOUT}s)"
@@ -346,7 +349,7 @@ IMPORTANT:
 
     log "  Quick validation passed"
 
-    # ── 완료: merge to main ──────────────────────────────────────
+    # ── 완료: merge to base branch ────────────────────────────────
     # 리뷰는 Phase B (Claude Code)에서 Epic 단위로 수행합니다.
     # 여기서는 validate-quick 통과 시 바로 merge합니다.
     log "  [$story_name] Quick validate passed, merging..."
@@ -354,7 +357,7 @@ IMPORTANT:
     if safe_merge_to_main "$branch_name"; then
       mark_completed "$story_name"
       success=true
-      log "  Merged to main"
+      log "  Merged to $BASE_BRANCH"
     else
       log "  Merge failed"
       mark_failed "$story_name" "merge-conflict"
@@ -393,6 +396,7 @@ main() {
   log "  CODEX_MODEL    = $CODEX_MODEL"
   log "  CODEX_REASONING= $CODEX_REASONING"
   log "  CODEX_SANDBOX  = $CODEX_SANDBOX"
+  log "  BASE_BRANCH    = $BASE_BRANCH"
 
   # Story 파일 수집 (파일명 기준 정렬)
   local stories=()

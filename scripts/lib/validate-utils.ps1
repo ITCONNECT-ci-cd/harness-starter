@@ -240,6 +240,42 @@ function Invoke-HarnessStepSkip {
   }
 }
 
+function Invoke-HarnessStepMissingRequired {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$StepNumber,
+    [Parameter(Mandatory = $true)]
+    [string]$StepName,
+    [Parameter(Mandatory = $true)]
+    [string]$Reason
+  )
+
+  $script:ValidateTotalSteps += 1
+  $logFile = Join-Path $script:ValidateLogDir "$StepNumber-$StepName.log"
+  @(
+    "Required validation step is not configured.",
+    "Step: $StepName",
+    "Reason: $Reason",
+    "",
+    "In template mode this may be skipped, but project mode requires an explicit command.",
+    "Add the command to package scripts, HARNESS_*_CMD, or harness.validate.json."
+  ) | Set-Content -LiteralPath $logFile
+
+  $script:ValidateFailedStep = $StepName
+  $script:ValidateFailedCode = 2
+
+  if ($script:ValidateOutputMode -eq "summary") {
+    Write-Host ("[{0}] {1,-20} FAILED (missing required command)" -f $StepNumber, $StepName)
+    Write-HarnessFailureSummary -StepNumber $StepNumber -StepName $StepName -ExitCode 2 -LogFile $logFile
+  } else {
+    Write-Host ""
+    Write-Host "[$StepNumber] ${StepName}: FAILED (missing required command)"
+    Get-Content -LiteralPath $logFile
+  }
+
+  throw "Required validation step missing: $StepName"
+}
+
 function Write-HarnessFailureSummary {
   param(
     [Parameter(Mandatory = $true)]
