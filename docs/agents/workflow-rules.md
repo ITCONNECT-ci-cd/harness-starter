@@ -10,6 +10,7 @@
 | 기획/설계 | Claude Code | PRD, Architecture, Epics 생성 | bmad-create-prd, bmad-create-architecture, bmad-create-epics-and-stories |
 | Phase A: 구현 | Codex Desktop | Story 생성 + 구현 (Epic 단위) | bmad-create-story, bmad-dev-story |
 | Phase B: 품질 보장 | Claude Code | 코드 리뷰 + 수정 + 테스트 보강 (Epic 단위) | bmad-code-review |
+| Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | 리뷰/검증 결과 분석, feedback-rules, incident, regression |
 
 ## Phase A: Codex Desktop 흐름 (Epic 단위)
 
@@ -71,7 +72,12 @@ Epic 전체를 대상으로:
 7. develop 푸시 시 GitHub CI 작동, 통과하면 develop → main으로 승격 (main push 시 자동 배포)
 8. sprint-status.yaml 업데이트 (review → done)
 
+주의: Phase B의 validate/smoke와 develop → main 흐름은 승인 후 통합/배포 경로입니다. Phase C를 출시 전 배포 준비로 해석하지 않습니다.
+
 ## Phase C: Claude Code 회고 + Harness 강화 (Epic 완료 후)
+
+Phase C는 출시 전 최종 검증이나 배포 준비가 아니라, 완료된 Epic에서 배운 실패 패턴을 다음 Epic 전에 하네스에 반영하는 회고 단계입니다.
+출시 전 검증과 배포 준비는 CI/CD 또는 Release Gate 흐름에서 별도로 다룹니다.
 
 Phase B 완료 후 실행:
 1. `reviews/epic-N/` 아래 리뷰 결과 (*.md + logs/*-validate.log + *-codex.log) 분석

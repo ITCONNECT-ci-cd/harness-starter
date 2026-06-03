@@ -74,7 +74,7 @@ CI/CD, Docker, DB 마이그레이션 설정은 사용자 확인 없이 위험하
 
 ---
 
-## Epic 구현 프롬프트
+## Phase A - Epic 구현 프롬프트
 
 Codex Desktop에서 Epic 단위 구현을 시작할 때 입력합니다.
 
@@ -98,7 +98,7 @@ Windows PowerShell이면 ./scripts/doctor.ps1 와 ./scripts/phase-a/preflight.ps
 
 ---
 
-## 리뷰 프롬프트
+## Phase B - 리뷰 프롬프트
 
 Claude Code에서 Epic 구현 결과를 리뷰하고 보강할 때 입력합니다.
 
@@ -116,6 +116,31 @@ REJECTED 항목은 직접 수정하고, 누락된 테스트를 보강해줘.
 
 ---
 
+## Phase C - Epic 회고 + Harness 강화 프롬프트
+
+Phase C는 출시 전 배포 준비가 아니라, Epic이 끝난 뒤 반복 실수와 검증 실패를 하네스에 반영하는 회고 단계입니다.
+배포 준비가 필요하면 아래의 CI/CD 프롬프트나 별도 Release Gate 프롬프트를 사용합니다.
+
+```text
+Epic <번호>의 회고를 진행하고 Harness를 강화해줘.
+
+Phase B가 끝났는지 먼저 확인해줘.
+reviews/epic-<번호>/ 아래 리뷰 결과, validate 로그, codex 로그를 분석해줘.
+state/epic-<번호>-progress.json이 있으면 failed/skipped story를 확인해줘.
+
+반복된 REJECTED 패턴, validate 실패 패턴, 수동으로 놓치기 쉬운 실수를 찾아줘.
+필요하면 feedback/incidents/ 아래 incident YAML을 작성해줘.
+다음 Epic에서 자동으로 잡아야 하는 패턴이면 tests/regression/에 재현 테스트를 추가해줘.
+반복 규칙은 docs/agents/feedback-rules.md에 반영하고, 기계적으로 판별 가능한 치명 패턴만 validate blocking check로 승격해줘.
+
+Harness 파일(validate, rules, hooks)을 수정했다면 현재 OS에 맞는 validate를 다시 실행해줘.
+회고 반영 커밋 메시지는 chore(harness): Epic <번호> 회고 반영 으로 준비해줘.
+
+완료 보고에는 발견한 반복 패턴, 생성한 incident, 추가한 regression test, 강화한 규칙, 검증 결과, 다음 Epic에서 주의할 점을 적어줘.
+```
+
+---
+
 ## 검증 실패 시 프롬프트
 
 ```text
@@ -129,10 +154,11 @@ state/validate/latest/ 아래 로그를 먼저 읽어줘.
 
 ---
 
-## CI/CD 프롬프트
+## CI/CD / Release Gate 프롬프트
 
 이 스타터는 여러 사람이 가져다 쓰는 공유 템플릿입니다. 따라서 CI/CD는
 각 프로젝트 상황에 맞게 켜거나 수동 모드로 둘 수 있습니다.
+출시 전 최종 검증, develop -> main 승격, 배포 준비는 Phase C가 아니라 이 영역에서 다룹니다.
 
 자동 CI/CD를 쓰려면:
 
@@ -186,6 +212,8 @@ DB 마이그레이션은 AI에게 이렇게 지시합니다.
 
 - 사람은 프롬프트를 입력하고, AI가 저장소 규칙과 스크립트를 읽습니다.
 - Story 중에는 `validate-quick`, Epic 끝에는 `validate`, 리뷰 끝에는 `validate + smoke`를 사용합니다.
+- Phase C는 배포 준비가 아니라 Epic 회고와 Harness 강화 단계입니다.
+- 출시 전 최종 검증과 배포 준비는 `CI/CD / Release Gate` 흐름으로 분리합니다.
 - 실제 프로젝트에서는 필수 검증 명령이 없으면 통과로 보지 않습니다.
 - 템플릿 상태에서는 무거운 검증을 건너뛰어 빠르게 유지합니다.
 - 자세한 운영 규칙은 `AGENTS.md`와 `docs/agents/`가 기준입니다.

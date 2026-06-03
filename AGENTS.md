@@ -11,6 +11,7 @@
 |---|---|---|---|
 | Phase A | Codex Desktop | story 생성 + 구현 (Epic 단위) | bmad-create-story, bmad-dev-story |
 | Phase B | Claude Code | 코드 리뷰 + 수정 + 테스트 보강 (Epic 단위) | bmad-code-review |
+| Phase C | Claude Code | Epic 회고 + Harness 강화 | incident, regression, feedback-rules |
 
 ## Phase A: Codex Desktop 시작 루틴
 
@@ -44,6 +45,10 @@
 3. 완료된 story 브랜치를 `bmad-code-review` 스킬로 리뷰
 4. REJECTED 항목 직접 수정 + 테스트 보강
 5. `./scripts/validate.sh` + `./scripts/smoke.sh` 최종 검증
+
+## Phase C: Epic 회고 시작 루틴
+
+Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 단계입니다. `docs/agents/workflow-rules.md`의 Phase C 절차에 따라 리뷰/검증 실패 패턴을 incident, regression, feedback-rules 또는 validate blocking check로 반영합니다.
 
 ## Repo map
 

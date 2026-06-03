@@ -14,6 +14,8 @@
 
 # 2. Epic 리뷰 + 수정 + 테스트 보강 (Phase B)
 
+# 3. Epic 회고 + Harness 강화 (Phase C)
+
 #
 
 # 구현은 Codex Desktop이 담당합니다 (Phase A).
@@ -62,8 +64,20 @@ Codex Desktop이 구현한 Epic 전체를 리뷰하고 수정할 때의 규칙:
 
 - 모든 story APPROVED 후 **develop** 브랜치에 merge (회사 표준: develop → CI → main → 자동 배포)
 - sprint-status.yaml 업데이트 (review → done)
+- 이 통합/배포 흐름은 Phase C가 아님. Phase C는 아래 회고 단계임
 
-## 역할 3: 가벼운 작업 (Quick Flow)
+## 역할 3: Epic 회고 + Harness 강화 (Phase C)
+
+Phase B가 끝난 Epic에서 반복 실수와 검증 실패를 학습할 때의 규칙:
+
+- `reviews/epic-N/`의 리뷰 결과와 validate/codex 로그 분석
+- `state/epic-N-progress.json`의 failed/skipped story 확인
+- 반복된 REJECTED 패턴과 validate 실패 패턴을 incident로 기록
+- 다음 Epic에서 자동으로 잡을 패턴은 regression test 또는 `docs/agents/feedback-rules.md`에 반영
+- 기계적으로 판별 가능한 치명 패턴만 validate blocking check로 승격
+- Phase C를 출시 전 최종 검증이나 배포 준비로 해석하지 않음
+
+## 역할 4: 가벼운 작업 (Quick Flow)
 
 BMAD 풀코스 없이 간단한 작업을 할 때:
 
