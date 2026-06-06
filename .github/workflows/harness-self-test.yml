@@ -27,19 +27,29 @@ jobs:
 
   powershell-entrypoints:
     runs-on: windows-latest
+    # 비용 가이드: windows-latest는 GitHub Actions 분을 2배로 소비한다. 자동 트리거(push 등)를
+    # 켠 프로젝트에서는 모든 push가 아니라 main push + 수동 실행에서만 Windows(Codex/Phase A)
+    # 경로를 검증한다. workflow_dispatch 기본 상태에서는 항상 실행된다.
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
       - name: PowerShell syntax
         shell: pwsh
         run: |
+          # [ref] 대상 변수는 사용 전 반드시 초기화한다. 미초기화 시
+          # "[ref] cannot be applied to a variable that does not exist"로 실패한다.
+          $failed = $false
           Get-ChildItem scripts -Recurse -Filter *.ps1 | ForEach-Object {
-            $null = [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errors)
+            $tokens = $null
+            $errors = $null
+            $null = [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
             if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Error $_ }
-              exit 1
+              $errors | ForEach-Object { Write-Error "$($_.Extent.File): $($_.Message)" }
+              $failed = $true
             }
           }
+          if ($failed) { exit 1 }
 
       - name: Core PowerShell entrypoints must be native
         shell: pwsh

@@ -9,6 +9,32 @@
 자동 CI/CD를 기본 선택지로 설명하되, 비용이나 권한 문제가 있으면 수동 모드를 선택할
 수 있게 안내합니다.
 
+## Private 저장소 + 무료 플랜 (실패 방지 & 분 절약)
+
+무료 플랜의 **private** 저장소에서 자동 모드를 켜면 일부 기능이 적용되지 않거나 분을
+낭비한다. 템플릿은 기본적으로 **실패하지 않게(robust)** + **분을 아끼게** 설정돼 있고,
+public 또는 GHAS(GitHub Advanced Security) 사용 시 확장하는 방법을 함께 둔다. 동일한
+설명이 각 워크플로 파일 주석에도 있으므로, AI/사람이 대상 프로젝트의 가시성·플랜에 맞춰
+바로 조정할 수 있다.
+
+| 기능 | 무료 private의 한계 | 템플릿 기본 조치 | public/GHAS에서 확장 |
+|---|---|---|---|
+| 브랜치 보호(classic/ruleset) | API가 403(Pro 필요) | 적용 안 함. 배포 안전은 `deploy.yml`의 "CI success" 게이트로 보장 | Pro/Team 업그레이드 또는 public 전환 |
+| CodeQL/Trivy SARIF → Security 탭 | GHAS 없으면 업로드 실패 → 잡 실패 | 업로드/analyze에 `continue-on-error: true` | 해당 줄 제거(업로드 실패를 실패로 취급) |
+| CodeQL 실행 빈도 | 결과 미표출인데 분 소비 | `if: schedule \|\| workflow_dispatch`(주간+수동) | codeql `if`에 push/PR 추가 |
+| Trivy 이미지 스캔 | 매 push 이미지 빌드=비쌈, base CVE로 실패 | 주간+수동 + `exit-code: '0'`(보고 전용) | `if`에 push/PR 추가, 차단 게이트는 `exit-code: '1'` |
+| Harness windows 잡 | windows-latest는 분 2배 | main push + 수동만 | windows 잡 `if` 조정 |
+
+원칙:
+
+- **실패로 분을 낭비하지 않는다.** SARIF 업로드 실패·base 이미지 CVE는 잡을 깨지 않게 한다.
+- **무거운 스캔(codeql/trivy-image)은 기본 주간**으로 두고, 분이 무료인 public이나 GHAS
+  사용 프로젝트에서만 push/PR로 확장한다.
+- **셀프호스트 러너로 배포하면 그 잡의 분은 무료**다(이미지 빌드를 self-hosted로 옮기면
+  GitHub 분을 더 아낀다).
+- `scripts/*.sh`는 실행 비트(+x)가 있어야 `./scripts/validate.sh`가 exit 126 없이 돈다
+  (템플릿에 적용됨).
+
 ## 자동 실행 모드
 
 자동 실행 모드는 push, pull request, schedule, workflow_run 같은 트리거를 사용합니다.
