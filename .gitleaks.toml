@@ -34,6 +34,10 @@ tags = ["ssh", "private-key"]
 
 # ── 허용(false positive 제외) 규칙 ──
 # test/mock/fixture/template 파일은 시크릿 형식이 자주 등장함
+#
+# 주의: 문서(docs/)와 워크플로우(.github/)는 실제 시크릿이 자주 새는 위치라
+# 광범위 제외를 하지 않는다. harness가 배포하는 규칙 문서 디렉터리(예시 값 포함)만
+# 좁게 제외하고, 프로젝트가 추가하는 그 외 문서·설정은 전부 스캔한다.
 
 [allowlist]
 description = "Gitleaks allowlist"
@@ -47,10 +51,12 @@ paths = [
   '''.*\.spec\..*''',
   '''.*\.example\..*''',
   '''.*\.template\..*''',
-  '''\.github/.*''',
-  '''docs/.*\.md''',
-  '''README\.md''',
-  '''CHANGELOG\.md''',
+  '''docs/agents/.*\.md''',
+  '''docs/harness/.*\.md''',
+  '''docs/checklists/.*\.md''',
+  '''docs/future-upgrades/.*\.md''',
+  '''docs/changelog/.*\.md''',
+  '''README-brownfield\.md''',
 ]
 
 # 명시적 allowlist 값 (false positive로 확인된 것만)
