@@ -1,7 +1,8 @@
 # .github/workflows/release.yml
 #
-# 태그 기반 GitHub Release 자동 생성 워크플로우.
-# 트리거: 'v*.*.*' 형식 태그 push (예: v1.2.3, v1.2.3-beta.1)
+# 태그 기반 GitHub Release 생성 워크플로우.
+# 트리거: 기본 수동(workflow_dispatch). 자동화를 복원하면 'v*.*.*' 형식 태그
+#         push(예: v1.2.3, v1.2.3-beta.1)에서 실행 — docs/harness/ci-cd.md 참조.
 #
 # 흐름:
 #   1. verify: CI 검증(lint/typecheck/test/build) 재실행 — 태그 생성 시점의

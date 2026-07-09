@@ -1,13 +1,14 @@
 # .github/workflows/ci.yml
 #
-# Quality gate — develop와 main push/PR에 작동하는 독립 검증 계층.
+# Quality gate — 독립 검증 계층. 기본은 수동(workflow_dispatch)이며,
+# 자동화를 켜면 develop/main push·PR에서 작동한다 (docs/harness/ci-cd.md 참조).
 # 로컬 validate.sh와 일부 명령이 겹치지만, CI 전용 가치는 다음에 집중:
 #   - 깨끗한 node_modules (npm ci)
 #   - coverage 수집
 #   - 보안 audit (npm audit)
 #   - Dockerfile 있으면 이미지 빌드 검증
 #
-# 배포는 .github/workflows/deploy.yml 담당 (main push만).
+# 배포는 .github/workflows/deploy.yml 담당.
 #
 # ⚠️ 4단계 프로젝트 초기화 후 기술 스택에 맞게 수정하세요.
 
