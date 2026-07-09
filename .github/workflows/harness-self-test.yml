@@ -19,6 +19,16 @@ jobs:
         run: |
           find scripts -name "*.sh" -print0 | xargs -0 -I{} bash -n "{}"
 
+      - name: Skill trees in sync (.agents/skills == .claude/skills)
+        run: |
+          # 두 스킬 트리는 수동 복제라 드리프트가 생기기 쉽다 (예: 한쪽에만 스킬 추가).
+          # byte 단위 diff로 동기화를 강제한다.
+          if [ -d .agents/skills ] && [ -d .claude/skills ]; then
+            diff -rq .agents/skills .claude/skills
+          else
+            echo "skill dirs missing — skip"
+          fi
+
       - name: Template validate
         run: ./scripts/validate.sh
 
