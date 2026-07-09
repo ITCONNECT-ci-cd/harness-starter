@@ -26,6 +26,12 @@
 #   }]
 # ============================================================================
 
+# jq 없으면 명령을 파싱할 수 없음 — 조용히 무력화되는 대신 경고를 남긴다
+if ! command -v jq >/dev/null 2>&1; then
+  echo "WARN: jq not found — docker/migration guard is INACTIVE. Install jq (scoop/brew/apt install jq)." >&2
+  exit 0
+fi
+
 # stdin에서 JSON 읽기
 input=$(cat)
 

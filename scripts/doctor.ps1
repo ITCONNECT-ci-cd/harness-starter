@@ -94,6 +94,11 @@ if ($node) {
 $npm = Get-Command npm -ErrorAction SilentlyContinue
 Write-Check "npm" ($null -ne $npm) $(if ($npm) { $npm.Source } else { "not found" })
 
+# .claude/hooks의 모든 가드(block-rm, docker-guard, run-checks)는 jq로 stdin JSON을
+# 파싱한다. jq가 없으면 훅이 fail-open으로 조용히 무력화되므로 여기서 가시화한다.
+$jq = Get-Command jq -ErrorAction SilentlyContinue
+Write-Check "jq (Claude hooks)" ($null -ne $jq) $(if ($jq) { $jq.Source } else { "not found - .claude/hooks guards are inactive (install: scoop install jq)" })
+
 $bash = Get-Command bash -ErrorAction SilentlyContinue
 Write-Check "bash optional" $true $(if ($bash) { $bash.Source } else { "not required for native PowerShell entrypoints" })
 

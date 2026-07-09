@@ -22,6 +22,12 @@
 #   대부분의 경우 async:false가 권장 — 60s cap으로 hang 위험은 이미 차단됨.
 # ============================================================================
 
+# jq 없으면 파일 경로를 파싱할 수 없음 — 조용히 무력화되는 대신 경고를 남긴다
+if ! command -v jq >/dev/null 2>&1; then
+  echo "WARN: jq not found — edit-time lint hook is INACTIVE. Install jq (scoop/brew/apt install jq)." >&2
+  exit 0
+fi
+
 # stdin에서 JSON 읽기
 input=$(cat)
 
