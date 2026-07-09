@@ -48,7 +48,7 @@ Epic의 모든 story 완료 후:
 
 **검증 출력:** 기본 summary 모드로 단계별 성공/실패만 표시. 실패 시 `state/validate/latest/*.log`에서 해당 단계 로그를 확인. 전체 출력이 필요하면 bash는 `VALIDATE_OUTPUT_MODE=verbose`, PowerShell은 `$env:VALIDATE_OUTPUT_MODE='verbose'`를 설정.
 
-**Project mode 검증 계약:** 스택 마커(`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml` 등) 또는 실제 소스 루트가 있으면 PowerShell validate는 project mode로 동작한다. 이 모드에서 `typecheck`, `lint`, `test`, `build` 명령이 없으면 SKIP/PASS가 아니라 실패다. 예외는 `harness.validate.json`의 `required.<step>=false`로 명시한다.
+**Project mode 검증 계약:** 스택 마커(`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml` 등) 또는 실제 소스 루트가 있으면 validate는 project mode로 동작한다(`validate.ps1`·`validate.sh` 공통 계약). 이 모드에서 `typecheck`, `lint`, `test`, `build` 명령이 없으면 SKIP/PASS가 아니라 실패다. 예외는 `harness.validate.json`의 `required.<step>=false`로 명시한다.
 
 **Windows/Codex 원칙:** `.ps1` entrypoint는 native PowerShell 경로다. Git Bash 또는 WSL을 내부 필수 의존성으로 삼지 않는다. Bash 기반 hook이 실패하면 native validate/check 통과 후에만 no-verify fallback을 사용한다.
 
@@ -166,11 +166,12 @@ validate · smoke · PostToolUse hook의 모든 외부 명령은 hard cap timeou
 함께 로그에 `HARNESS TIMEOUT` 메시지가 추가됩니다.
 
 명시적 명령 오버라이드:
-- `HARNESS_TEST_CMD` — validate.sh의 04a test 단계
+- `HARNESS_INSTALL_CMD` / `HARNESS_TYPECHECK_CMD` / `HARNESS_LINT_CMD` / `HARNESS_BUILD_CMD` — 각 단계 명령
+- `HARNESS_TEST_CMD` — validate의 04a test 단계
 - `HARNESS_RELATED_TEST_CMD` — validate-quick의 03 related-tests 단계
-- `HARNESS_REGRESSION_TEST_CMD` — validate.sh의 04b regression 단계
+- `HARNESS_REGRESSION_TEST_CMD` — validate의 04b regression 단계
 - `HARNESS_SMOKE_CMD` — smoke 전체
-- `harness.validate.json` — PowerShell validate의 `install`, `typecheck`, `lint`, `test`, `build`, `regression-test`, `related-tests` 명령과 필수 여부
+- `harness.validate.json` — `mode`, `commands.{install,typecheck,lint,test,build,regression-test,related-tests}`, `required.<step>` 계약. **validate.ps1과 validate.sh 둘 다 인식** (우선순위: 환경변수 > config > 자동 감지)
 
 PostToolUse hook은 `.claude/settings.json`의 `async` 속성을 토글해 행동을
 바꿀 수 있습니다(기본 `false` = 즉시 피드백, `true` = 후행 알림). 60s cap이

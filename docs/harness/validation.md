@@ -57,6 +57,10 @@ project mode:
 - 필수 검증 명령이 없으면 실패해야 합니다.
 - 예외가 필요하면 `harness.validate.json`의 `required`에서 명시적으로 꺼야 합니다.
 
+`harness.validate.json`의 `mode`/`commands`/`required` 계약은 `validate.ps1`과
+`validate.sh` 두 진입점이 동일하게 인식합니다 (우선순위: `HARNESS_*_CMD` 환경변수
+> config > 자동 감지). 비 npm 스택은 `commands`에 스택 고유 명령을 지정하세요.
+
 ## 불필요한 시간 줄이기
 
 - 매 편집마다 전체 테스트를 돌리지 않습니다.

@@ -19,6 +19,13 @@
 #
 # 환경변수:
 #   VALIDATE_OUTPUT_MODE  summary (기본) | verbose
+#   HARNESS_INSTALL_CMD / HARNESS_TYPECHECK_CMD / HARNESS_LINT_CMD /
+#   HARNESS_TEST_CMD / HARNESS_REGRESSION_TEST_CMD / HARNESS_BUILD_CMD
+#                         단계별 명령 오버라이드 (최우선)
+#
+# 설정 파일:
+#   harness.validate.json  mode/commands/required 계약 — validate.ps1(package-runner.ps1)과
+#                          동일하게 bash에서도 인식 (우선순위: env > config > 자동 감지)
 #
 # 로그 위치:
 #   state/validate/latest/*.log   (최신 실행)
@@ -84,18 +91,36 @@ if [ -n "${1:-}" ]; then
   echo ""
 fi
 
-# ── Template 감지: package.json 없으면 npm 관련 단계 모두 skip ──
+# ── 검증 모드 결정 ──
+# harness.validate.json의 mode > 프로젝트 마커 자동 감지 (package-runner.ps1과 동일 계약)
+# template mode: 실행할 명령이 없으면 우아하게 skip
+# project mode:  install/typecheck/lint/test/build 명령 누락 시 실패
+#                (harness.validate.json required.<step>=false 로 예외 가능)
 HAS_PACKAGE_JSON=false
 if [ -f package.json ]; then
   HAS_PACKAGE_JSON=true
 fi
 
+VALIDATE_MODE=$(get_validation_mode)
+if [ "$VALIDATE_MODE" = "invalid" ]; then
+  echo "ERROR: harness.validate.json mode must be 'template' or 'project'" >&2
+  exit 1
+fi
+echo " Validation mode: ${VALIDATE_MODE}"
+
 # ── 1. 의존성 설치 ──
 if [ "$SKIP_INSTALL" = false ]; then
-  if [ "$HAS_PACKAGE_JSON" = false ]; then
-    run_step_skip "01" "install" "no package.json (template state)"
+  INSTALL_CMD=$(resolve_step_cmd "install" "HARNESS_INSTALL_CMD" "")
+  if [ -z "$INSTALL_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ]; then
+    INSTALL_CMD=$(get_install_cmd_default)
+  fi
+
+  if [ -n "$INSTALL_CMD" ]; then
+    run_step "01" "install" "$INSTALL_CMD" || exit 1
+  elif step_required "install"; then
+    step_missing_fail "01" "install" || exit 1
   else
-    run_step "01" "install" "npm install --prefer-offline" || exit 1
+    run_step_skip "01" "install" "no install command (${VALIDATE_MODE} mode)"
   fi
 else
   run_step_skip "01" "install" "--from"
@@ -103,21 +128,21 @@ fi
 
 # ── 2. 타입 체크 ──
 if [ "$SKIP_TYPECHECK" = false ]; then
-  if [ "$HAS_PACKAGE_JSON" = false ]; then
-    run_step_skip "02" "typecheck" "no package.json (template state)"
-  else
-    TYPECHECK_CMD=""
+  TYPECHECK_CMD=$(resolve_step_cmd "typecheck" "HARNESS_TYPECHECK_CMD" "")
+  if [ -z "$TYPECHECK_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ]; then
     if grep -q '"typecheck"' package.json 2>/dev/null; then
-      TYPECHECK_CMD="npm run typecheck"
+      TYPECHECK_CMD="$(get_run_prefix) typecheck"
     elif [ -f tsconfig.json ] && [ -x node_modules/.bin/tsc ]; then
       TYPECHECK_CMD="npx tsc --noEmit"
     fi
+  fi
 
-    if [ -z "$TYPECHECK_CMD" ]; then
-      run_step_skip "02" "typecheck" "no typecheck script or local tsc binary"
-    else
-      run_step "02" "typecheck" "$TYPECHECK_CMD" || exit 1
-    fi
+  if [ -n "$TYPECHECK_CMD" ]; then
+    run_step "02" "typecheck" "$TYPECHECK_CMD" || exit 1
+  elif step_required "typecheck"; then
+    step_missing_fail "02" "typecheck" || exit 1
+  else
+    run_step_skip "02" "typecheck" "no typecheck command (${VALIDATE_MODE} mode)"
   fi
 else
   run_step_skip "02" "typecheck" "--from"
@@ -125,10 +150,17 @@ fi
 
 # ── 3. 린트 ──
 if [ "$SKIP_LINT" = false ]; then
-  if [ "$HAS_PACKAGE_JSON" = false ]; then
-    run_step_skip "03" "lint" "no package.json (template state)"
+  LINT_CMD=$(resolve_step_cmd "lint" "HARNESS_LINT_CMD" "")
+  if [ -z "$LINT_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ] && grep -q '"lint"' package.json 2>/dev/null; then
+    LINT_CMD="$(get_run_prefix) lint"
+  fi
+
+  if [ -n "$LINT_CMD" ]; then
+    run_step "03" "lint" "$LINT_CMD" || exit 1
+  elif step_required "lint"; then
+    step_missing_fail "03" "lint" || exit 1
   else
-    run_step "03" "lint" "npm run lint" || exit 1
+    run_step_skip "03" "lint" "no lint command (${VALIDATE_MODE} mode)"
   fi
 else
   run_step_skip "03" "lint" "--from"
@@ -136,51 +168,50 @@ fi
 
 # ── 4a. 테스트 ──
 if [ "$SKIP_TEST" = false ]; then
-  if [ "$HAS_PACKAGE_JSON" = false ]; then
-    run_step_skip "04a" "test" "no package.json (template state)"
-    run_step_skip "04b" "regression-test" "no package.json (template state)"
+  # 우선순위: HARNESS_TEST_CMD > harness.validate.json > vitest/jest binary > npm script
+  # vitest/jest binary 직접 호출이 자동 감지 1순위인 이유:
+  # package.json의 "test" 스크립트가 "vitest" 단독(인자 없음)이면
+  # interactive watch 모드로 진입해 무한 행 발생. binary 직접 호출은
+  # 항상 run-once 모드를 강제한다.
+  TEST_CMD=$(resolve_step_cmd "test" "HARNESS_TEST_CMD" "")
+  if [ -z "$TEST_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ]; then
+    if [ -x node_modules/.bin/vitest ]; then
+      TEST_CMD="npx vitest run"
+    elif [ -x node_modules/.bin/jest ]; then
+      TEST_CMD="npx jest --runInBand --ci"
+    elif grep -q '"test"' package.json 2>/dev/null; then
+      TEST_CMD="$(get_run_prefix) test"
+    fi
+  fi
+
+  if [ -n "$TEST_CMD" ]; then
+    run_step "04a" "test" "$TEST_CMD" || exit 1
+  elif step_required "test"; then
+    step_missing_fail "04a" "test" || exit 1
   else
-    # 우선순위: HARNESS_TEST_CMD > vitest binary > jest binary > npm run test
-    # vitest/jest binary 직접 호출이 1순위인 이유:
-    # package.json의 "test" 스크립트가 "vitest" 단독(인자 없음)이면
-    # interactive watch 모드로 진입해 무한 행 발생. binary 직접 호출은
-    # 항상 run-once 모드를 강제한다.
-    TEST_CMD="${HARNESS_TEST_CMD:-}"
-    if [ -z "$TEST_CMD" ]; then
-      if [ -x node_modules/.bin/vitest ]; then
-        TEST_CMD="npx vitest run"
-      elif [ -x node_modules/.bin/jest ]; then
-        TEST_CMD="npx jest --runInBand --ci"
-      elif grep -q '"test"' package.json 2>/dev/null; then
-        TEST_CMD="npm run test"
-      fi
-    fi
+    run_step_skip "04a" "test" "no test runner (${VALIDATE_MODE} mode)"
+  fi
 
-    if [ -z "$TEST_CMD" ]; then
-      run_step_skip "04a" "test" "no test runner (HARNESS_TEST_CMD/vitest/jest/npm test)"
-    else
-      run_step "04a" "test" "$TEST_CMD" || exit 1
-    fi
-
-    # 4b. Regression 테스트
-    if [ -d "tests/regression" ] && [ "$(ls -A tests/regression/ 2>/dev/null)" ]; then
-      REGRESSION_TEST_CMD=""
+  # 4b. Regression 테스트 (tests/regression/ 있을 때만 — 기본 필수 아님)
+  if [ -d "tests/regression" ] && [ "$(ls -A tests/regression/ 2>/dev/null)" ]; then
+    REGRESSION_TEST_CMD=$(resolve_step_cmd "regression-test" "HARNESS_REGRESSION_TEST_CMD" "")
+    if [ -z "$REGRESSION_TEST_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ]; then
       if [ -x node_modules/.bin/vitest ]; then
         REGRESSION_TEST_CMD="npx vitest run tests/regression/"
       elif [ -x node_modules/.bin/jest ]; then
         REGRESSION_TEST_CMD="npx jest --runInBand --testPathPattern=tests/regression/"
       elif grep -q '"test"' package.json 2>/dev/null; then
-        REGRESSION_TEST_CMD="npm run test -- tests/regression/"
+        REGRESSION_TEST_CMD="$(get_run_prefix) test -- tests/regression/"
       fi
-
-      if [ -z "$REGRESSION_TEST_CMD" ]; then
-        run_step_skip "04b" "regression-test" "no supported test runner"
-      else
-        run_step "04b" "regression-test" "$REGRESSION_TEST_CMD" || exit 1
-      fi
-    else
-      run_step_skip "04b" "regression-test" "no tests/regression/ found"
     fi
+
+    if [ -z "$REGRESSION_TEST_CMD" ]; then
+      run_step_skip "04b" "regression-test" "no supported test runner"
+    else
+      run_step "04b" "regression-test" "$REGRESSION_TEST_CMD" || exit 1
+    fi
+  else
+    run_step_skip "04b" "regression-test" "no tests/regression/ found"
   fi
 else
   run_step_skip "04a" "test" "--from"
@@ -189,10 +220,17 @@ fi
 
 # ── 5. 빌드 ──
 if [ "$SKIP_BUILD" = false ]; then
-  if [ "$HAS_PACKAGE_JSON" = false ]; then
-    run_step_skip "05" "build" "no package.json (template state)"
+  BUILD_CMD=$(resolve_step_cmd "build" "HARNESS_BUILD_CMD" "")
+  if [ -z "$BUILD_CMD" ] && [ "$HAS_PACKAGE_JSON" = true ] && grep -q '"build"' package.json 2>/dev/null; then
+    BUILD_CMD="$(get_run_prefix) build"
+  fi
+
+  if [ -n "$BUILD_CMD" ]; then
+    run_step "05" "build" "$BUILD_CMD" || exit 1
+  elif step_required "build"; then
+    step_missing_fail "05" "build" || exit 1
   else
-    run_step "05" "build" "npm run build" || exit 1
+    run_step_skip "05" "build" "no build command (${VALIDATE_MODE} mode)"
   fi
 else
   run_step_skip "05" "build" "--from"

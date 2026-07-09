@@ -344,3 +344,138 @@ safe_grep_rn() {
   shift 2
   safe_grep -rn "$@" "$pattern" "$path" 2>/dev/null
 }
+
+# ============================================================================
+# harness.validate.json + 검증 명령 결정
+# (PowerShell scripts/lib/package-runner.ps1과 동일 계약의 bash 구현 —
+#  두 진입점이 같은 설정 소스를 읽어야 Phase A(Windows)와 Phase B(bash)의
+#  판정이 갈라지지 않는다)
+#
+# 우선순위: HARNESS_*_CMD 환경변수 > harness.validate.json commands > 자동 감지
+# 스키마:   { "mode": "template"|"project",
+#             "commands": { "install"|"typecheck"|"lint"|"test"|"build"|
+#                           "regression-test"|"related-tests": "<cmd>" },
+#             "required": { "<step>": true|false } }
+# ============================================================================
+
+HARNESS_VALIDATE_CONFIG_FILE="${HARNESS_VALIDATE_CONFIG_FILE:-harness.validate.json}"
+HARNESS_CONFIG_JQ_WARNED=false
+
+# config의 commands.<step> 값 (jq 없으면 빈 값 + 1회 경고)
+get_config_command() {
+  local step="$1"
+  [ -f "$HARNESS_VALIDATE_CONFIG_FILE" ] || return 0
+  if ! command -v jq >/dev/null 2>&1; then
+    if [ "$HARNESS_CONFIG_JQ_WARNED" = false ]; then
+      echo "WARN: harness.validate.json 발견했으나 jq 없음 — config 무시 (env/자동감지로 진행)" >&2
+      HARNESS_CONFIG_JQ_WARNED=true
+    fi
+    return 0
+  fi
+  jq -r --arg k "$step" '.commands[$k] // empty' "$HARNESS_VALIDATE_CONFIG_FILE" 2>/dev/null
+}
+
+# config의 required.<step> 값 ("true"/"false"/빈 값)
+# 주의: jq의 `//`는 false를 empty로 삼키므로 has() 체크를 사용한다
+get_config_required() {
+  local step="$1"
+  [ -f "$HARNESS_VALIDATE_CONFIG_FILE" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  jq -r --arg k "$step" 'if ((.required // {}) | has($k)) then .required[$k] | tostring else empty end' \
+    "$HARNESS_VALIDATE_CONFIG_FILE" 2>/dev/null
+}
+
+# config의 mode ("template"/"project"/빈 값)
+get_config_mode() {
+  [ -f "$HARNESS_VALIDATE_CONFIG_FILE" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  jq -r '.mode // empty' "$HARNESS_VALIDATE_CONFIG_FILE" 2>/dev/null
+}
+
+# 프로젝트 마커 감지 (package-runner.ps1 Test-HarnessProjectMarker와 동일)
+has_project_marker() {
+  local f d
+  for f in package.json pyproject.toml go.mod Cargo.toml pom.xml \
+           build.gradle build.gradle.kts Gemfile Package.swift; do
+    [ -f "$f" ] && return 0
+  done
+  ls ./*.csproj >/dev/null 2>&1 && return 0
+
+  for d in src app apps backend frontend server client packages cmd internal; do
+    [ -d "$d" ] || continue
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      [ -n "$(git ls-files -- "$d" 2>/dev/null | head -1)" ] && return 0
+      [ -n "$(git ls-files --others --exclude-standard -- "$d" 2>/dev/null | head -1)" ] && return 0
+    elif [ -n "$(find "$d" -maxdepth 3 -type f -print 2>/dev/null | head -1)" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 검증 모드 결정: config mode > 마커 자동 감지. 잘못된 값이면 "invalid" 반환.
+get_validation_mode() {
+  local m
+  m=$(get_config_mode)
+  case "$m" in
+    template|project) echo "$m"; return 0 ;;
+    "") ;;
+    *) echo "invalid"; return 0 ;;
+  esac
+  if has_project_marker; then echo "project"; else echo "template"; fi
+}
+
+# step_required <step>
+# config required.<step>이 명시되면 그 값, 아니면 project mode에서 기본 필수
+step_required() {
+  local step="$1" cfg
+  cfg=$(get_config_required "$step")
+  case "$cfg" in
+    true) return 0 ;;
+    false) return 1 ;;
+  esac
+  [ "${VALIDATE_MODE:-template}" = "project" ]
+}
+
+# 패키지 매니저 감지 (package-runner.ps1 Get-HarnessPackageManager와 동일)
+get_run_prefix() {
+  if [ -f pnpm-lock.yaml ]; then echo "pnpm run"
+  elif [ -f yarn.lock ]; then echo "yarn"
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then echo "bun run"
+  else echo "npm run"
+  fi
+}
+
+get_install_cmd_default() {
+  if [ -f pnpm-lock.yaml ]; then echo "pnpm install --prefer-offline"
+  elif [ -f yarn.lock ]; then echo "yarn install"
+  elif [ -f bun.lockb ] || [ -f bun.lock ]; then echo "bun install"
+  else echo "npm install --prefer-offline"
+  fi
+}
+
+# resolve_step_cmd <step> <env_var_name> <default_cmd>
+# 우선순위: env > harness.validate.json commands > default
+resolve_step_cmd() {
+  local step="$1" envname="$2" default_cmd="${3:-}" val
+  eval "val=\${$envname:-}"
+  if [ -n "$val" ]; then echo "$val"; return 0; fi
+  val=$(get_config_command "$step")
+  if [ -n "$val" ]; then echo "$val"; return 0; fi
+  echo "$default_cmd"
+}
+
+# step_missing_fail <step_num> <step_name>
+# project mode에서 필수 단계의 실행 명령이 없을 때 명시적 실패 처리
+step_missing_fail() {
+  local step_num="$1" step_name="$2" envname
+  envname="HARNESS_$(echo "$step_name" | tr 'a-z-' 'A-Z_')_CMD"
+  VALIDATE_TOTAL_STEPS=$((VALIDATE_TOTAL_STEPS + 1))
+  VALIDATE_FAILED_STEP="$step_name"
+  VALIDATE_FAILED_CODE=1
+  echo "[${step_num}] ${step_name}: FAILED — project mode인데 실행할 명령이 없습니다." >&2
+  echo "  해결: package.json scripts, ${envname}," >&2
+  echo "        또는 harness.validate.json commands.\"${step_name}\" 에 명령을 추가하세요." >&2
+  echo "  예외: harness.validate.json required.\"${step_name}\"=false 로 명시적으로 끌 수 있습니다." >&2
+  return 1
+}
