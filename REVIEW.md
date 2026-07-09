@@ -1,7 +1,9 @@
+<!--
+REVIEW.md — Claude Code가 코드 리뷰 시 참고하는 기준 문서입니다.
+bmad-code-review 스킬과 함께 사용됩니다.
+-->
+
 # REVIEW.md
-#
-# Claude Code가 코드 리뷰 시 참고하는 기준 문서입니다.
-# bmad-code-review 스킬과 함께 사용됩니다.
 
 ## 리뷰 범위
 

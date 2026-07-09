@@ -1,9 +1,11 @@
+<!--
+AGENTS.md — Codex와 Claude Code 모두가 세션 시작 시 읽는 저장소 공식 운영 규칙입니다.
+Codex Desktop은 이 파일을 자동 로드합니다.
+Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
+핵심 규칙만 담고, 상세 규칙은 docs/agents/로 분리합니다.
+-->
+
 # AGENTS.md
-#
-# 이 파일은 Codex와 Claude Code 모두가 세션 시작 시 읽는 저장소 공식 운영 규칙입니다.
-# Codex Desktop은 이 파일을 자동 로드합니다.
-# Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
-# 60줄 안팎으로 유지하고, 상세 규칙은 docs/agents/로 분리합니다.
 
 ## 역할 분담
 
@@ -36,7 +38,7 @@
    - bash/WSL/macOS/Linux: `./scripts/validate.sh`
    - Windows PowerShell: `./scripts/validate.ps1`
    - 실패 시 `./scripts/validate.sh --from=실패단계`로 재개
-7. Codex Desktop 모델 권장: chatgpt-5.4, reasoning: xhigh
+7. Codex Desktop 모델: 조직 표준 최신 모델 + 최고 reasoning 설정 권장 (모델명은 빠르게 바뀌므로 조직 표준 문서를 따름)
 
 ## Phase B: Claude Code 시작 루틴
 
@@ -56,7 +58,7 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 |---|---|
 | `_bmad-output/planning-artifacts/` | PRD, architecture, epics, stories (공식 제품 문서) |
 | `_bmad-output/implementation-artifacts/` | sprint-status, story 파일, 구현 산출물 |
-| `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) |
+| `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) — `.claude/skills/`와 byte 동기 유지 (harness-self-test가 검증) |
 | `.claude/skills/` | Claude Code용 BMAD 스킬 (code-review 등) |
 | `docs/agents/` | 에이전트 운영 규칙 (architecture, coding, testing, security, performance, deploy, workflow, backup, seo, feedback) |
 | `docs/checklists/` | 수동 체크리스트 (페이지 수정 후, 배포 전) |

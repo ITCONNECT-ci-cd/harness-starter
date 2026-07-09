@@ -1,30 +1,22 @@
+<!--
+CLAUDE.md — Claude Code 전용 지침 파일입니다.
+저장소 공식 규칙은 AGENTS.md에 있습니다.
+
+이 프로젝트에서 Claude Code의 역할:
+  1. BMAD 기획/설계 실행 (PM, Architect agent 대화)
+  2. Epic 리뷰 + 수정 + 테스트 보강 (Phase B)
+  3. Epic 회고 + Harness 강화 (Phase C)
+
+구현은 Codex Desktop이 담당합니다 (Phase A).
+-->
+
 # CLAUDE.md
-
-#
-
-# Claude Code 전용 지침 파일입니다.
-
-# 저장소 공식 규칙은 AGENTS.md에 있습니다.
-
-#
-
-# 이 프로젝트에서 Claude Code의 역할:
-
-# 1. BMAD 기획/설계 실행 (PM, Architect agent 대화)
-
-# 2. Epic 리뷰 + 수정 + 테스트 보강 (Phase B)
-
-# 3. Epic 회고 + Harness 강화 (Phase C)
-
-#
-
-# 구현은 Codex Desktop이 담당합니다 (Phase A).
 
 ## 기본 동작
 
 - 저장소 규칙은 항상 `AGENTS.md`를 우선 참고
 - 도구 사용 원칙은 `AGENTS.md`를 따른다. CLI로 가능한 작업은 CLI를 우선 사용
-- 상세 규칙은 `docs/agents/` 아래 문서 참조
+- 상세 규칙은 `docs/agents/` 아래 문서 참조 (아래 "상황별 규칙" 표 — 필요할 때 Read)
 - BMAD 산출물은 `_bmad-output/` 아래에서 참조
 - `.claude/skills/bmad-*/`와 `.agents/skills/bmad-*/` 내용을 수정하지 않음
 
@@ -82,13 +74,13 @@ Phase B가 끝난 Epic에서 반복 실수와 검증 실패를 학습할 때의 
 BMAD 풀코스 없이 간단한 작업을 할 때:
 
 - `bmad-quick-dev` 스킬 사용 (spec → implement → review → present)
-- 또는 `bmad-agent-quick-flow-solo-dev` (Barry) 호출
+- 구버전 BMAD 번들에서는 `bmad-agent-quick-flow-solo-dev`(Barry)도 있음 —
+  설치된 BMAD 버전의 스킬 목록을 먼저 확인하고 존재하는 스킬만 호출
 
 ## Build, Test & Quality
 
-# ⚠️ 기획 완료 후 기술 스택에 맞게 아래 명령을 수정하세요.
-
-# 통합 초기화 프롬프트가 이 섹션을 자동으로 채웁니다.
+<!-- ⚠️ 기획 완료 후 기술 스택에 맞게 아래 명령을 수정하세요.
+     통합 초기화 프롬프트가 이 섹션을 자동으로 채웁니다. -->
 
 - Dev server: `npm run dev`
 - Build: `npm run build`
@@ -98,23 +90,32 @@ BMAD 풀코스 없이 간단한 작업을 할 때:
 - Story 검증: bash/WSL/macOS/Linux는 `./scripts/validate-quick.sh`, Windows PowerShell은 `./scripts/validate-quick.ps1`
 - Epic 검증: bash/WSL/macOS/Linux는 `./scripts/validate.sh`, Windows PowerShell은 `./scripts/validate.ps1`
 - 실패 재개: bash/WSL/macOS/Linux는 `./scripts/validate.sh --from=실패단계`, Windows PowerShell은 `./scripts/validate.ps1 --from=실패단계`
+- 검증 명령 커스터마이징: `harness.validate.json`(mode/commands/required) 또는 `HARNESS_*_CMD` 환경변수 — bash/PowerShell 공통 계약
 - 검증 로그: `state/validate/latest/*.log` (단계별 로그)
 - 출력 모드: 기본 summary, `VALIDATE_OUTPUT_MODE=verbose`로 전체 출력
 - 실패 디버깅: summary 출력의 로그 경로를 읽어서 원인 파악
 
-## 참조 파일
+## 참조 파일 (매 세션 로드)
+
+핵심 계약과 활성 교훈만 @import한다 — 나머지를 전부 @import하면 매 세션
+수만 토큰이 고정 소모되므로, 상황별 규칙은 아래 표에 따라 필요할 때 Read로 로드한다.
 
 @AGENTS.md
 @REVIEW.md
 @docs/agents/architecture-rules.md
-@docs/agents/testing-rules.md
 @docs/agents/coding-rules.md
-@docs/agents/workflow-rules.md
-@docs/agents/security-rules.md
-@docs/agents/performance-rules.md
-@docs/agents/deploy-rules.md
-@docs/agents/docker-rules.md
-@docs/agents/migration-rules.md
-@docs/agents/backup-rules.md
+@docs/agents/testing-rules.md
 @docs/agents/feedback-rules.md
-@docs/agents/seo-rules.md
+
+## 상황별 규칙 (해당 작업 시작 시 Read)
+
+| 작업 | 문서 |
+|---|---|
+| Phase A/C 절차 상세, 브랜치·커밋·검증 계약 | `docs/agents/workflow-rules.md` |
+| 보안 구현·리뷰 심화 | `docs/agents/security-rules.md` |
+| 성능 최적화·리뷰 심화 | `docs/agents/performance-rules.md` |
+| 배포 작업 | `docs/agents/deploy-rules.md` |
+| Docker 컨테이너 작업 | `docs/agents/docker-rules.md` |
+| DB 마이그레이션 | `docs/agents/migration-rules.md` |
+| 백업 시스템 구성 | `docs/agents/backup-rules.md` |
+| SEO 작업 | `docs/agents/seo-rules.md` |
