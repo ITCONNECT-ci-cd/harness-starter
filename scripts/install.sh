@@ -17,7 +17,13 @@
 #   bash install.sh --dry-run        # 무엇을 설치할지만 표시
 #   bash install.sh                  # 실제 설치 (기존 파일은 skip)
 #   bash install.sh --force          # 기존 파일 덮어쓰기
+#                                    #   - 덮어쓰기 전 .harness-backup/<ts>/ 에 백업
+#                                    #   - 디렉토리는 삭제 없이 overlay 병합 (프로젝트 자체 파일 보존)
 #   bash install.sh --branch develop # 특정 브랜치에서 설치
+#
+# .gitignore: 설치 시 harness 필수 제외 규칙(private/*, state/db-backups/ 등)을
+#   대상 .gitignore 끝에 자동 append (마커 존재 시 skip — 멱등,
+#   README-brownfield §3-1과 같은 마커 사용)
 #
 # 환경변수:
 #   HARNESS_TEMPLATE_REPO  기본 itconnect-ai/harness-starter
@@ -44,7 +50,7 @@ while [ $# -gt 0 ]; do
     --repo) REPO="$2"; shift 2 ;;
     --target) TARGET="$2"; shift 2 ;;
     -h|--help)
-      sed -n '2,36p' "$0" | sed 's/^# //; s/^#//'
+      sed -n '2,42p' "$0" | sed 's/^# //; s/^#//'
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -169,6 +175,8 @@ COPIED=0
 SKIPPED_EXISTS=0
 SKIPPED_MISSING=0
 OVERWROTE=0
+BACKED_UP=0
+BACKUP_ROOT="$TARGET/.harness-backup/$(date +%Y%m%d-%H%M%S)"
 
 for path in "${ESSENTIAL_PATHS[@]}"; do
   SRC_PATH="$SRC/$path"
@@ -191,16 +199,26 @@ for path in "${ESSENTIAL_PATHS[@]}"; do
 
   if [ "$DRY_RUN" = true ]; then
     if [ "$EXISTED_BEFORE" = true ]; then
-      echo "  [DRY RUN] overwrite: $path"
+      echo "  [DRY RUN] overwrite (backup 후): $path"
     else
       echo "  [DRY RUN] copy:      $path"
     fi
   else
     mkdir -p "$(dirname "$DEST_PATH")"
-    # 디렉토리면 재귀 복사, 파일이면 직접
+    # --force 덮어쓰기 전 백업 (기존 내용 보존 — brownfield "백업 후 조정" 원칙)
+    if [ "$EXISTED_BEFORE" = true ]; then
+      mkdir -p "$BACKUP_ROOT/$(dirname "$path")"
+      cp -r "$DEST_PATH" "$BACKUP_ROOT/$path"
+      BACKED_UP=$((BACKED_UP + 1))
+    fi
     if [ -d "$SRC_PATH" ]; then
-      rm -rf "$DEST_PATH"  # 디렉토리는 깨끗이 교체
-      cp -r "$SRC_PATH" "$DEST_PATH"
+      # 디렉토리는 삭제 없이 overlay 병합: template 파일은 갱신하되,
+      # 프로젝트가 그 디렉토리에 추가해 둔 자체 파일은 보존한다.
+      if [ -e "$DEST_PATH" ] && [ ! -d "$DEST_PATH" ]; then
+        rm -f "$DEST_PATH"
+      fi
+      mkdir -p "$DEST_PATH"
+      cp -r "$SRC_PATH"/. "$DEST_PATH"/
     else
       cp "$SRC_PATH" "$DEST_PATH"
     fi
@@ -219,6 +237,37 @@ if [ "$DRY_RUN" = false ] && [ "$COPIED" -gt 0 ]; then
   find "$TARGET/scripts" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
   find "$TARGET/.claude/hooks" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
   find "$TARGET/.githooks" -type f -exec chmod +x {} \; 2>/dev/null || true
+fi
+
+# ── .gitignore harness 규칙 병합 ──
+# .gitignore는 프로젝트마다 다르므로 통째로 설치하지 않는다. 대신 harness 운영에
+# 필수인 제외 규칙(내부정보 private/, DB 덤프, 검증 로그, 설치 백업 등)만 append.
+# 이 규칙이 없으면 private/ 내부정보와 pg_dump 백업이 커밋될 수 있다.
+# 마커가 이미 있으면 skip — README-brownfield §3-1과 같은 마커로 상호 멱등.
+GITIGNORE_NOTE=""
+if [ "$DRY_RUN" = false ]; then
+  GI="$TARGET/.gitignore"
+  if ! grep -q "── Harness Engineering rules ──" "$GI" 2>/dev/null; then
+    cat >> "$GI" <<'EOF'
+
+# ── Harness Engineering rules ──────────────────────
+state/validate/
+state/db-backups/
+state/epic-*-progress.json
+reviews/*/logs/
+private/*
+!private/README.md
+docs/org/docker-port-registry.md
+docs/org/*.local.md
+.claude/settings.local.json
+.harness-backup/
+EOF
+    GITIGNORE_NOTE="harness 규칙 블록 append 완료"
+  else
+    GITIGNORE_NOTE="harness 규칙 블록 이미 존재 → skip"
+  fi
+else
+  GITIGNORE_NOTE="[DRY RUN] harness 규칙 블록 append 예정 (마커 없을 때만)"
 fi
 
 # ── CodeQL 언어 감지 + security.yml 갱신 ──
@@ -279,6 +328,12 @@ echo "  copied:            $COPIED"
 echo "  overwrote:         $OVERWROTE"
 echo "  skipped (exists):  $SKIPPED_EXISTS"
 echo "  skipped (missing): $SKIPPED_MISSING"
+if [ "$BACKED_UP" -gt 0 ]; then
+  echo "  backup:            $BACKUP_ROOT ($BACKED_UP item(s))"
+fi
+if [ -n "$GITIGNORE_NOTE" ]; then
+  echo "  .gitignore: $GITIGNORE_NOTE"
+fi
 if [ -n "$LANG_DETECT_NOTE" ]; then
   echo "  CodeQL: $LANG_DETECT_NOTE"
 fi

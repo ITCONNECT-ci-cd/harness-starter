@@ -61,3 +61,6 @@ private/*
 
 # DB 마이그레이션 전 자동 백업 (db-migrate.sh가 생성)
 state/db-backups/
+
+# install.sh --force가 덮어쓰기 전 만드는 백업
+.harness-backup/
