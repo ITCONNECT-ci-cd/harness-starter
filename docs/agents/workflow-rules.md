@@ -91,12 +91,24 @@ Phase B 완료 후 실행:
    - 2회: `docs/agents/feedback-rules.md`에 활성 규칙 추가
    - 3회+ 또는 치명적 (기계적으로 판별 가능한 경우만): `scripts/validate.sh`에 **blocking check**로 추가 (warning이 아닌 exit 1)
    - 아키텍처 성격: `docs/agents/architecture-rules.md` 또는 `docs/decisions/`에 ADR
-8. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 `scripts/validate.sh` 또는 CI 우선
-9. **완료 기준**: harness 파일(validate, rules, hooks)을 수정했으면 반드시 현재 OS/셸에 맞는 검증을 재실행하여 harness 자체가 깨지지 않았는지 확인
+8. **프로젝트 이해 문서 갱신** — 다음 Epic에서 AI가 잘못된 가정으로 짓지 않도록 지도를 코드와 맞춥니다.
+   회고(1~7)가 regression 테스트와 validate를 바꾸므로 **반드시 회고 뒤에** 실행합니다.
+   - `docs/PROJECT_MAP.md`가 **없으면**: project-map 스킬로 생성하고, `CLAUDE.md`·`AGENTS.md`에
+     장 단위 참조와 `docs/*.html` 읽기 금지를 배선합니다 (보통 Epic 1 회고에서 1회).
+   - **있으면**: 이번 Epic에서 바뀐 장만 갱신합니다 (`PROJECT_MAP.md` §0의 갱신 트리거 참조).
+     모듈 추가·의존 방향 변경이 없었으면 건너뜁니다.
+   - **마지막 Epic이면**: `docs/SPEC.html`(화면·규칙 정의서)과 사람용 문서 2종을 생성·재생성합니다.
+   - 회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
+     **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).
+   - 검증: 모듈·라우트 커버리지와 경로 실존을 스크립트로 대조해 누락 0건을 확인합니다.
+     재생성 스크립트는 리포에 남겨야 다음 Epic에서 재현됩니다.
+9. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 `scripts/validate.sh` 또는 CI 우선
+10. **완료 기준**: harness 파일(validate, rules, hooks)을 수정했으면 반드시 현재 OS/셸에 맞는 검증을 재실행하여 harness 자체가 깨지지 않았는지 확인
    - Windows PowerShell: `./scripts/validate.ps1`
    - bash/WSL/macOS/Linux: `bash -n scripts/validate.sh && ./scripts/validate.sh`
-10. 검증 통과 후 커밋: `chore(harness): Epic N 회고 반영`
-11. **브랜치 정리**: 이번 Epic의 story 브랜치와 merged된 임시 브랜치를 정리
+   - 이해 문서를 갱신했으면 커버리지·경로 실존 검증도 함께 재실행
+11. 검증 통과 후 커밋: `chore(harness): Epic N 회고 반영`
+12. **브랜치 정리**: 이번 Epic의 story 브랜치와 merged된 임시 브랜치를 정리
     ```bash
     # 먼저 dry-run으로 대상 확인
     ./scripts/cleanup-branches.sh

@@ -19,6 +19,9 @@ CLAUDE.md — Claude Code 전용 지침 파일입니다.
 - 상세 규칙은 `docs/agents/` 아래 문서 참조 (아래 "상황별 규칙" 표 — 필요할 때 Read)
 - BMAD 산출물은 `_bmad-output/` 아래에서 참조
 - `.claude/skills/bmad-*/`와 `.agents/skills/bmad-*/` 내용을 수정하지 않음
+- **프로젝트 이해 문서(`docs/PROJECT_MAP.md` 등)는 project-map 스킬로만 만든다.**
+  `bmad-document-project`·`bmad-generate-project-context`는 호출하지 않는다 — 트리거가 겹치지만
+  산출물 체계가 달라, 둘 다 돌면 문서가 이원화된다. 생성·갱신 시점은 Phase C 8단계를 따른다.
 
 ## 역할 1: BMAD 기획/설계
 

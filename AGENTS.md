@@ -52,6 +52,8 @@ Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
 
 Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 단계입니다. `docs/agents/workflow-rules.md`의 Phase C 절차에 따라 리뷰/검증 실패 패턴을 incident, regression, feedback-rules 또는 validate blocking check로 반영합니다.
 
+회고를 반영한 뒤 **프로젝트 이해 문서를 코드와 맞춥니다**(Phase C 8단계). 지도가 낡으면 다음 Epic에서 에이전트가 잘못된 가정으로 구현합니다. `docs/PROJECT_MAP.md`가 없으면 project-map 스킬로 생성하고 `CLAUDE.md`·`AGENTS.md`에 배선하며, 있으면 바뀐 장만 갱신합니다.
+
 ## Repo map
 
 | 경로 | 역할 |
@@ -60,6 +62,8 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 | `_bmad-output/implementation-artifacts/` | sprint-status, story 파일, 구현 산출물 |
 | `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) — `.claude/skills/`와 byte 동기 유지 (harness-self-test가 검증) |
 | `.claude/skills/` | Claude Code용 BMAD 스킬 (code-review 등) |
+| `docs/PROJECT_MAP.md` | 코드에서 도출한 구조 지도(Phase C 8단계 산출물). **장 단위로 Read** — §9 함정(수정 전 필독) · §4 아키텍처 · §5~6 모듈 지도 |
+| `docs/*.html` | **사람 전용 — 열지 말 것.** 규칙 정의서 한 개가 10만 토큰을 넘길 수 있음. 내용 수정을 명시 지시받은 경우에만 |
 | `docs/agents/` | 에이전트 운영 규칙 (architecture, coding, testing, security, performance, deploy, workflow, backup, seo, feedback) |
 | `docs/checklists/` | 수동 체크리스트 (페이지 수정 후, 배포 전) |
 | `docs/decisions/` | 아키텍처 결정 기록 (ADR) |
