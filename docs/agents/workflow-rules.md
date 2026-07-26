@@ -93,15 +93,26 @@ Phase B 완료 후 실행:
    - 아키텍처 성격: `docs/agents/architecture-rules.md` 또는 `docs/decisions/`에 ADR
 8. **프로젝트 이해 문서 갱신** — 다음 Epic에서 AI가 잘못된 가정으로 짓지 않도록 지도를 코드와 맞춥니다.
    회고(1~7)가 regression 테스트와 validate를 바꾸므로 **반드시 회고 뒤에** 실행합니다.
-   - `docs/PROJECT_MAP.md`가 **없으면**: project-map 스킬로 생성하고, `CLAUDE.md`·`AGENTS.md`에
-     장 단위 참조와 `docs/*.html` 읽기 금지를 배선합니다 (보통 Epic 1 회고에서 1회).
-   - **있으면**: 이번 Epic에서 바뀐 장만 갱신합니다 (`PROJECT_MAP.md` §0의 갱신 트리거 참조).
-     모듈 추가·의존 방향 변경이 없었으면 건너뜁니다.
-   - **마지막 Epic이면**: `docs/SPEC.html`(화면·규칙 정의서)과 사람용 문서 2종을 생성·재생성합니다.
-   - 회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
-     **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).
-   - 검증: 모듈·라우트 커버리지와 경로 실존을 스크립트로 대조해 누락 0건을 확인합니다.
-     재생성 스크립트는 리포에 남겨야 다음 Epic에서 재현됩니다.
+   문서 작성 방법은 project-map 스킬을 따릅니다. 스킬이 없으면 이 단계를 건너뛰지 말고 사용자에게 알립니다.
+
+   산출물별로 판단합니다 (Epic 번호가 아니라 **파일 존재 여부**가 기준입니다):
+   - `docs/PROJECT_MAP.md`가 **없으면**: 생성하고 `CLAUDE.md`·`AGENTS.md`에 장 단위 참조와
+     `docs/*.html` 읽기 금지를 배선합니다 (보통 Epic 1 회고에서 1회).
+   - **있으면**: 이번 Epic에서 바뀐 장만 갱신합니다. **§0의 갱신 트리거가 하나도 안 걸렸을 때만**
+     건너뜁니다 — "모듈 추가·의존 방향 변경"은 트리거 중 하나일 뿐 단독 판정 기준이 아닙니다.
+     (라우트 추가, 스키마·상태전이 변경, 워커·알림 파이프라인 변경도 트리거입니다.)
+   - `docs/SPEC.html`이 **이미 있으면**: 화면·라우트·규칙 근거가 바뀌었는지 확인하고 바뀌었으면 재생성합니다.
+     마지막 Epic이 아니어도 합니다.
+   - **마지막 Epic이면**: `docs/SPEC.html`과 사람용 문서 2종을 생성하고, `PROJECT_MAP.md` §10 규칙 색인을
+     기계 생성한 뒤 `CLAUDE.md`에 §10 행을 추가합니다(배선 2차). §10 없이 완료로 보고하지 않습니다.
+     **판정**: `_bmad-output/implementation-artifacts/sprint-status.yaml`에서 이번 Epic 외 모든 `epic-*`이
+     `done`이면 마지막입니다. 파일이 없거나 애매하면 **사용자에게 물어봅니다.**
+
+   회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
+   **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).
+
+   검증: 커버리지(양방향 diff)·경로 실존·근거 생존을 스크립트로 확인해 0건을 봅니다.
+   **재생성 스크립트는 리포에 남깁니다** — 안 남기면 다음 Epic에서 재현되지 않습니다.
 9. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 `scripts/validate.sh` 또는 CI 우선
 10. **완료 기준**: harness 파일(validate, rules, hooks)을 수정했으면 반드시 현재 OS/셸에 맞는 검증을 재실행하여 harness 자체가 깨지지 않았는지 확인
    - Windows PowerShell: `./scripts/validate.ps1`

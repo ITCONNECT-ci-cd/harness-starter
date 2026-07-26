@@ -133,10 +133,14 @@ state/epic-<번호>-progress.json이 있으면 failed/skipped story를 확인해
 다음 Epic에서 자동으로 잡아야 하는 패턴이면 tests/regression/에 재현 테스트를 추가해줘.
 반복 규칙은 docs/agents/feedback-rules.md에 반영하고, 기계적으로 판별 가능한 치명 패턴만 validate blocking check로 승격해줘.
 
+회고를 반영한 뒤 docs/agents/workflow-rules.md Phase C의 8단계(프로젝트 이해 문서 갱신)도 실행해줘.
+docs/PROJECT_MAP.md가 없으면 만들고 CLAUDE.md·AGENTS.md에 배선해줘. 있으면 이번 Epic에서 바뀐 장만 갱신해줘.
+이번 Epic이 마지막인지 판단해서 알려주고, 마지막이면 사람용 문서(SPEC.html 등) 생성 여부를 물어봐줘.
+
 Harness 파일(validate, rules, hooks)을 수정했다면 현재 OS에 맞는 validate를 다시 실행해줘.
 회고 반영 커밋 메시지는 chore(harness): Epic <번호> 회고 반영 으로 준비해줘.
 
-완료 보고에는 발견한 반복 패턴, 생성한 incident, 추가한 regression test, 강화한 규칙, 검증 결과, 다음 Epic에서 주의할 점을 적어줘.
+완료 보고에는 발견한 반복 패턴, 생성한 incident, 추가한 regression test, 강화한 규칙, 이해 문서 갱신 범위, 검증 결과, 다음 Epic에서 주의할 점을 적어줘.
 ```
 
 ---
