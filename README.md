@@ -23,6 +23,8 @@ Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서
 
 2026-09-09: Astra / Extra High 기본값을 정리하고, 스킬의 불필요한 대기·반복 검증 지침과 Phase C 문서 생성 조건을 보완했습니다. [변경 전·후, 적용 방법, 검증 결과](docs/changelog/2026-09-09-astra-harness-guidance.md)를 확인하세요.
 
+후속 [독립 에이전트 리뷰와 행동 시험](reviews/astra-guidance-2026-09-09/review.md)에서 승인 대기 상태·기존 변경 보존·Epic 완료 조건을 보완하고, 격리 시나리오 4개를 검증했습니다.
+
 ---
 
 ## 먼저 고르기

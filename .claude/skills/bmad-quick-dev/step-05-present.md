@@ -12,7 +12,7 @@
 
 ### Generate Suggested Review Order
 
-Read `{baseline_commit}` from `{spec_file}` frontmatter and construct the diff of all changes since that commit.
+Use the task-scoped diff established in Step 4, relative to the original pre-implementation working state. Do not include pre-existing staged, unstaged, or untracked user changes in the suggested review order.
 
 Append the review order as a `## Suggested Review Order` section to `{spec_file}` **after the last existing section**. Do not modify the Code Map.
 
@@ -50,8 +50,8 @@ When there is only one concern, omit the bold label — just list the stops dire
 
 ### Commit and Present
 
-1. Change `{spec_file}` status to `done` in the frontmatter.
-2. If version control is available and the tree is dirty, create a local commit with a conventional message derived from the spec title.
+1. Set `{spec_file}` status to `done` only when all tasks, required checks, findings, and required approvals are resolved. If independent approval is required and `independent_review_status` is not `passed`, retain `in-review` and report that approval as pending. Missing approval metadata is not evidence of approval; recover it from the actual request and review evidence. Keep `in-progress` for incomplete implementation or failing checks.
+2. When required validation passes and version control is available, create a local conventional commit containing only this task's changes if the user permits a commit. Preserve existing file content and index entries; never include unrelated staged work. Follow a request to leave changes uncommitted. A local checkpoint commit does not resolve a pending approval or change the status to `done`.
 3. Open the spec in the user's editor so they can click through the Suggested Review Order:
    - Resolve two absolute paths: (1) the repository root (`git rev-parse --show-toplevel` — returns the worktree root when in a worktree, project root otherwise; if this fails, fall back to the current working directory), (2) `{spec_file}`. Run `code -r "{absolute-root}" "{absolute-spec-file}"` — the root first so VS Code opens in the right context, then the spec file. Always double-quote paths to handle spaces and special characters.
    - If `code` is not available (command fails), skip gracefully and tell the user the spec file path instead.
@@ -60,4 +60,4 @@ When there is only one concern, omit the bold label — just list the stops dire
    - **Navigation tip:** "Ctrl+click (Cmd+click on macOS) the links in the Suggested Review Order to jump to each stop."
    - Offer to push and/or create a pull request.
 
-Workflow complete.
+Finish with a self-contained report of completed work and any pending checks or approvals. Do not claim the task is complete while required outcomes remain pending.

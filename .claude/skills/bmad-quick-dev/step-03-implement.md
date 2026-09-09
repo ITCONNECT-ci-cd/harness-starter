@@ -18,7 +18,7 @@ Verify `{spec_file}` resolves to a non-empty path and the file exists on disk. I
 
 ### Baseline
 
-Capture `baseline_commit` (current HEAD, or `NO_VCS` if version control is unavailable) into `{spec_file}` frontmatter before making any changes.
+Before the first implementation, capture `baseline_commit` (current HEAD, or `NO_VCS` if version control is unavailable) into `{spec_file}` frontmatter. Record the existing staged, unstaged, and untracked paths and retain the pre-edit contents needed to distinguish this task's changes from existing work. Do not stage, reset, or stash to capture the baseline. Keep this original baseline through review loopbacks; do not replace it with the already-modified state.
 
 ### Implement
 

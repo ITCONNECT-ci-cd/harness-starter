@@ -33,7 +33,7 @@ BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으�
    - bash/WSL/macOS/Linux: `./scripts/validate-quick.sh`
 4. 통과 시 **commit + push 필수**. Windows PowerShell/Codex에서는 raw git 대신:
    `./scripts/phase-a/finalize-story.ps1 -StoryName <story-이름>`
-   이 스크립트는 3번 quick 검증도 실행하므로 최종 확정 시 3~4번을 이 호출 한 번으로 처리한다.
+   이 스크립트가 최종 3~4번을 처리하므로 호출 직전에 수동 quick을 추가하지 않는다. BMAD Step 9의 `review` 전 검증은 별도 필수 게이트이며, 현재 finalizer가 그 결과를 재사용하지는 않는다. 기존 사용자 변경이 있는 작업 트리에서 실행하지 않도록 `agent-execution-rules.md`의 분리 기준을 먼저 적용한다.
 5. sprint-status.yaml 업데이트 (스킬이 자동 처리)
 6. 실패 시 수정 후 재검증. 동일 원인으로 수정 후 3회 실패하면 기록 후 skip (TDD RED 제외)
 7. 실패 Story에 의존하지 않는 다음 Story로 진행. 의존성을 확인할 수 없으면 해당 Story를 보류
@@ -71,7 +71,7 @@ Epic 전체를 대상으로:
 5. 현재 OS/셸에 맞는 `validate` + `smoke` 최종 검증 (이미 Epic 단위 validate를 통과했으므로 재확인 성격)
 6. 모든 story APPROVED 후 **develop** 브랜치에 merge
 7. develop 푸시 시 GitHub CI 작동, 통과하면 develop → main으로 승격 (main push 시 자동 배포)
-8. sprint-status.yaml 업데이트 (review → done)
+8. sprint-status.yaml의 각 Story를 review → done으로 업데이트한다. 기획의 해당 Epic Story 목록과 대조하여 모든 Story가 done이고 필수 리뷰·검증·승인된 통합이 끝났으며 failed/skipped/보류 항목이 없을 때만 `development_status[epic-N]`도 done으로 기록한다. 누락된 Story나 미완료 게이트가 있으면 Epic은 in-progress로 유지한다.
 
 주의: Phase B의 validate/smoke와 develop → main 흐름은 승인 후 통합/배포 경로입니다. Phase C를 출시 전 배포 준비로 해석하지 않습니다.
 
@@ -108,6 +108,7 @@ Phase B 완료 후 실행:
      `docs/SPEC.html` 신규 생성은 이미 요청·승인됐으면 진행하고, 아니면 생성 여부를 한 번 확인합니다. 추가 사람용 문서는 승인된 파일명·대상 독자·범위가 있을 때만 생성합니다. 거절된 선택 문서는 완료 조건에서 제외합니다.
      **판정**: `_bmad-output/implementation-artifacts/sprint-status.yaml`의 `development_status`에서 정규식 `^epic-[0-9]+$`에 맞는 Epic 키만 봅니다. `epic-N-retrospective`와 Story 키는 제외합니다.
      이번 Epic 키가 존재하고 `done`이며, 나머지 Epic이 모두 `done`이고, 기획의 Epic 목록과 일치할 때 마지막으로 판정합니다. 파일·키 누락, 알 수 없는 상태, 목록 불일치는 미확정으로 보고 필요한 정보만 확인합니다. 빈 목록을 마지막 Epic으로 간주하지 않습니다.
+     모든 Story가 done인데 Epic 키만 in-progress라면 Phase B 8번의 기획 목록·리뷰·검증·통합 근거를 확인합니다. 모두 충족하면 누락된 Epic 상태 갱신을 기록한 뒤 다시 판정하고, 근거가 부족하면 미확정으로 남깁니다. §10 생성을 위해 상태만 임의로 done으로 바꾸지 않습니다.
 
    회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
    **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).

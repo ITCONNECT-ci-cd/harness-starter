@@ -16,13 +16,15 @@ Change `{spec_file}` status to `in-review` in the frontmatter before continuing.
 
 ### Construct Diff
 
-Read `{baseline_commit}` from `{spec_file}` frontmatter. If `{baseline_commit}` is missing or `NO_VCS`, use best effort to determine what changed. Otherwise, construct `{diff_output}` covering all changes — tracked and untracked — since `{baseline_commit}`.
+Read `{baseline_commit}` and the pre-implementation working-state record. Construct `{diff_output}` for this task's tracked and untracked changes relative to that original working state. Exclude pre-existing user changes even when they share a file with this task. If the baseline is missing or `NO_VCS`, establish ownership from available evidence; disclose any uncertainty instead of including unrelated work in the task diff.
 
 Do NOT `git add` anything — this is read-only inspection.
 
 ### Review
 
 When authorized delegation is available, launch the three review roles below without conversation context. Otherwise perform their checks sequentially and disclose that review was not independent. If the user or project explicitly requires independent approval, prepare review prompts and mark only that approval pending; do not claim it passed.
+
+Record `independent_review_required` and `independent_review_status` in `{spec_file}` frontmatter. Use `not-required` when no independent approval is required, `pending` while a required review is unavailable or unresolved, and `passed` only after the required reviewer actually approves. A sequential self-review cannot satisfy a required independent approval. Preserve `pending` when moving to the presentation step.
 
 - **Blind hunter** — receives `{diff_output}` only. No spec, no context docs, no project access. Invoke via the `bmad-review-adversarial-general` skill.
 - **Edge case hunter** — receives `{diff_output}` and read access to the project. Invoke via the `bmad-review-edge-case-hunter` skill.
@@ -46,4 +48,4 @@ When authorized delegation is available, launch the three review roles below wit
 
 ## NEXT
 
-Read fully and follow `./step-05-present.md`
+Run the checks required by the repository for the final changed behavior, including any review patches. Reuse passing checks only if their relevant working state is unchanged. Keep unresolved findings and failed checks visible. Read fully and follow `./step-05-present.md`; presentation does not imply completion.

@@ -431,7 +431,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <action>Use examples and references to specific code when helpful</action>
     </check>
 
-    <action>For an authorized Epic, return to the Harness finalization and next-story loop without waiting for optional questions. Otherwise summarize logical next steps</action>
+    <action>For an authorized Epic or Story, return to Harness finalization without waiting for optional questions. Continue to the next Story only within an authorized Epic scope; a single-Story request ends after that Story is finalized. Otherwise summarize logical next steps</action>
     <action>Recommended next steps (flexible based on project setup):
       - Review the implemented story and test the changes
       - Verify all acceptance criteria are met
