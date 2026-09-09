@@ -22,7 +22,7 @@ Do NOT `git add` anything — this is read-only inspection.
 
 ### Review
 
-Launch three subagents without conversation context. If no sub-agents are available, generate three review prompt files in `{implementation_artifacts}` — one per reviewer role below — and HALT. Ask the human to run each in a separate session (ideally a different LLM) and paste back the findings.
+When authorized delegation is available, launch the three review roles below without conversation context. Otherwise perform their checks sequentially and disclose that review was not independent. If the user or project explicitly requires independent approval, prepare review prompts and mark only that approval pending; do not claim it passed.
 
 - **Blind hunter** — receives `{diff_output}` only. No spec, no context docs, no project access. Invoke via the `bmad-review-adversarial-general` skill.
 - **Edge case hunter** — receives `{diff_output}` and read access to the project. Invoke via the `bmad-review-edge-case-hunter` skill.
@@ -38,8 +38,8 @@ Launch three subagents without conversation context. If no sub-agents are availa
    - **defer** — pre-existing issue not caused by this story, surfaced incidentally by the review. Collect for later focused attention.
    - **reject** — noise. Drop silently. When unsure between defer and reject, prefer reject — only defer findings you are confident are real.
 3. Process findings in cascading order. If intent_gap or bad_spec findings exist, they trigger a loopback — lower findings are moot since code will be re-derived. If neither exists, process patch and defer normally. Increment `{specLoopIteration}` on each loopback. If it exceeds 5, HALT and escalate to the human.
-   - **intent_gap** — Root cause is inside `<frozen-after-approval>`. Revert code changes. Loop back to the human to resolve. Once resolved, read fully and follow `./step-02-plan.md` to re-run steps 2–4.
-   - **bad_spec** — Root cause is outside `<frozen-after-approval>`. Before reverting code: extract KEEP instructions for positive preservation (what worked well and must survive re-derivation). Revert code changes. Read the `## Spec Change Log` in `{spec_file}` and strictly respect all logged constraints when amending the non-frozen sections that contain the root cause. Append a new change-log entry recording: the triggering finding, what was amended, the known-bad state avoided, and the KEEP instructions. Read fully and follow `./step-03-implement.md` to re-derive the code, then this step will run again.
+   - **intent_gap** — Root cause is inside `<frozen-after-approval>`. Preserve existing work and ask about the unresolved requirement; continue independent fixes. Rework only this task's changes after the requirement is resolved. Once resolved, read fully and follow `./step-02-plan.md` to re-run steps 2–4.
+   - **bad_spec** — Root cause is outside `<frozen-after-approval>`. Before reverting code: extract KEEP instructions for positive preservation (what worked well and must survive re-derivation). Rework only this task's affected changes, preserving unrelated user work. Read the `## Spec Change Log` in `{spec_file}` and strictly respect all logged constraints when amending the non-frozen sections that contain the root cause. Append a new change-log entry recording: the triggering finding, what was amended, the known-bad state avoided, and the KEEP instructions. Read fully and follow `./step-03-implement.md` to re-derive the code, then this step will run again.
    - **patch** — Auto-fix. These are the only findings that survive loopbacks.
    - **defer** — Append to `{deferred_work_file}`.
    - **reject** — Drop silently.

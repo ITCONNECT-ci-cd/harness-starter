@@ -7,6 +7,12 @@ Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
 
 # AGENTS.md
 
+## 작업 범위와 지침 적용
+
+- 작업 시작 시 `docs/agents/agent-execution-rules.md`를 읽고 적용한다. 사용자 요청·승인 범위, 스킬 충돌, 질문·위임·검증 범위의 공통 기준이다.
+- 시스템·도구 권한과 데이터 보호 규칙을 준수하면서, 명시적 사용자 요청과 이미 승인된 범위를 스킬의 기본 진행 방식보다 우선한다.
+- 아래 Phase A 루틴은 Epic/Story 구현 요청에 적용한다. Git 조회·문서 검토·Harness 유지보수에는 관련 규칙만 적용하며, 없는 제품 기획 문서나 Epic을 생성하도록 요구하지 않는다.
+
 ## 역할 분담
 
 | Phase | 도구 | 역할 | BMAD 스킬 |
@@ -33,12 +39,13 @@ Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
    - 통과 시 **commit + push 필수**
    - Windows PowerShell/Codex: `./scripts/phase-a/finalize-story.ps1 -StoryName <story-name>`
    - bash/WSL/macOS/Linux: `git add -A && git commit -m "feat(story-name): 설명" && git push`
-   - validate-quick 실패 시 수정 후 재검증, 3회 실패 시 skip
+   - validate-quick 실패 시 수정 후 재검증. 같은 원인으로 수정 후 3회 실패하면 기록 후 skip하고 독립적인 Story만 진행 (`agent-execution-rules.md` 참조, TDD RED 제외)
 6. Epic의 모든 story 완료 후 현재 OS/셸에 맞는 전체 검증 실행
    - bash/WSL/macOS/Linux: `./scripts/validate.sh`
    - Windows PowerShell: `./scripts/validate.ps1`
-   - 실패 시 `./scripts/validate.sh --from=실패단계`로 재개
-7. Codex Desktop 모델: 조직 표준 최신 모델 + 최고 reasoning 설정 권장 (모델명은 빠르게 바뀌므로 조직 표준 문서를 따름)
+   - 실패 시 현재 OS의 `validate.ps1` 또는 `validate.sh`에 `--from=실패단계`로 재개
+   - failed/skipped 또는 의존성으로 보류된 Story가 남으면 Epic 완료로 보고하지 않음
+7. Codex 모델·reasoning 기본값은 `.codex/config.toml`에서 관리 (`docs/agents/agent-execution-rules.md`의 적용 범위 참조)
 
 ## Phase B: Claude Code 시작 루틴
 
@@ -63,8 +70,9 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 | `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) — `.claude/skills/`와 byte 동기 유지 (harness-self-test가 검증) |
 | `.claude/skills/` | Claude Code용 BMAD 스킬 (code-review 등) |
 | `docs/PROJECT_MAP.md` | 코드에서 도출한 구조 지도(Phase C 8단계 산출물). **장 단위로 Read** — §9 함정(수정 전 필독) · §4 아키텍처 · §5~6 모듈 지도 |
-| `docs/*.html` | **사람 전용 — 열지 말 것.** 규칙 정의서 한 개가 10만 토큰을 넘길 수 있음. 내용 수정을 명시 지시받은 경우에만 |
+| `docs/*.html` | 사람용 문서. 일상적인 코드 맥락 수집에서는 읽지 않음. 요청된 문서 검토·생성·갱신·검증에 필요한 범위만 읽음 |
 | `docs/agents/` | 에이전트 운영 규칙 (architecture, coding, testing, security, performance, deploy, workflow, backup, seo, feedback) |
+| `.codex/config.toml` | Codex 프로젝트 모델·reasoning 기본값 |
 | `docs/checklists/` | 수동 체크리스트 (페이지 수정 후, 배포 전) |
 | `docs/decisions/` | 아키텍처 결정 기록 (ADR) |
 | `scripts/` | 검증 (validate, validate-quick, smoke), 빌드, 스모크 테스트 스크립트 |
@@ -77,6 +85,7 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 
 ## 참조 파일
 
+- `docs/agents/agent-execution-rules.md`
 - `docs/agents/architecture-rules.md`
 - `docs/agents/coding-rules.md`
 - `docs/agents/testing-rules.md`
@@ -134,7 +143,7 @@ Docker 컨테이너 또는 DB 마이그레이션 작업 시작 전 **반드시**
 
 ## Change rules
 
-- 변경 범위를 현재 story로 제한
+- 변경 범위를 사용자가 요청한 작업으로 제한. Phase A에서는 현재 Story로 제한
 - story와 관련 없는 리팩터링 금지
 - 관련 문서를 같은 변경에서 업데이트
 - 커밋 메시지 형식: `type(scope): description`

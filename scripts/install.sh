@@ -70,6 +70,7 @@ ESSENTIAL_PATHS=(
   # Git·GitHub 설정
   ".gitattributes"
   ".gitleaks.toml"
+  ".codex/config.toml"
   # 규칙 문서
   "docs/agents"
   "docs/checklists"

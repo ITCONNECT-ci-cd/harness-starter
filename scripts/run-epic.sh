@@ -43,6 +43,11 @@
 # ============================================================================
 set -uo pipefail
 
+# Resolve project-local Codex defaults even when launched from another directory.
+HARNESS_SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$HARNESS_SCRIPT_ROOT" || exit 1
+source "$HARNESS_SCRIPT_ROOT/scripts/lib/codex-options.sh"
+
 # ============================================================================
 # 설정값 (환경변수로 오버라이드 가능)
 # ============================================================================
@@ -78,8 +83,7 @@ COOLDOWN=${COOLDOWN:-30}                   # Story 사이 쿨다운 (30초)
 
 # Codex 설정
 CODEX_SANDBOX="${CODEX_SANDBOX:---full-auto}"
-CODEX_MODEL="${CODEX_MODEL:-chatgpt-5.4}"
-CODEX_REASONING="${CODEX_REASONING:-xhigh}"
+build_harness_codex_options
 
 # ============================================================================
 # 유틸리티 함수
@@ -280,7 +284,7 @@ process_story() {
     log "  [2/3] Codex implementing... (timeout: ${CODEX_TIMEOUT}s = $(( CODEX_TIMEOUT / 60 ))m)"
 
     local codex_exit=0
-    timeout "$CODEX_TIMEOUT" codex exec -m "$CODEX_MODEL" -c model_reasoning_effort="$CODEX_REASONING" $CODEX_SANDBOX \
+    timeout "$CODEX_TIMEOUT" codex exec "${HARNESS_CODEX_OPTIONS[@]}" $CODEX_SANDBOX \
       "You are implementing a story for a software project.
 
 INSTRUCTIONS:
@@ -393,8 +397,8 @@ main() {
   log "  CLAUDE_TIMEOUT = ${CLAUDE_TIMEOUT}s ($(( CLAUDE_TIMEOUT / 60 ))m)"
   log "  VALIDATE_TIMEOUT = ${VALIDATE_TIMEOUT}s"
   log "  MAX_RETRIES    = $MAX_RETRIES"
-  log "  CODEX_MODEL    = $CODEX_MODEL"
-  log "  CODEX_REASONING= $CODEX_REASONING"
+  log "  CODEX_MODEL    = ${CODEX_MODEL:-project Codex config}"
+  log "  CODEX_REASONING= ${CODEX_REASONING:-project Codex config}"
   log "  CODEX_SANDBOX  = $CODEX_SANDBOX"
   log "  BASE_BRANCH    = $BASE_BRANCH"
 

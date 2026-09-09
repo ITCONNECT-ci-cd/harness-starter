@@ -18,7 +18,8 @@ CLAUDE.md — Claude Code 전용 지침 파일입니다.
 - 도구 사용 원칙은 `AGENTS.md`를 따른다. CLI로 가능한 작업은 CLI를 우선 사용
 - 상세 규칙은 `docs/agents/` 아래 문서 참조 (아래 "상황별 규칙" 표 — 필요할 때 Read)
 - BMAD 산출물은 `_bmad-output/` 아래에서 참조
-- `.claude/skills/bmad-*/`와 `.agents/skills/bmad-*/` 내용을 수정하지 않음
+- 제품 Story 작업 중 BMAD 스킬을 임의 수정하지 않음. 사용자가 요청한 Harness/스킬 유지보수에서는 필요한 부분만 수정하고 `.claude/skills/`와 `.agents/skills/`의 byte 동기화를 검증한다.
+- 스킬 실행 전 `docs/agents/agent-execution-rules.md`를 적용한다. 승인된 작업을 다시 묻는 기본 메뉴와 전체 테스트 요구는 해당 문서의 Harness 기준을 따른다.
 - **프로젝트 이해 문서(`docs/PROJECT_MAP.md` 등)는 project-map 스킬로만 만든다.**
   `bmad-document-project`·`bmad-generate-project-context`는 호출하지 않는다 — 트리거가 겹치지만
   산출물 체계가 달라, 둘 다 돌면 문서가 이원화된다. 생성·갱신 시점은 Phase C 8단계를 따른다.
@@ -115,6 +116,7 @@ BMAD 풀코스 없이 간단한 작업을 할 때:
 | 작업 | 문서 |
 |---|---|
 | Phase A/C 절차 상세, 브랜치·커밋·검증 계약 | `docs/agents/workflow-rules.md` |
+| 프로젝트 이해 문서 생성·갱신, project-map 준비 | `docs/agents/project-map-rules.md` |
 | 보안 구현·리뷰 심화 | `docs/agents/security-rules.md` |
 | 성능 최적화·리뷰 심화 | `docs/agents/performance-rules.md` |
 | 배포 작업 | `docs/agents/deploy-rules.md` |

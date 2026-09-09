@@ -42,7 +42,7 @@ Load a specific shard using a template variable. Example: used for epics with `{
 
 Load index.md, analyze the structure and description of each doc in the index, then intelligently load relevant docs.
 
-**DO NOT BE LAZY** -- use best judgment to load documents that might have relevant information, even if there is only a 5% chance of relevance.
+Use the target story and known dependencies to select relevant documents. Expand when required evidence is missing.
 
 1. Load `index.md` from the sharded directory.
 2. Parse the table of contents, links, and section headers.
@@ -52,7 +52,7 @@ Load index.md, analyze the structure and description of each doc in the index, t
 5. Load all identified relevant documents.
 6. Store combined content in variable: `{pattern_name_content}`.
 
-**When in doubt, LOAD IT** -- context is valuable, and being thorough is better than missing critical info.
+Resolve uncertainty with targeted searches before loading additional documents in full.
 
 ---
 
@@ -63,7 +63,7 @@ After applying the matching strategy, mark the pattern as **RESOLVED** and move 
 If no sharded matches were found OR no sharded pattern exists for this input:
 
 1. Attempt a glob match on the "whole" pattern (e.g., `{planning_artifacts}/*prd*.md`).
-2. If matches are found, load ALL matching files completely (no offset/limit).
+2. If matches are found, honor the configured load strategy: for SELECTIVE_LOAD or INDEX_GUIDED, use headings and relevant sections; load all content only for FULL_LOAD or when the complete context is required.
 3. Store content in variable: `{pattern_name_content}` (e.g., `{prd_content}`).
 4. Mark pattern as **RESOLVED** and move to the next pattern.
 

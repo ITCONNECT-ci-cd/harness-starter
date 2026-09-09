@@ -6,7 +6,7 @@ main_config: '{project-root}/_bmad/bmm/config.yaml'
 
 **Goal:** Turn user intent into a hardened, reviewable artifact.
 
-**CRITICAL:** If a step says "read fully and follow step-XX", you read and follow step-XX. No exceptions.
+**CRITICAL:** Read each required step before acting. Explicit user intent, authorization, and repository execution rules take precedence over default checkpoints.
 
 
 ## READY FOR DEVELOPMENT STANDARD
@@ -44,16 +44,16 @@ This uses **step-file architecture** for disciplined execution:
 
 1. **READ COMPLETELY**: Read the entire step file before acting
 2. **FOLLOW SEQUENCE**: Execute sections in order
-3. **WAIT FOR INPUT**: Halt at checkpoints and wait for human
+3. **CHECK AUTHORIZATION**: At checkpoints, wait only for a required decision or approval that is not already established
 4. **LOAD NEXT**: When directed, read fully and follow the next step file
 
-### Critical Rules (NO EXCEPTIONS)
+### Step execution rules
 
 - **NEVER** load multiple step files simultaneously
 - **ALWAYS** read entire step file before execution
-- **NEVER** skip steps or optimize the sequence
-- **ALWAYS** follow the exact instructions in the step file
-- **ALWAYS** halt at checkpoints and wait for human input
+- Preserve required outcomes and validation; adapt procedural steps when the user or repository execution contract explicitly directs it
+- Apply the step instructions within explicit user scope and repository execution rules
+- Do not re-request approval for work already authorized in the session
 
 
 ## INITIALIZATION SEQUENCE

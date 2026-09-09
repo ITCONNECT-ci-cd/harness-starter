@@ -13,6 +13,10 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 | 검증이 언제 도는지 | [docs/harness/validation.md](docs/harness/validation.md) |
 | CI/CD 켜기 또는 수동 모드 유지 | [docs/harness/ci-cd.md](docs/harness/ci-cd.md) |
 | Docker/DB 작업 지시 문구 | [docs/harness/docker-db.md](docs/harness/docker-db.md) |
+| Astra 모델 설정·자율 진행·스킬 충돌 기준 | [docs/agents/agent-execution-rules.md](docs/agents/agent-execution-rules.md) |
+| Phase C 문서·project-map 준비 | [docs/agents/project-map-rules.md](docs/agents/project-map-rules.md) |
+
+Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서 관리합니다. 신뢰된 프로젝트에서 적용되며, 이미 열린 작업의 모델은 사용자가 선택한 값을 유지합니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
 
 ---
 
@@ -41,6 +45,7 @@ BMAD 산출물이 이미 있다면 아래 프롬프트로 바로 시작합니다
 AGENTS.md와 docs/agents/ 규칙을 먼저 읽어줘.
 _bmad-output/planning-artifacts/ 아래의 PRD, architecture, epics 산출물을 확인해줘.
 BMAD 스킬 경로가 있는지 확인해줘.
+docs/agents/project-map-rules.md에 따라 Phase C에서 사용할 project-map의 실제 경로·출처도 확인해줘.
 현재 프로젝트의 기술 스택을 감지하고, 필요한 scaffold와 harness 파일을 적용해줘.
 검증 스크립트는 현재 OS에 맞는 공식 진입점으로 실행해줘.
 
@@ -135,7 +140,10 @@ state/epic-<번호>-progress.json이 있으면 failed/skipped story를 확인해
 
 회고를 반영한 뒤 docs/agents/workflow-rules.md Phase C의 8단계(프로젝트 이해 문서 갱신)도 실행해줘.
 docs/PROJECT_MAP.md가 없으면 만들고 CLAUDE.md·AGENTS.md에 배선해줘. 있으면 이번 Epic에서 바뀐 장만 갱신해줘.
-이번 Epic이 마지막인지 판단해서 알려주고, 마지막이면 사람용 문서(SPEC.html 등) 생성 여부를 물어봐줘.
+마지막 Epic 여부는 workflow-rules.md의 Epic 키·상태·기획 목록 기준으로 판단해줘.
+마지막이면 PROJECT_MAP.md §10 규칙 색인을 생성·검증해줘.
+SPEC.html 신규 생성은 이미 승인됐으면 진행하고, 아니면 한 번 물어봐줘. 추가 사람용 문서는 승인된 파일명과 범위가 있을 때만 만들어줘.
+선택 문서의 답변 대기와 project-map 누락은 구분해서 보고하고, 독립적인 회고·검증 작업은 계속해줘.
 
 Harness 파일(validate, rules, hooks)을 수정했다면 현재 OS에 맞는 validate를 다시 실행해줘.
 회고 반영 커밋 메시지는 chore(harness): Epic <번호> 회고 반영 으로 준비해줘.

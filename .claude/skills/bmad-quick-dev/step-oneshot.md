@@ -17,7 +17,7 @@ Implement the clarified intent directly.
 
 ### Review
 
-Invoke the `bmad-review-adversarial-general` skill in a subagent with the changed files. The subagent gets NO conversation context — to avoid anchoring bias. If no sub-agents are available, write the changed files to a review prompt file in `{implementation_artifacts}` and HALT. Ask the human to run the review in a separate session and paste back the findings.
+Review the changed behavior and required checks directly for a small change. Use `bmad-review-adversarial-general` in an independent subagent when authorized and useful. If independent review is unavailable, disclose the limitation; keep approval pending only when the user or project explicitly requires independent approval.
 
 ### Classify
 
@@ -27,11 +27,11 @@ Deduplicate all review findings. Three categories only:
 - **defer** — pre-existing issue not caused by this change. Append to `{deferred_work_file}`.
 - **reject** — noise. Drop silently.
 
-If a finding is caused by this change but too significant for a trivial patch, HALT and present it to the human for decision before proceeding.
+Fix findings within the authorized scope. Ask only about material changes to requirements, architecture, or authorization; continue independent fixes.
 
 ### Commit
 
-If version control is available and the tree is dirty, create a local commit with a conventional message derived from the intent. If VCS is unavailable, skip.
+After required validation passes, create a local conventional commit containing only this task's changes when version control is available. Preserve unrelated work and follow any user instruction to leave changes uncommitted. If VCS is unavailable, skip.
 
 ### Present
 
@@ -44,6 +44,6 @@ If version control is available and the tree is dirty, create a local commit wit
    - Review findings breakdown: patches applied, items deferred, items rejected. If all findings were rejected, say so.
 3. Offer to push and/or create a pull request.
 
-HALT and wait for human input.
+Finish with a self-contained result. Do not wait for optional follow-up input or push without authorization.
 
 Workflow complete.

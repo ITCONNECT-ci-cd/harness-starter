@@ -8,7 +8,7 @@
 - Only modify the story file in these areas: Tasks/Subtasks checkboxes, Dev Agent Record (Debug Log, Completion Notes), File List, Change Log, and Status
 - Execute ALL steps in exact order; do NOT skip steps
 - Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution until the story is COMPLETE (all ACs satisfied and all tasks/subtasks checked) UNLESS a HALT condition is triggered or the USER gives other instruction.
-- Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 6 decides completion.
+- Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Step 9 decides implementation completion.
 - User skill level ({user_skill_level}) affects conversation style ONLY, not code updates.
 
 ---
@@ -47,7 +47,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   <critical>Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution
     until the story is COMPLETE (all ACs satisfied and all tasks/subtasks checked) UNLESS a HALT condition is triggered or the USER gives
     other instruction.</critical>
-  <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 6 decides completion.</critical>
+  <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Step 9 decides implementation completion.</critical>
   <critical>User skill level ({user_skill_level}) affects conversation style ONLY, not code updates.</critical>
 
   <step n="1" goal="Find next ready story and load it" tag="sprint-status">
@@ -169,7 +169,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <goto step="6">Completion sequence</goto>
     </action>
     <action if="story file inaccessible">HALT: "Cannot develop story without access to story file"</action>
-    <action if="incomplete task or subtask requirements ambiguous">ASK user to clarify or HALT</action>
+    <action if="incomplete task or subtask requirements ambiguous">Resolve routine details from the story and project context. Ask only when a material requirement or authorization remains unresolved; continue independent authorized work.</action>
   </step>
 
   <step n="2" goal="Load project context and story information">
@@ -281,9 +281,9 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
     <action>Document technical approach and decisions in Dev Agent Record → Implementation Plan</action>
 
-    <action if="new dependencies required beyond story specifications">HALT: "Additional dependencies need user approval"</action>
-    <action if="3 consecutive implementation failures occur">HALT and request guidance</action>
-    <action if="required configuration is missing">HALT: "Cannot proceed without necessary configuration files"</action>
+    <action if="new dependencies required beyond story specifications">Check existing dependencies first. Within authorized scope, justify necessary additions in the story and commit; ask before material architecture, cost, or scope changes.</action>
+    <action if="3 consecutive implementation failures occur">Apply the Harness failure policy: exclude expected TDD RED, record unresolved failures, and defer this story and its dependents. Continue only independent authorized stories. Without a repository policy, report the blocker and request guidance.</action>
+    <action if="required configuration is missing">Inspect documented defaults and templates. Restore authorized non-secret configuration when derivable; ask for missing credentials or material decisions without blocking independent work.</action>
 
     <critical>NEVER implement anything not mapped to a specific task/subtask in the story file</critical>
     <critical>NEVER proceed to next task until current task/subtask is complete AND tests pass</critical>
@@ -300,7 +300,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
   <step n="7" goal="Run validations and tests">
     <action>Determine how to run tests for this repo (infer test framework from project structure)</action>
-    <action>Run all existing tests to ensure no regressions</action>
+    <action>Run the tests required for this change by the repository validation policy; under Harness, use related tests for a Story and full validation for an Epic</action>
     <action>Run the new tests to verify implementation correctness</action>
     <action>Run linting and code quality checks if configured in project</action>
     <action>Validate implementation meets ALL story acceptance criteria; enforce quantitative thresholds explicitly</action>
@@ -315,7 +315,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     <action>Verify ALL tests for this task/subtask ACTUALLY EXIST and PASS 100%</action>
     <action>Confirm implementation matches EXACTLY what the task/subtask specifies - no extra features</action>
     <action>Validate that ALL acceptance criteria related to this task are satisfied</action>
-    <action>Run full test suite to ensure NO regressions introduced</action>
+    <action>Verify related regression tests pass; reuse current passing results unless further changes or unresolved concerns require rerunning them</action>
 
     <!-- REVIEW FOLLOW-UP HANDLING -->
     <check if="task is review follow-up (has [AI-Review] prefix)">
@@ -361,7 +361,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
   <step n="9" goal="Story completion and mark for review" tag="sprint-status">
     <action>Verify ALL tasks and subtasks are marked [x] (re-scan the story document now)</action>
-    <action>Run the full regression suite (do not skip)</action>
+    <action>Run native validate-quick required by the repository before marking the story ready for review; reuse a current passing result only if the relevant working state has not changed. Do not run the full suite for a Harness Story. The Phase A finalizer still enforces its required quick gate before commit and push</action>
     <action>Confirm File List includes every changed file</action>
     <action>Execute enhanced definition-of-done validation</action>
     <action>Update the story Status to: "review"</action>
@@ -418,7 +418,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     <action>Summarize key accomplishments: story ID, story key, title, key changes made, tests added, files modified</action>
     <action>Provide the story file path and current status (now "review")</action>
 
-    <action>Based on {user_skill_level}, ask if user needs any explanations about:
+    <action>Based on {user_skill_level}, briefly explain relevant points without adding an approval checkpoint:
       - What was implemented and how it works
       - Why certain technical decisions were made
       - How to test or verify the changes
@@ -431,7 +431,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <action>Use examples and references to specific code when helpful</action>
     </check>
 
-    <action>Once explanations are complete (or user indicates no questions), suggest logical next steps</action>
+    <action>For an authorized Epic, return to the Harness finalization and next-story loop without waiting for optional questions. Otherwise summarize logical next steps</action>
     <action>Recommended next steps (flexible based on project setup):
       - Review the implemented story and test the changes
       - Verify all acceptance criteria are met

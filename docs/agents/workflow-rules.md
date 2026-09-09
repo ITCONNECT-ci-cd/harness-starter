@@ -3,6 +3,8 @@
 # 이 프로젝트의 작업 흐름 규칙입니다.
 # BMAD + Harness Engineering 통합 워크플로우를 정의합니다.
 
+실행 범위·승인·스킬 충돌·실패 횟수·위임은 `agent-execution-rules.md`를 먼저 적용한다. 이 문서의 Phase 루프는 해당 Phase 작업이 요청됐을 때 실행한다.
+
 ## 도구별 역할 분담
 
 | Phase | 도구 | 역할 | BMAD 스킬 |
@@ -31,9 +33,10 @@ BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으�
    - bash/WSL/macOS/Linux: `./scripts/validate-quick.sh`
 4. 통과 시 **commit + push 필수**. Windows PowerShell/Codex에서는 raw git 대신:
    `./scripts/phase-a/finalize-story.ps1 -StoryName <story-이름>`
+   이 스크립트는 3번 quick 검증도 실행하므로 최종 확정 시 3~4번을 이 호출 한 번으로 처리한다.
 5. sprint-status.yaml 업데이트 (스킬이 자동 처리)
-6. 실패 시 수정 후 재검증, 3회 실패 시 skip
-7. 다음 story로 진행
+6. 실패 시 수정 후 재검증. 동일 원인으로 수정 후 3회 실패하면 기록 후 skip (TDD RED 제외)
+7. 실패 Story에 의존하지 않는 다음 Story로 진행. 의존성을 확인할 수 없으면 해당 Story를 보류
 
 **중요:** validate-quick 통과한 story는 반드시 commit과 push를 완료해야 다음 story로 진행할 수 있다. push 없이 다음 story 진행은 금지.
 
@@ -42,7 +45,7 @@ Epic의 모든 story 완료 후:
    - Windows PowerShell: `./scripts/validate.ps1`
    - bash/WSL/macOS/Linux: `./scripts/validate.sh`
 2. 실패 시 수정 후 현재 OS/셸에 맞는 `--from=실패단계`로 재개
-3. 전체 통과 후 Phase B로 이동
+3. 전체 통과하고 failed/skipped/보류 Story가 없을 때 Phase B로 이동. 미완료 Story가 있으면 완료로 보고하지 않음
 
 **--from 옵션:** 테스트에서 실패했으면 `--from=test`, 빌드에서 실패했으면 `--from=build`로 해당 단계부터 재실행. 처음부터 다시 돌리지 않음.
 
@@ -56,9 +59,7 @@ Epic의 모든 story 완료 후:
 
 **Windows/Codex GitHub 판정:** GitHub 읽기/사전 조건 확인은 `gh`를 사용한다. `scripts/lib/git-utils.ps1`는 Windows 기본 env를 복구하고, `GH_TOKEN`이 없으면 Git credential helper의 GitHub 토큰을 재사용한다. `fatal: unable to access ... getaddrinfo() thread failed to start`가 raw git 네트워크 호출에서 발생하면 원격 장애로 단정하지 말고 `./scripts/phase-a/preflight.ps1 -Epic <N>`로 재확인한다. 이 경로에서 토큰 없음/권한 부족이 확인될 때만 새 PAT를 요청한다.
 
-Codex Desktop 모델 설정:
-- 모델: chatgpt-5.4
-- 사고수준: xhigh (`-c model_reasoning_effort=xhigh`)
+Codex 모델·reasoning 기본값은 `.codex/config.toml` 한 곳에서 관리한다. Desktop 기존 작업의 사용자 선택과 CLI의 명시적 오버라이드를 존중한다. 적용 범위는 `agent-execution-rules.md`의 모델 기본값을 참조한다.
 
 ## Phase B: Claude Code 흐름 (Epic 단위)
 
@@ -93,20 +94,20 @@ Phase B 완료 후 실행:
    - 아키텍처 성격: `docs/agents/architecture-rules.md` 또는 `docs/decisions/`에 ADR
 8. **프로젝트 이해 문서 갱신** — 다음 Epic에서 AI가 잘못된 가정으로 짓지 않도록 지도를 코드와 맞춥니다.
    회고(1~7)가 regression 테스트와 validate를 바꾸므로 **반드시 회고 뒤에** 실행합니다.
-   문서 작성 방법은 project-map 스킬을 따릅니다. 스킬이 없으면 이 단계를 건너뛰지 말고 사용자에게 알립니다.
+   문서 작성 방법은 project-map 스킬, 준비·산출물 계약은 `project-map-rules.md`를 따릅니다. 스킬을 찾을 수 없으면 준비 절차로 경로·출처를 확인하고 이 단계만 미완료로 보고합니다. 다른 승인된 회고·검증 작업은 계속합니다.
 
    산출물별로 판단합니다 (Epic 번호가 아니라 **파일 존재 여부**가 기준입니다):
    - `docs/PROJECT_MAP.md`가 **없으면**: 생성하고 `CLAUDE.md`·`AGENTS.md`에 장 단위 참조와
-     `docs/*.html` 읽기 금지를 배선합니다 (보통 Epic 1 회고에서 1회).
+     `docs/*.html`의 일상 맥락 수집 제외와 요청된 문서 작업의 읽기 허용을 배선합니다 (보통 Epic 1 회고에서 1회).
    - **있으면**: 이번 Epic에서 바뀐 장만 갱신합니다. **§0의 갱신 트리거가 하나도 안 걸렸을 때만**
      건너뜁니다 — "모듈 추가·의존 방향 변경"은 트리거 중 하나일 뿐 단독 판정 기준이 아닙니다.
      (라우트 추가, 스키마·상태전이 변경, 워커·알림 파이프라인 변경도 트리거입니다.)
    - `docs/SPEC.html`이 **이미 있으면**: 화면·라우트·규칙 근거가 바뀌었는지 확인하고 바뀌었으면 재생성합니다.
      마지막 Epic이 아니어도 합니다.
-   - **마지막 Epic이면**: `docs/SPEC.html`과 사람용 문서 2종을 생성하고, `PROJECT_MAP.md` §10 규칙 색인을
-     기계 생성한 뒤 `CLAUDE.md`에 §10 행을 추가합니다(배선 2차). §10 없이 완료로 보고하지 않습니다.
-     **판정**: `_bmad-output/implementation-artifacts/sprint-status.yaml`에서 이번 Epic 외 모든 `epic-*`이
-     `done`이면 마지막입니다. 파일이 없거나 애매하면 **사용자에게 물어봅니다.**
+   - **마지막 Epic이면**: `PROJECT_MAP.md` §10 규칙 색인을 기계 생성하고 `CLAUDE.md`에 §10 행을 추가합니다. §10 없이 마지막 Epic 회고를 완료로 보고하지 않습니다.
+     `docs/SPEC.html` 신규 생성은 이미 요청·승인됐으면 진행하고, 아니면 생성 여부를 한 번 확인합니다. 추가 사람용 문서는 승인된 파일명·대상 독자·범위가 있을 때만 생성합니다. 거절된 선택 문서는 완료 조건에서 제외합니다.
+     **판정**: `_bmad-output/implementation-artifacts/sprint-status.yaml`의 `development_status`에서 정규식 `^epic-[0-9]+$`에 맞는 Epic 키만 봅니다. `epic-N-retrospective`와 Story 키는 제외합니다.
+     이번 Epic 키가 존재하고 `done`이며, 나머지 Epic이 모두 `done`이고, 기획의 Epic 목록과 일치할 때 마지막으로 판정합니다. 파일·키 누락, 알 수 없는 상태, 목록 불일치는 미확정으로 보고 필요한 정보만 확인합니다. 빈 목록을 마지막 Epic으로 간주하지 않습니다.
 
    회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
    **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).
@@ -164,7 +165,7 @@ BMAD 풀코스가 필요 없는 간단한 작업:
 - Phase A validate-quick 실패: Codex가 수정 후 재시도 (3회까지)
 - Phase A validate.sh (Epic 단위) 실패: `--from=실패단계`로 재개, 처음부터 다시 돌리지 않음
 - Phase B 리뷰 거부: Claude Code가 직접 수정
-- 3회 실패: skip 처리하고 수동 확인 대상으로 표시
+- 같은 원인의 수정 후 3회 실패: `agent-execution-rules.md`에 따라 실패 근거를 남기고 해당 Story 및 의존 Story를 미완료로 표시. 독립 Story만 진행
 
 ## Hang/Timeout 가드
 

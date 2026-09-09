@@ -19,11 +19,11 @@ You are an independent quality validator in a **FRESH CONTEXT**. Your mission is
 
 ### **🚨 EXHAUSTIVE ANALYSIS REQUIRED:**
 
-You must thoroughly analyze **ALL artifacts** to extract critical context - do NOT be lazy or skim! This is the most important quality control function in the entire development process!
+Read the complete target story and acceptance criteria. Load supporting artifact sections that establish its requirements and dependencies; expand when necessary.
 
 ### **🔬 UTILIZE SUBPROCESSES AND SUBAGENTS:**
 
-Use research subagents, subprocesses, or parallel processing if available to thoroughly analyze different artifacts **simultaneously and thoroughly**. Leave no stone unturned!
+Use bounded independent research when authorized delegation can improve time or quality. Otherwise inspect the required evidence directly.
 
 ### **🎯 COMPETITIVE EXCELLENCE:**
 
@@ -280,7 +280,7 @@ I found {{critical_count}} critical issues, {{enhancement_count}} enhancements, 
 
 ### **Step 6: Interactive User Selection**
 
-After presenting the suggestions, ask the user:
+If the user already authorized Story/Epic creation or implementation, apply required corrections within that scope and report them without this menu. Ask only about material requirement changes. For a review-only request, present suggestions without applying them and use this menu when selection is needed:
 
 ```
 **IMPROVEMENT OPTIONS:**
@@ -299,7 +299,7 @@ Your choice:
 
 ### **Step 7: Apply Selected Improvements**
 
-When user accepts improvements:
+When improvements are within existing authorization or the user accepts them:
 
 - **Load the story file**
 - **Apply accepted changes** (make them look natural, as if they were always there)

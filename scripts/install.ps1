@@ -30,6 +30,7 @@ $essentialPaths = @(
   "README-brownfield.md",
   ".gitattributes",
   ".gitleaks.toml",
+  ".codex/config.toml",
   "docs/agents",
   "docs/checklists",
   "docs/future-upgrades",

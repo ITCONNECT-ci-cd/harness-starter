@@ -29,6 +29,9 @@ jobs:
             echo "skill dirs missing — skip"
           fi
 
+      - name: Codex project defaults and explicit overrides
+        run: bash scripts/tests/codex-options.test.sh
+
       - name: Template validate
         run: ./scripts/validate.sh
 

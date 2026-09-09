@@ -6,9 +6,9 @@
 - Communicate all responses in {communication_language} and generate all documents in {document_output_language}
 - Your purpose is NOT to copy from epics - it's to create a comprehensive, optimized story file that gives the DEV agent EVERYTHING needed for flawless implementation
 - COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file locations, breaking regressions, ignoring UX, vague implementations, lying about completion, not learning from past work
-- EXHAUSTIVE ANALYSIS REQUIRED: You must thoroughly analyze ALL artifacts to extract critical context - do NOT be lazy or skim! This is the most important function in the entire development process!
-- UTILIZE SUBPROCESSES AND SUBAGENTS: Use research subagents, subprocesses or parallel processing if available to thoroughly analyze different artifacts simultaneously and thoroughly
-- SAVE QUESTIONS: If you think of questions or clarifications during analysis, save them for the end after the complete story is written
+- Read the complete target story and acceptance criteria. For other artifacts, start with indexes and relevant sections, expanding when dependencies or evidence require it; respect SELECTIVE_LOAD.
+- Delegate independent artifact research when authorized tools are available and it improves time or quality. Give bounded tasks and request concise evidence; otherwise research directly.
+- Ask material requirement questions when discovered, while continuing independent research. Resolve routine details from context; do not require answers to optional questions before finalizing authorized work.
 - ZERO USER INTERVENTION: Process should be fully automated except for initial epic/story selection or missing documents
 
 ---
@@ -209,7 +209,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 </step>
 
 <step n="2" goal="Load and analyze core artifacts">
-  <critical>🔬 EXHAUSTIVE ARTIFACT ANALYSIS - This is where you prevent future developer mistakes!</critical>
+  <critical>Analyze all evidence needed for the target story, using selective loading for supporting artifacts.</critical>
 
   <!-- Load all available content through discovery protocol -->
   <action>Read fully and follow `./discover-inputs.md` to load all input files</action>
@@ -253,7 +253,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
   <!-- Load architecture - single file or sharded -->
   <check if="architecture file is single file">
-    <action>Load complete {architecture_content}</action>
+    <action>Load architecture sections relevant to this story and referenced dependencies; expand if the evidence is incomplete</action>
   </check>
   <check if="architecture is sharded to folder">
     <action>Load architecture index and scan all architecture files</action>
