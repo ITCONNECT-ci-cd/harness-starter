@@ -15,13 +15,13 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 | Docker/DB 작업 지시 문구 | [docs/harness/docker-db.md](docs/harness/docker-db.md) |
 | Astra 모델 설정·자율 진행·스킬 충돌 기준 | [docs/agents/agent-execution-rules.md](docs/agents/agent-execution-rules.md) |
 | Phase C 문서·project-map 준비 | [docs/agents/project-map-rules.md](docs/agents/project-map-rules.md) |
-| 날짜별 변경 이력 | [docs/changelog/](docs/changelog/) |
+| 날짜별 변경 이력·수정 파일 상세 | [docs/changelog/README.md](docs/changelog/README.md) |
 
 Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서 관리합니다. 신뢰된 프로젝트에서 적용되며, 이미 열린 작업의 모델은 사용자가 선택한 값을 유지합니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
 
 ## 최근 변경
 
-2026-09-10: 기본값을 Astra / High로 조정하고 계획·구현·조사·리뷰 역할별 모델 배정을 추가했습니다. [모델 배정 규칙](docs/agents/model-routing-rules.md)과 [변경 기록](docs/changelog/2026-09-10-astra-high-model-routing.md)을 확인하세요.
+2026-09-10: 기본값을 Astra / High로 조정하고 계획·구현·조사·리뷰 역할별 모델 배정을 추가했습니다. [모델 배정 규칙](docs/agents/model-routing-rules.md), [변경 기록](docs/changelog/2026-09-10-astra-high-model-routing.md), [공통 하네스 수정 파일·검증 상세](docs/changelog/2026-09-10-harness-changed-files.md)를 확인하세요.
 
 2026-09-09: Astra / Extra High 기본값을 정리하고, 스킬의 불필요한 대기·반복 검증 지침과 Phase C 문서 생성 조건을 보완했습니다. [변경 전·후, 적용 방법, 검증 결과](docs/changelog/2026-09-09-astra-harness-guidance.md)를 확인하세요.
 
