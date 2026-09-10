@@ -38,8 +38,8 @@
 - 환경변수: 테스트에서 `process.env`를 직접 수정하지 않음. mock 또는 설정 주입 사용
 - 타이머/시간: `vi.useFakeTimers()` 또는 `jest.useFakeTimers()` 사용 시 `afterEach`에서 반드시 복원
 
-validate.sh는 `--no-threads` (Vitest) 또는 `--runInBand` (Jest)로 순차 실행합니다.
-격리 규칙이 충분히 정착되면 병렬 실행으로 전환할 수 있습니다.
+**현재 실행 실태**: validate 진입점(`validate.sh`·`validate.ps1`)은 Jest를 `npx jest --runInBand --ci`로 순차 실행합니다. **Vitest는 `npx vitest run`으로 호출하므로 기본 병렬 실행입니다.** 즉 Vitest 프로젝트에서는 위 격리 규칙이 실제 안전장치이며, 순차 실행이 대신 막아주지 않습니다.
+순차 실행이 필요하면 `harness.validate.json`의 `commands.test` 또는 `HARNESS_TEST_CMD`로 `npx vitest run --no-file-parallelism`을 지정합니다.
 
 ## 4층 검증 체계 (Inner Loop → Outer Loop)
 
@@ -47,8 +47,8 @@ validate.sh는 `--no-threads` (Vitest) 또는 `--runInBand` (Jest)로 순차 실
 
 | 시점 | 도구 | 범위 | 고유 가치 | 예상 시간 |
 |---|---|---|---|---|
-| Story 완료 (로컬) | `validate-quick.sh` | 변경 파일 lint + typecheck + 관련 테스트 | 빠른 피드백 (inner loop) | < 60초 |
-| Epic 완료 (로컬) | `validate.sh` | 전체 typecheck/lint/test/build + **grep 기반 security/perf/blocking 체크** | 로컬 특화 패턴 검증 (CI에 없음) | 3~5분 |
+| Story 완료 (로컬) | `validate-quick` | 변경 파일 lint + typecheck + 관련 테스트 | 빠른 피드백 (inner loop) | < 60초 |
+| Epic 완료 (로컬) | `validate` | 전체 typecheck/lint/test/build + **grep 기반 security/perf/blocking 체크** | 로컬 특화 패턴 검증 (CI에 없음) | 3~5분 |
 | develop push (원격) | `.github/workflows/ci.yml` | 깨끗한 npm ci + 전체 검증 + **coverage + npm audit + docker build 검증** | 환경 독립 검증 + 보안 감사 | 5~8분 |
 | main push (원격) | `.github/workflows/deploy.yml` | **사내 Docker 서버로 배포 + (옵션) pre-backup + post-smoke** | 프로덕션 배포 게이트 | 5~10분 |
 
@@ -56,7 +56,7 @@ validate.sh는 `--no-threads` (Vitest) 또는 `--runInBand` (Jest)로 순차 실
 
 - **네 계층이 lint/typecheck/test/build를 반복 실행**하는 것은 의도된 redundancy (Defense in Depth). 빠르고 싼 체크는 여러 번 돌려도 무방.
 - **각 계층 고유 영역은 중복되지 않게**:
-  - 로컬 validate.sh만 하는 것: grep 기반 security/perf/blocking 체크 (CI에서는 불필요)
+  - 로컬 validate만 하는 것: grep 기반 security/perf/blocking 체크 (CI에서는 불필요)
   - CI만 하는 것: coverage 수집, npm audit, Dockerfile 검증
   - Deploy만 하는 것: 실제 서버 적용
 - Story 단위에서는 전체 테스트를 돌리지 않음 (아직 구현 안 된 Story의 테스트 실패 방지)
@@ -64,7 +64,7 @@ validate.sh는 `--no-threads` (Vitest) 또는 `--runInBand` (Jest)로 순차 실
 - Windows의 BMAD Step 9는 `review` 상태를 기록하기 전에 quick 검증을 요구한다. 이후 `finalize-story.ps1`는 커밋할 최종 상태를 다시 검증한다. 현재 두 게이트는 모두 필수이며 자동으로 결과를 재사용하지 않는다. finalizer 직전에 별도 수동 quick을 추가해 세 번째로 실행하지 않는다. 구현 중 관련 테스트 실행은 별도다.
 - 같은 변경 상태에서 통과한 검증은 새 변경·실패·미해결 우려가 없으면 반복하지 않는다. Phase B 통합 검증과 CI의 독립 환경 검증은 유지한다.
 - Epic 단위에서 전체 테스트를 순차 실행하여 병렬 충돌 없이 통합 검증
-- validate.sh 실패 시 `--from=실패단계`로 해당 단계부터 재개 가능
+- validate 실패 시 `--from=실패단계`로 해당 단계부터 재개 가능
 
 ## 검증 출력과 로그
 

@@ -48,13 +48,13 @@ Codex Desktop이 구현한 Epic 전체를 리뷰하고 수정할 때의 규칙:
 
 - REJECTED 항목을 직접 수정 (Edit/Write)
 - 수정 시 Hooks가 자동으로 lint+typecheck 실행
-- 수정 후 `./scripts/validate.sh`로 재검증
+- 수정 후 현재 OS/셸에 맞는 전체 validate로 재검증 (`./scripts/validate.sh` 또는 `./scripts/validate.ps1`)
 
 ### 테스트 보강
 
 - 누락된 테스트 케이스 작성
 - 엣지 케이스 커버리지 추가
-- `./scripts/validate.sh` + `./scripts/smoke.sh`로 최종 검증
+- 현재 OS/셸에 맞는 validate + smoke로 최종 검증 (`./scripts/validate.sh` + `./scripts/smoke.sh`, 또는 `./scripts/validate.ps1` + `./scripts/smoke.ps1`)
 
 ### 완료
 
@@ -91,13 +91,7 @@ BMAD 풀코스 없이 간단한 작업을 할 때:
 - Test: `npm run test`
 - Lint: `npm run lint`
 - Type check: `npm run typecheck`
-- Story 검증: bash/WSL/macOS/Linux는 `./scripts/validate-quick.sh`, Windows PowerShell은 `./scripts/validate-quick.ps1`
-- Epic 검증: bash/WSL/macOS/Linux는 `./scripts/validate.sh`, Windows PowerShell은 `./scripts/validate.ps1`
-- 실패 재개: bash/WSL/macOS/Linux는 `./scripts/validate.sh --from=실패단계`, Windows PowerShell은 `./scripts/validate.ps1 --from=실패단계`
-- 검증 명령 커스터마이징: `harness.validate.json`(mode/commands/required) 또는 `HARNESS_*_CMD` 환경변수 — bash/PowerShell 공통 계약
-- 검증 로그: `state/validate/latest/*.log` (단계별 로그)
-- 출력 모드: 기본 summary, `VALIDATE_OUTPUT_MODE=verbose`로 전체 출력
-- 실패 디버깅: summary 출력의 로그 경로를 읽어서 원인 파악
+- 검증 진입점, `--from` 재개, 로그 경로, 출력 모드, `harness.validate.json` 계약은 `AGENTS.md`의 Validation과 `docs/agents/testing-rules.md`의 실행 명령을 따른다 (둘 다 매 세션 @import됨)
 
 ## 참조 파일 (매 세션 로드)
 
@@ -116,6 +110,7 @@ BMAD 풀코스 없이 간단한 작업을 할 때:
 | 작업 | 문서 |
 |---|---|
 | Phase A/C 절차 상세, 브랜치·커밋·검증 계약 | `docs/agents/workflow-rules.md` |
+| 모델·effort 배정 (Claude Phase B/C 포함) | `docs/agents/model-routing-rules.md` |
 | 프로젝트 이해 문서 생성·갱신, project-map 준비 | `docs/agents/project-map-rules.md` |
 | 보안 구현·리뷰 심화 | `docs/agents/security-rules.md` |
 | 성능 최적화·리뷰 심화 | `docs/agents/performance-rules.md` |

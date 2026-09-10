@@ -7,7 +7,7 @@
 #   - 최대 10개 active rule만 유지 (초과 시 가장 오래된 것 retire)
 #   - 각 규칙은 source incident id를 가짐
 #   - 최근 2 Epic 동안 재발 없으면 retired로 이동
-#   - 기계적으로 판별 가능한 패턴은 validate.sh로 승격 후 여기서 제거
+#   - 기계적으로 판별 가능한 패턴은 validate 진입점 양쪽(validate.sh·validate.ps1)으로 승격 후 여기서 제거
 
 ## Active Rules
 

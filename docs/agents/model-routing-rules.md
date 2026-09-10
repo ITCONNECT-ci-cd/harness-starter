@@ -24,10 +24,33 @@
 - 실패 원인이 권한·자격증명·환경 누락이면 모델을 올려 재시도하지 않는다. 추론 부족이 의심될 때만 구체적인 미해결 근거를 전달해 재분석하며, 모델 교체로 기존 실패 횟수나 승인 상태를 초기화하지 않는다.
 - 코드·문서 편집은 승인 범위 안에서만 한다. 읽기 전용 역할의 결과를 반영할 편집은 주 에이전트가 수행한다. 모델을 낮춰도 테스트·데이터 보호·독립 승인 기준은 낮추지 않는다.
 
+## Claude Code 측 모델·effort
+
+Claude Code에는 `.codex/config.toml`에 대응하는 프로젝트 설정 파일이 없고, 역할 프로필 파일도 만들지 않는다 — 실행 설정이 두 벌이 되고 Claude 세션은 사람이 직접 시작하므로 자동 로딩의 이점이 없다. 세션 모델은 `/model`로 사람이 고르고, 하위 에이전트 모델은 생성 시 인자로 지정한다. Phase B와 Phase C가 Claude 담당이므로 아래가 그 두 단계의 기준이다.
+
+| 역할 | 적용 설정 | 맡기는 일 |
+|---|---|---|
+| 일반 작업·최종 통합 | **Opus 5 / high** | Phase B 총괄, REJECTED 수정, 테스트 보강, 최종 검증 |
+| 복잡한 계획 | Opus 5 / xhigh | Epic 구조·의존성·분할안 검토 |
+| 어려운 오류·심층 분석 | Fable 5.1 / xhigh | 원인 불명 장애, 동시성·권한·데이터 경계 |
+| 일반 독립 리뷰 | Opus 5 / high | 정확성·회귀·테스트 근거 검토 |
+| 조사·로그 분석 | Sonnet 5 / medium | 코드 탐색, validate 로그 분석, 근거 수집 (읽기 전용) |
+| 기계적 문서 작업 | Sonnet 5 / medium | Phase C 문서 갱신, 색인 생성, 상태 파일 갱신 |
+| 단순 조회 | Haiku 4.5 | 파일 목록·경로 확인. effort 파라미터를 지원하지 않으므로 지정하지 않는다 |
+
+작은 수정은 주 세션이 직접 처리한다. 위 역할은 별도 판단이나 독립 근거가 필요할 때만 나눈다. Codex 쪽 역할 표와 대응하지만 같은 파일을 쓰지 않으며, 이 표가 Codex 설정을 바꾸지도 않는다.
+
+- effort는 `low`·`medium`·`high`·`xhigh`·`max` 다섯 단계이며 `output_config.effort`로 지정한다. Claude Code의 기본값은 `xhigh`다. 표의 `high`는 그보다 낮으므로 **명시적으로 지정해야 적용된다.** 지정하지 않았다면 기본값으로 실행된 것으로 기록한다.
+- 일반 작업을 `high`로 두는 이유는 Phase B·C가 이미 리뷰·검증 게이트로 둘러싸여 있어 모든 작업에 `xhigh` 비용을 지불할 이유가 없기 때문이다. 어려운 판단이 걸린 구간만 올린다.
+- 최신 모델의 낮은 effort가 이전 세대의 높은 effort보다 나은 경우가 많다. 모델을 내리기 전에 effort를 먼저 조정한다. 반대로 작업이 끝나기는 하는데 필요 이상으로 오래 걸리면 effort를 낮춘다.
+- Fable 5.1은 공격적 사이버보안·생명과학 안전 분류기를 돌린다. 방어 목적의 보안 리뷰도 거부될 수 있으므로 처리는 `security-rules.md`의 「보안 작업 중 모델 거부 처리」를 따른다.
+- 위 「실행 기준」의 모델 관련 제약은 effort에도 같이 적용한다. 권한·자격증명·환경 누락으로 실패했을 때 effort를 올려 재시도하지 않고, effort를 낮춰도 테스트·데이터 보호·독립 승인 기준은 낮추지 않는다.
+- 요청한 모델·effort와 실제 적용된 값을 구분해 기록한다. 앱의 현재 작업 설정이 우선할 수 있다.
+
 ## 적용과 관찰
 
 커스텀 에이전트는 Codex용이며 Claude Code의 모델 설정을 바꾸지 않는다. 앱의 현재 작업 설정과 시스템 권한이 우선할 수 있으므로 생성 시 요청한 모델·추론과 반환된 실행 정보를 구분해 기록한다. 파일 검사를 실제 앱 로딩이나 모델 품질 검증으로 보고하지 않는다.
 
 대표 구현·리뷰·조사 작업에서 성공 여부, 재수정 횟수, 완료 시간과 확인 가능한 사용량을 비교한다. 비교 결과가 쌓이기 전에는 High 또는 혼합 모델의 품질·속도·비용 개선을 보장하지 않는다. 초기에는 적은 수의 독립 작업부터 적용한다.
 
-근거: [OpenAI 하위 에이전트 설정](https://learn.chatgpt.com/ko-KR/docs/agent-configuration/subagents), [Astra 마이그레이션 안내](https://developers.openai.com/api/docs/guides/latest-model#update-api-and-model-parameters). 역할별 배정은 이 프로젝트의 운영 결정이다.
+근거: [OpenAI 하위 에이전트 설정](https://learn.chatgpt.com/ko-KR/docs/agent-configuration/subagents), [Astra 마이그레이션 안내](https://developers.openai.com/api/docs/guides/latest-model#update-api-and-model-parameters), [Claude Fable 5 프롬프팅](https://platform.claude.com/docs/ko/build-with-claude/prompt-engineering/prompting-claude-fable-5). 역할별 배정은 이 프로젝트의 운영 결정이다.

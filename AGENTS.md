@@ -53,7 +53,9 @@ Claude Code는 CLAUDE.md에서 이 파일을 @import합니다.
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` 확인
 3. 완료된 story 브랜치를 `bmad-code-review` 스킬로 리뷰
 4. REJECTED 항목 직접 수정 + 테스트 보강
-5. `./scripts/validate.sh` + `./scripts/smoke.sh` 최종 검증
+5. 현재 OS/셸에 맞는 전체 validate + smoke 최종 검증
+   - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`
+   - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
 
 ## Phase C: Epic 회고 시작 루틴
 
@@ -130,8 +132,8 @@ Docker 컨테이너 또는 DB 마이그레이션 작업 시작 전 **반드시**
 - validate 실패 시: bash/WSL/macOS/Linux는 `./scripts/validate.sh --from=실패단계`, Windows PowerShell은 `./scripts/validate.ps1 --from=실패단계`로 재개
 - 실패 시 로그 확인: `state/validate/latest/*.log` (단계별 로그 파일)
 - 기본 출력은 summary 모드 (단계별 성공/실패 + 소요시간만 표시)
-- 전체 출력이 필요하면: `VALIDATE_OUTPUT_MODE=verbose ./scripts/validate.sh`
-- critical path가 있으면 `./scripts/smoke.sh` 추가 실행
+- 전체 출력이 필요하면: bash/WSL/macOS/Linux는 `VALIDATE_OUTPUT_MODE=verbose ./scripts/validate.sh`, Windows PowerShell은 `$env:VALIDATE_OUTPUT_MODE='verbose'; ./scripts/validate.ps1`
+- critical path가 있으면 현재 OS/셸에 맞는 smoke 추가 실행 (`./scripts/smoke.sh` 또는 `./scripts/smoke.ps1`)
 - 검증이 실패하면 완료로 간주하지 않음
 
 ## Coding rules (핵심만, 상세는 docs/agents/coding-rules.md)

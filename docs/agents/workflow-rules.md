@@ -90,7 +90,7 @@ Phase B 완료 후 실행:
 7. 승격 정책에 따라 조치:
    - 1회: 기록만
    - 2회: `docs/agents/feedback-rules.md`에 활성 규칙 추가
-   - 3회+ 또는 치명적 (기계적으로 판별 가능한 경우만): `scripts/validate.sh`에 **blocking check**로 추가 (warning이 아닌 exit 1)
+   - 3회+ 또는 치명적 (기계적으로 판별 가능한 경우만): `scripts/validate.sh`와 `scripts/validate.ps1` **양쪽에** blocking check로 추가 (warning이 아닌 exit 1). 한쪽에만 넣으면 다른 OS에서 승격이 적용되지 않는다
    - 아키텍처 성격: `docs/agents/architecture-rules.md` 또는 `docs/decisions/`에 ADR
 8. **프로젝트 이해 문서 갱신** — 다음 Epic에서 AI가 잘못된 가정으로 짓지 않도록 지도를 코드와 맞춥니다.
    회고(1~7)가 regression 테스트와 validate를 바꾸므로 **반드시 회고 뒤에** 실행합니다.
@@ -115,7 +115,7 @@ Phase B 완료 후 실행:
 
    검증: 커버리지(양방향 diff)·경로 실존·근거 생존을 스크립트로 확인해 0건을 봅니다.
    **재생성 스크립트는 리포에 남깁니다** — 안 남기면 다음 Epic에서 재현되지 않습니다.
-9. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 `scripts/validate.sh` 또는 CI 우선
+9. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 validate 진입점 양쪽(`validate.sh`·`validate.ps1`) 또는 CI 우선
 10. **완료 기준**: harness 파일(validate, rules, hooks)을 수정했으면 반드시 현재 OS/셸에 맞는 검증을 재실행하여 harness 자체가 깨지지 않았는지 확인
    - Windows PowerShell: `./scripts/validate.ps1`
    - bash/WSL/macOS/Linux: `bash -n scripts/validate.sh && ./scripts/validate.sh`
@@ -139,7 +139,7 @@ feedback-rules.md 운영 규칙:
 - 최대 10개 active rule만 유지
 - 각 규칙은 source incident id를 가짐
 - 최근 2 Epic 동안 재발 없으면 retired로 이동
-- 기계적 판별 가능 패턴이 validate.sh로 승격되면 여기서 제거
+- 기계적 판별 가능 패턴이 validate 진입점 양쪽으로 승격되면 여기서 제거
 
 ## Quick Flow (가벼운 작업)
 

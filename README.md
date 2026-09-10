@@ -14,12 +14,15 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 | CI/CD 켜기 또는 수동 모드 유지 | [docs/harness/ci-cd.md](docs/harness/ci-cd.md) |
 | Docker/DB 작업 지시 문구 | [docs/harness/docker-db.md](docs/harness/docker-db.md) |
 | Astra 모델 설정·자율 진행·스킬 충돌 기준 | [docs/agents/agent-execution-rules.md](docs/agents/agent-execution-rules.md) |
+| Claude·Codex 모델과 effort 배정 | [docs/agents/model-routing-rules.md](docs/agents/model-routing-rules.md) |
 | Phase C 문서·project-map 준비 | [docs/agents/project-map-rules.md](docs/agents/project-map-rules.md) |
 | 날짜별 변경 이력·수정 파일 상세 | [docs/changelog/README.md](docs/changelog/README.md) |
 
 Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서 관리합니다. 신뢰된 프로젝트에서 적용되며, 이미 열린 작업의 모델은 사용자가 선택한 값을 유지합니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
 
 ## 최근 변경
+
+2026-09-10: Claude Fable 5 공식 프롬프팅 가이드를 반영해 근거 기반 완료 보고, 보고·소통 형식, 구현 범위 제한, Claude 측 모델·effort 배정을 추가했습니다. [변경 요약](docs/changelog/2026-09-10-claude-fable5-harness.md), [수정 파일·검증 상세](docs/changelog/2026-09-10-claude-fable5-changed-files.md)를 확인하세요.
 
 2026-09-10: 기본값을 Astra / High로 조정하고 계획·구현·조사·리뷰 역할별 모델 배정을 추가했습니다. [모델 배정 규칙](docs/agents/model-routing-rules.md), [변경 기록](docs/changelog/2026-09-10-astra-high-model-routing.md), [공통 하네스 수정 파일·검증 상세](docs/changelog/2026-09-10-harness-changed-files.md)를 확인하세요.
 
@@ -95,6 +98,8 @@ Codex Desktop에서 Epic 단위 구현을 시작할 때 입력합니다.
 ```text
 Epic <번호>의 story를 순서대로 처리해.
 
+이 Epic은 <누구를 위한 어떤 결과물인지, 완료되면 무엇이 가능해지는지>를 위한 작업이야.
+
 시작 전에 AGENTS.md, architecture.md, sprint-status.yaml, docs/agents/feedback-rules.md를 읽어줘.
 Windows PowerShell이면 ./scripts/doctor.ps1 와 ./scripts/phase-a/preflight.ps1 -Epic <번호> 를 먼저 실행해줘.
 
@@ -107,7 +112,7 @@ Windows PowerShell이면 ./scripts/doctor.ps1 와 ./scripts/phase-a/preflight.ps
 
 모든 story가 끝나면 현재 OS에 맞는 validate를 실행해줘.
 실패하면 state/validate/latest/*.log를 읽고 고친 뒤 --from 옵션으로 재개해줘.
-완료 보고에는 구현한 story, 브랜치, 검증 결과, 남은 주의사항을 포함해줘.
+완료 보고는 결과부터 써줘. 보고하는 항목은 실제 실행 결과(검증 로그 경로, 커밋)에 근거해야 하고, 확인하지 못한 건 확인하지 못했다고 적어줘.
 ```
 
 ---
@@ -119,13 +124,15 @@ Claude Code에서 Epic 구현 결과를 리뷰하고 보강할 때 입력합니�
 ```text
 Epic <번호>의 구현 결과를 리뷰하고 수정해줘.
 
+이 Epic은 <무엇을 위한 것인지>이고, 가장 걱정되는 건 <어떤 위험인지>야.
+
 sprint-status.yaml에서 review 상태인 story를 확인해줘.
 각 story를 bmad-code-review로 리뷰해줘.
 REJECTED 항목은 직접 수정하고, 누락된 테스트를 보강해줘.
 현재 OS에 맞는 validate와 smoke를 실행해줘.
 모든 story가 APPROVED이면 develop 브랜치에 merge할 준비 상태로 정리해줘.
 
-완료 보고에는 승인된 story, 수정한 파일, 검증 결과, 남은 위험을 적어줘.
+완료 보고는 결과부터 써줘. 승인·수정·검증 주장은 각각 근거가 되는 실행 결과에 연결하고, 남은 위험은 따로 적어줘.
 ```
 
 ---
@@ -157,7 +164,7 @@ SPEC.html 신규 생성은 이미 승인됐으면 진행하고, 아니면 한 �
 Harness 파일(validate, rules, hooks)을 수정했다면 현재 OS에 맞는 validate를 다시 실행해줘.
 회고 반영 커밋 메시지는 chore(harness): Epic <번호> 회고 반영 으로 준비해줘.
 
-완료 보고에는 발견한 반복 패턴, 생성한 incident, 추가한 regression test, 강화한 규칙, 이해 문서 갱신 범위, 검증 결과, 다음 Epic에서 주의할 점을 적어줘.
+완료 보고는 결과부터 써줘. 하네스에 무엇이 바뀌었고 다음 Epic에서 무엇이 달라지는지를 먼저 적고, 근거와 세부는 그 뒤에 적어줘. 확인하지 못한 항목은 미검증이라고 적어줘.
 ```
 
 ---

@@ -25,7 +25,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 - story의 acceptance criteria를 충족하는지
 - 엣지 케이스 처리 (null, empty, boundary values)
-- 에러 처리 (try-catch, fallback, 사용자 피드백)
+- 경계(사용자 입력, 외부 호출)의 에러 처리 — try-catch, fallback, 사용자 피드백. 일어날 수 없는 경우까지 방어 코드를 요구하지 않음
 
 ### 3. 테스트
 
@@ -61,14 +61,14 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 - 네이밍 일관성
 - 중복 코드 여부
-- 불필요한 복잡성
+- 불필요한 복잡성 — 요청 범위를 넘는 추상화, 한 번 쓰는 헬퍼, 쓰이지 않는 하위 호환 shim (`docs/agents/coding-rules.md`의 구현 범위 기준)
 - 구조화된 로깅 사용 (console.log 금지)
 
 ## 판정 기준
 
 ### APPROVED 조건 (모두 충족 시)
 
-- validate.sh 통과
+- 현재 OS/셸에 맞는 전체 validate 통과
 - 아키텍처 경계 위반 없음
 - 변경 동작에 테스트 존재
 - 보안 이슈 없음
@@ -77,7 +77,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 ### REJECTED 조건 (하나라도 해당 시)
 
-- validate.sh 실패
+- 현재 OS/셸에 맞는 전체 validate 실패
 - 아키텍처 경계 위반
 - 보안 취약점 발견
 - 하드코딩된 시크릿/포트
