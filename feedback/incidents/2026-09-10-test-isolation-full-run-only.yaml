@@ -1,0 +1,42 @@
+# feedback/incidents/2026-09-10-test-isolation-full-run-only.yaml
+#
+# 내부 프로젝트명·브랜치·커밋은 기록하지 않는다 (security-rules.md 「내부 프로젝트 관리 정보」).
+# 재발 판단에 필요한 것은 실패의 형태이지 어느 저장소였는지가 아니다.
+
+incident_id: "2026-09-10-test-isolation-full-run-only"
+phase: "B"
+epic: "harness-maintenance"
+story: "cross-project"
+category: "test-isolation"
+symptom: "단독 실행하면 통과하는 테스트가 전체 실행에서만 실패한다. 간헐적이라 타임아웃이나 성능 문제로 오진하기 쉽다."
+root_cause: "테스트가 공유 상태(환경변수, 전역 mock)를 남기고, 전체 실행은 병렬·순서 의존이라 그 잔여가 다른 테스트로 새어든다. 격리 규칙의 환경변수 항목이 JS 문구로만 쓰여 있어 다른 언어의 테스트 작성자에게 닿지 않았고, 값을 '변경'하는 쪽만 막고 환경 상태를 '단언'하는 쪽은 막지 않았다."
+preventable_by: "rule"
+
+occurrences:
+  - stack: "프런트엔드 Vitest"
+    detail: "컴포넌트 테스트 1건이 전체 병렬 실행에서만 실패. 같은 파일을 단독 실행하면 전부 통과."
+    evidence: "전체 validate 로그(2923 passed / 1 failed)와 단일 파일 재실행 결과(28 passed) 대조"
+  - stack: "백엔드 pytest"
+    detail: "환경변수 미설정 시 fail-closed 동작을 단언하는 테스트가 전체 실행에서 실패. 다른 테스트가 같은 환경변수를 os.environ에 심어 순서에 의존했다. 단독 실행은 통과."
+    evidence: "전체 validate 로그와 단독 실행 결과 대조"
+
+related_misdiagnosis:
+  - "처음에는 waitFor 타임아웃으로 보고 대기 시간 상향을 시도했으나 실패 시점 DOM 덤프가 반증했다. 그대로 올렸으면 실제 결함을 덮었을 것이다."
+  - "이어서 만든 결정론적 재현 테스트가 대상 함수를 아예 호출하지 않는 셋업 실패였다. 통과·실패 어느 쪽이든 아무것도 증명하지 못해 삭제했다."
+  - "재현하지 못한 수정을 원인으로 단정하지 않고, 시도한 방법과 횟수를 함께 기록해 미확정으로 남겼다. 이 대응은 올바르다."
+
+evidence:
+  - "docs/agents/testing-rules.md 테스트 격리 규칙"
+  - "docs/changelog/2026-09-10-claude-fable5-harness.md (Vitest 병렬 실행 실태 정정)"
+
+mechanically_detectable: false
+# 부분적으로는 가능하다. 테스트 파일 안의 환경변수 직접 대입
+# (os.environ[...] = , process.env.X = )은 grep으로 잡을 수 있다.
+# 그 하위 패턴은 현재 1회 관측이라 blocking 승격 기준(3회 또는 치명)에 못 미친다.
+# 재발하면 validate blocking check 후보로 승격한다.
+
+regression_test: ""
+# 해당 없음 — 이 저장소는 제품 소스가 없는 템플릿이라 재현 테스트를 둘 곳이 없다.
+# 각 프로젝트에서 해당 테스트를 고칠 때 회귀 테스트를 함께 둔다.
+
+promoted_to: "docs/agents/feedback-rules.md#6, docs/agents/testing-rules.md 「간헐 실패와 전체 실행 전용 실패」"

@@ -4,6 +4,7 @@
 
 | 날짜 | 변경 내용 | 문서 |
 |---|---|---|
+| 2026-09-10 | 전체 실행 전용 테스트 실패 회고 반영 (격리 규칙 언어 중립화, 간헐 실패 절차) | [변경 기록](2026-09-10-test-isolation-retro.md) |
 | 2026-09-10 | Claude Fable 5 프롬프팅 가이드 반영 (보고 근거·구현 범위·Claude 모델/effort) | [변경 요약](2026-09-10-claude-fable5-harness.md) · [수정 파일·검증 상세](2026-09-10-claude-fable5-changed-files.md) |
 | 2026-09-10 | Astra / High 기본값과 역할별 모델 배정 | [변경 요약](2026-09-10-astra-high-model-routing.md) · [공통 하네스 수정 파일·검증 상세](2026-09-10-harness-changed-files.md) |
 | 2026-09-09 | Astra 실행 지침·스킬 충돌·검증·Phase C 보완 | [변경 기록](2026-09-09-astra-harness-guidance.md) |

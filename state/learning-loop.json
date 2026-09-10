@@ -6,9 +6,25 @@
       "last_seen_epic": null,
       "source_incidents": [],
       "promoted_to": null
+    },
+    "test-isolation-full-run-only": {
+      "count": 2,
+      "status": "active-rule",
+      "last_seen_epic": "harness-maintenance",
+      "source_incidents": ["2026-09-10-test-isolation-full-run-only"],
+      "promoted_to": "docs/agents/feedback-rules.md#6",
+      "note": "프런트엔드 Vitest 병렬 실행 1건, 백엔드 pytest os.environ 순서 의존 1건. 3회째 또는 환경변수 직접 대입이 재발하면 validate blocking check로 승격"
+    },
+    "test-mutates-process-env": {
+      "count": 1,
+      "status": "watching",
+      "last_seen_epic": "harness-maintenance",
+      "source_incidents": ["2026-09-10-test-isolation-full-run-only"],
+      "promoted_to": null,
+      "note": "기계적 검출 가능(grep). 2회째에 active-rule, 3회째에 blocking check 후보"
     }
   },
   "status_values": ["watching", "active-rule", "blocking-check", "retired"],
-  "last_retro_epic": null,
-  "last_updated": null
+  "last_retro_epic": "harness-maintenance",
+  "last_updated": "2026-09-10"
 }

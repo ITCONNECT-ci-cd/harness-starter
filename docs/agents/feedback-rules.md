@@ -55,6 +55,12 @@
 - 승격 상태: validate.sh에 자동 감지 추가됨 → retired
 -->
 
+### 6. Full-run-only test failures are isolation failures until proven otherwise (test-isolation-full-run-only)
+- source: 2026-09-10-test-isolation-full-run-only
+- 발견: 서로 다른 스택 두 곳에서 같은 형태로 관측. 프런트엔드 Vitest 프로젝트에서 컴포넌트 테스트 1건이 전체 병렬 실행에서만 실패하고 단독 실행은 전부 통과했다. 백엔드 pytest 프로젝트에서는 환경변수 미설정 시 fail-closed 동작을 단언하는 테스트가 전체 실행에서 실패했는데, 다른 테스트가 같은 환경변수를 `os.environ`에 심은 순서 의존이었다. 두 경우 모두 처음에는 타임아웃·성능 문제로 오진해 대기 시간 상향을 시도할 뻔했다.
+- 규칙: 전체 실행에서만 실패하는 테스트는 먼저 **단독 실행**으로 격리 문제 여부를 판별한다. 단독 통과 + 전체 실패면 격리 문제이며, 타임아웃·재시도 상향으로 넘기지 않는다(실제 결함을 덮는다). 재현하지 못하면 시도한 방법과 횟수를 기록하고 원인 미확정으로 남기며, 재현되지 않은 수정을 원인으로 보고하지 않는다. 절차는 `testing-rules.md`의 「간헐 실패와 전체 실행 전용 실패」를 따른다.
+- 승격 상태: active. 테스트 파일 내 환경변수 직접 대입(`os.environ[...] =`, `process.env.X =`)은 기계적으로 검출 가능하므로 재발 시 validate blocking check 후보.
+
 ## Retired Rules
 
 없음
