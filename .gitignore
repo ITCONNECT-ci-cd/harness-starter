@@ -64,3 +64,8 @@ state/db-backups/
 
 # install.sh --force가 덮어쓰기 전 만드는 백업
 .harness-backup/
+
+# Internal project inventories belong in a private knowledge vault.
+/docs/org/harness-project-registry.md
+/docs/org/harness-project-decisions.csv
+/docs/org/audits/*-github-harness-inventory.json
