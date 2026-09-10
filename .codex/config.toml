@@ -1,3 +1,3 @@
 # Project defaults. See docs/agents/agent-execution-rules.md.
 model = "gpt-6-astra"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"

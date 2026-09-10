@@ -21,6 +21,8 @@ Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서
 
 ## 최근 변경
 
+2026-09-10: 기본값을 Astra / High로 조정하고 계획·구현·조사·리뷰 역할별 모델 배정을 추가했습니다. [모델 배정 규칙](docs/agents/model-routing-rules.md)과 [변경 기록](docs/changelog/2026-09-10-astra-high-model-routing.md)을 확인하세요.
+
 2026-09-09: Astra / Extra High 기본값을 정리하고, 스킬의 불필요한 대기·반복 검증 지침과 Phase C 문서 생성 조건을 보완했습니다. [변경 전·후, 적용 방법, 검증 결과](docs/changelog/2026-09-09-astra-harness-guidance.md)를 확인하세요.
 
 후속 [독립 에이전트 리뷰와 행동 시험](reviews/astra-guidance-2026-09-09/review.md)에서 승인 대기 상태·기존 변경 보존·Epic 완료 조건을 보완하고, 격리 시나리오 4개를 검증했습니다.

@@ -71,6 +71,11 @@ ESSENTIAL_PATHS=(
   ".gitattributes"
   ".gitleaks.toml"
   ".codex/config.toml"
+  ".codex/agents/harness-planner.toml"
+  ".codex/agents/harness-worker.toml"
+  ".codex/agents/harness-explorer.toml"
+  ".codex/agents/harness-reviewer.toml"
+  ".codex/agents/harness-deep-reviewer.toml"
   # 규칙 문서
   "docs/agents"
   "docs/checklists"
