@@ -7,6 +7,8 @@ tags: [harness, orca, model-routing, workflow]
 # 26.09.30 Orca 오케스트레이션 적용
 
 > [전체 변경 이력](README.md) · [결정 기록 ADR-002](../decisions/ADR-002-orca-orchestration.md) · [Orca 가이드](../harness/orca.md)
+>
+> 후속: 같은 날 한도 계산을 없애고 모델 배정을 사용자 승인 방식으로 바꿨습니다 → [후속 기록](2026-09-30-orca-model-approval.md)
 
 ORCA SDD Orchestrator v5.0 프롬프트를 하네스에 적용했습니다. Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 흐름으로 바꾸고, 모델을 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개로 통일했습니다. 사용자는 README의 Orca 프롬프트에 빈칸만 채워 개발을 맡깁니다.
 

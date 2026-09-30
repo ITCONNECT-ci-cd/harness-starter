@@ -7,7 +7,7 @@
 #   reviews/
 #   ├── epic-1/
 #   │   ├── <story-key>-review.md   ← 리뷰 워커의 판정과 findings (코디네이터가 저장)
-#   │   ├── orca-runs.md            ← Story별 계획/실제 모델·effort, 커밋, 재시도, 시간, 사용량
+#   │   ├── orca-runs.md            ← Story별 승인/실제 모델·effort, 커밋, 리뷰 결과, 재시도, 시간
 #   │   └── logs/                   ← 워커 워크트리에서 복사한 검증 로그 (커밋 제외)
 #   │       └── <story-key>-*.log
 #   ├── epic-2/

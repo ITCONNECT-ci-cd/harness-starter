@@ -28,10 +28,10 @@
 - 특히 확인할 정상·예외·회귀 동작: <목록>
 - 검증: `VALIDATE_BASE_REF=<기준 커밋> ./scripts/validate-quick.sh`
   (Windows: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/validate-quick.ps1`)
-- 리뷰 요구: <일반 | 위험 영역> / 리뷰 모델: <작성자와 다른 회사 모델>
+- 위험도: <낮음 | 보통 | 높음> / 리뷰 모델: <승인된 배정안의 리뷰 모델>
 
 [실행]
-- 모델·effort: <실제 모델 ID> / <effort>
+- 모델·effort: <승인된 배정안의 모델 ID> / <effort>
 - 방식: <구현: bmad-create-story 후 bmad-dev-story | 리뷰: 리뷰 대상 커밋을 detached로 받아 bmad-code-review (기준 커밋 대비 branch diff, spec은 story 파일)>
 - 예산: 시간 <분>, 같은 원인 수정 3회, BMAD 내부 리뷰어 <3 | 해당 없음>
 
@@ -40,5 +40,5 @@
 
 [결과]
 - worker_done은 정확히 한 번. 끝냈으면 --outcome succeeded, 미완료면 --outcome failed
-- 보고: 커밋 해시, 검증 결과와 로그 경로(state/validate/latest/), 남은 위험, 사용량(모르면 unknown)
+- 보고: 커밋 해시, 검증 결과와 로그 경로(state/validate/latest/), 남은 위험
 - 리뷰 워커: REVIEW.md 형식의 판정과 findings(decision-needed / patch / defer)를 보고 파일로 넘긴다

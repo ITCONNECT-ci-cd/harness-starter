@@ -1,51 +1,124 @@
 # 모델 배정 규칙
 
-이 하네스가 쓰는 모델은 아래 네 개뿐이다. 모델과 effort의 기준은 이 문서 한 곳이며, 다른 운영 문서나 스크립트에 기본 모델을 따로 두지 않는다. 역할과 effort는 운영 가설이지 독점 담당이나 성능 순위가 아니다. `reviews/epic-<N>/orca-runs.md`에 쌓인 실측으로 Phase C에서 고친다.
+이 하네스가 쓰는 모델은 아래 네 개뿐이다. 모델과 effort의 기준은 이 문서 한 곳이며, 다른 운영 문서나 스크립트에 기본 모델을 따로 두지 않는다. 코디네이터는 이 문서의 선택 방법으로 Story별 배정안을 만들어 사용자 승인을 받은 뒤 워커를 띄운다. 사용량과 한도는 계산하지 않는다. 표의 값은 운영 가설이며 `reviews/epic-<N>/orca-runs.md`의 기록으로 Phase C에서 고친다.
 
 ## 네 모델
 
-| 모델 | 호출 경로 | 우선 역할 | 기본 effort |
+| 모델 | 호출 경로 | 맡기는 일 | 맡기지 않는 일 |
 |---|---|---|---|
-| Gemini 3.8 Flash | Antigravity, Gemini CLI | 명확한 코드·문서 조사, 로그 분석, 작은 버그, 정형 구현·테스트 | 조사 low, 구현 medium |
-| Sonnet 5.5 | Claude Code | 코디네이터, 짧은 조정·계약 정리, 일반 FE/BE 구현·리뷰, 문서 작업 | medium |
-| GPT-6 Sol | Codex | 코디네이터, 여러 파일 구현·테스트 연계, 순차 리팩터링·통합 | medium, 어려운 작업 high |
-| Opus 5.5 | Claude Code | 어려운 설계·원인 분석, 보안·트랜잭션 판단, 위험 변경 리뷰, BMAD 기획 | 명세 확정 medium, 어려운 판단 high |
+| Gemini 3.8 Flash | Antigravity, Gemini CLI | 명세가 분명한 작은 구현·테스트, 코드 조사, 로그 분석 | 위험 높음 Story 작성, 리뷰, 코디네이터 |
+| Sonnet 5.5 | Claude Code | 코디네이터, 일반 기능 구현, 일반 리뷰, 문서 작업 | 위험 높음 Story 작성 |
+| GPT-6 Sol | Codex | 여러 파일 연계 구현, 리팩터링, 통합, 위험 변경 작성·리뷰 | 코디네이터 |
+| Opus 5.5 | Claude Code | 설계 판단, 원인 분석, 위험 변경 작성·리뷰, BMAD 기획 | 정형 작업 (비용 대비 이득이 작음) |
 
-- 이 네 모델 외의 모델을 자동으로 배정하지 않는다.
-- Gemini CLI와 Antigravity는 같은 모델을 부르는 경로이지 추가 모델이 아니다. 같은 모델이라도 경로·계정이 다르면 한도가 같다고 가정하지 않는다. Orca의 워커별 `--model` 지정은 에이전트마다 지원 여부가 다르므로(공개 가이드 기준 Antigravity는 지원), Flash를 워커로 부를 경로는 시작 확인에서 정한다.
+- 이 네 모델 외의 모델을 배정하지 않는다.
+- Gemini CLI와 Antigravity는 같은 모델을 부르는 경로이지 추가 모델이 아니다. 같은 모델이라도 경로·계정이 다르면 설정이 같다고 가정하지 않는다. Orca의 워커별 `--model` 지정은 에이전트마다 지원 여부가 다르므로(공개 가이드 기준 Antigravity는 지원), Flash를 워커로 부를 경로는 시작 확인에서 정한다.
 - 논리 이름은 실행할 때 확인한 실제 등록 ID로 바꿔 쓰고 `state/orca/env.json`에 기록한다. 확인하지 않은 ID를 추측해서 쓰지 않는다.
 
-## 역할별 기본 배정
+## 선택 방법
 
-| 역할 | 기본 모델 / effort | 비고 |
+코디네이터는 Epic의 Story 설명과 architecture를 읽고 Story마다 아래 1~5번을 정한다. 결과는 6번 형식으로 사용자에게 보여 주고 승인받는다.
+
+### 1. 위험도
+
+| 위험도 | 기준 |
+|---|---|
+| 높음 | 인증·권한·결제·개인정보·DB 마이그레이션·트랜잭션·동시성을 건드리거나, 실패하면 데이터 손실이나 보안 사고로 이어지는 변경 |
+| 보통 | 위에 해당하지 않는 일반 기능 |
+| 낮음 | 문서·설정·테스트 보강·표시 전용 UI처럼 실패 영향이 작고 되돌리기 쉬운 변경 |
+
+파일 수가 아니라 명세 불확실성·결합도·실패 영향으로 판정한다. 의존성 버전 변경은 영향 범위를 확인해 판정한다. 판단이 갈리면 높은 쪽을 고른다.
+
+### 2. 작업 형태
+
+| 형태 | 기준 |
+|---|---|
+| 정형 | 명세와 수정 파일이 분명하고 기존 패턴을 따르는 작업 (CRUD 추가, 테스트 작성, 작은 버그) |
+| 일반 | 한두 모듈 안의 새 기능 |
+| 연계 | 여러 파일·모듈을 순서대로 바꾸는 작업, 리팩터링, 통합 |
+| 설계 판단 | 명세가 불확실하거나 설계 결정을 포함하는 작업, 원인 불명 버그 |
+
+### 3. 구현 모델과 effort
+
+| 형태 \ 위험도 | 낮음 | 보통 | 높음 |
+|---|---|---|---|
+| 정형 | Gemini 3.8 Flash / medium | Gemini 3.8 Flash / medium | GPT-6 Sol / high |
+| 일반 | Sonnet 5.5 / medium | Sonnet 5.5 / medium | Opus 5.5 / high |
+| 연계 | GPT-6 Sol / medium | GPT-6 Sol / medium | GPT-6 Sol / high |
+| 설계 판단 | Opus 5.5 / medium | Opus 5.5 / medium | Opus 5.5 / high |
+
+### 4. 리뷰 모델과 effort
+
+리뷰는 작성자와 다른 회사의 모델이 한다. Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6 Sol), Google(Gemini 3.8 Flash)을 서로 다른 회사로 본다. Flash는 리뷰하지 않는다.
+
+| 작성 모델 | 위험 낮음·보통 | 위험 높음 |
+|---|---|---|
+| Gemini 3.8 Flash | Sonnet 5.5 / medium | 해당 없음 (Flash는 위험 높음을 작성하지 않음) |
+| Sonnet 5.5 | GPT-6 Sol / medium | 해당 없음 (Sonnet은 위험 높음을 작성하지 않음) |
+| GPT-6 Sol | Sonnet 5.5 / medium | Opus 5.5 / high |
+| Opus 5.5 | GPT-6 Sol / medium | GPT-6 Sol / high |
+
+Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(Opus 5.5 / high)을 넣어 제안한다. 승인되면 Epic 완료 보고 전에 위험 Story들의 통합된 변경을 한 번 더 리뷰한다. 모델이 다르다는 사실을 정확성 보장으로 보지 않는다.
+
+### 5. 대체 모델
+
+구현 모델을 쓸 수 없을 때(한도·접근 오류, 같은 원인 3회 실패 후 재배정) 바꿔 쓸 모델이다. 배정안에 함께 적어 승인받는다.
+
+| 구현 모델 / effort | 대체 모델 / effort |
+|---|---|
+| Gemini 3.8 Flash / medium | Sonnet 5.5 / medium |
+| Sonnet 5.5 / medium | GPT-6 Sol / medium |
+| GPT-6 Sol / medium | Sonnet 5.5 / medium |
+| GPT-6 Sol / high | Opus 5.5 / high |
+| Opus 5.5 / medium | GPT-6 Sol / high |
+| Opus 5.5 / high | GPT-6 Sol / high |
+
+대체 모델로 바뀌어 작성 회사가 달라지면 리뷰 모델도 4번 표로 다시 고른다.
+
+### 6. 사용자 승인
+
+워커를 띄우기 전에 배정안을 아래 형식으로 보여 주고 사용자의 OK를 기다린다. 답이 없으면 승인으로 보지 않는다. 사용자가 고치면 고친 대로 쓴다.
+
+| Story | 위험도 | 형태 | 구현 모델 / effort | 리뷰 모델 / effort | 대체 모델 | 이유 |
+|---|---|---|---|---|---|---|
+| 1-1 로그인 | 높음 | 일반 | Opus 5.5 / high | GPT-6 Sol / high | GPT-6 Sol / high | 인증 토큰 처리 |
+| 1-2 목록 화면 | 보통 | 정형 | Gemini 3.8 Flash / medium | Sonnet 5.5 / medium | Sonnet 5.5 / medium | 기존 목록 패턴 반복 |
+| Epic 통합 리뷰 | — | — | — | Opus 5.5 / high | — | 위험 높음 Story 1건 |
+
+- 승인된 배정안은 `plans/epic-<N>-orca.md`에 승인 날짜와 함께 기록하고 커밋한다.
+- 승인 후 기록만 하고 진행해도 되는 변경: 승인된 대체 모델로의 전환, 위험도가 계획보다 높게 드러났을 때 리뷰를 위험 높음 기준으로 올리는 것. 바꾼 사실과 이유는 `orca-runs.md`와 최종 보고에 적는다.
+- 다시 승인받아야 하는 변경: 배정안에 없는 모델, 구현 effort 상향, 리뷰 생략이나 약화, Story 추가·분할.
+
+## effort 원칙
+
+- 표의 effort가 기본이다. high는 위험 높음과 설계 판단에만 쓴다. low는 Flash의 조사 작업에만 쓴다.
+- xhigh는 같은 원인으로 실패한 근거가 있을 때 사용자 승인을 받아서만 쓴다. max와 경쟁 풀이(같은 범위를 여러 모델이 동시에 구현)는 쓰지 않는다.
+- Claude Code의 기본 effort는 xhigh다. Claude 세션과 워커는 effort를 항상 명시한다. 지정하지 않았다면 기본값으로 실행된 것으로 기록한다.
+- 같은 effort 이름이라도 모델마다 토큰 예산이 다르다. 지원되지 않는 effort를 전달하지 않고, 실제로 적용된 값을 기록한다.
+- 모델을 내리기 전에 effort부터 조정한다. 작업이 끝나기는 하는데 필요 이상으로 오래 걸리면 effort를 낮춘다.
+- 권한·자격증명·환경 누락으로 실패하면 모델이나 effort를 올려 재시도하지 않는다. 모델·effort를 낮춰도 테스트·데이터 보호·독립 리뷰 기준은 낮추지 않는다.
+
+## 코디네이터
+
+| 선택 | 모델 / effort | 언제 |
+|---|---|---|
+| 기본 | Sonnet 5.5 / medium (Claude Code) | 대부분의 Epic |
+| 상향 | Opus 5.5 / medium (Claude Code) | 위험 높음 Story가 Epic의 절반 이상이거나, 기록상 코디네이터의 판정·계약 작성 오류가 반복될 때 |
+
+- 코디네이터의 일은 대부분 짧은 보고 읽기, 명령 실행, 계약 작성이다. 가장 어려운 판단인 모델 배정은 사용자가 승인하고, 위험 Story에는 강한 모델의 독립 리뷰가 따로 붙는다. 그래서 기본은 최상위 모델이 아니어도 된다.
+- 코디네이터는 Epic 내내 켜져 있어 호출 횟수가 가장 많은 역할이다. Opus 5.5는 판단이 어려운 Epic에만 쓴다.
+- Claude Code에서 돌면 `.claude/hooks`의 위험 명령 차단과 docker·마이그레이션 가드가 코디네이터에도 걸린다. 코디네이터는 merge와 push를 하는 유일한 역할이다.
+- GPT-6 Sol은 연계·위험 구현의 주 모델이라 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않는다. Gemini 3.8 Flash는 최종 판정 역할에 쓰지 않는다.
+
+## 그 밖의 역할
+
+| 역할 | 모델 / effort | 비고 |
 |---|---|---|
 | BMAD 기획·설계 (사람과 대화) | Opus 5.5 / medium, 어려운 결정은 high | Claude Code에서 `/model`과 effort를 직접 고른다 |
-| Orca 코디네이터 | Sonnet 5.5 또는 GPT-6 Sol / medium | 남은 사용량이 많은 쪽 |
-| 구현: 명세가 분명한 정형 작업, 작은 버그 | Gemini 3.8 Flash 또는 Sonnet 5.5 / medium | 위험 영역 제외 |
-| 구현: 일반 기능 | Sonnet 5.5 또는 GPT-6 Sol / medium | |
-| 구현: 여러 파일 연계, 순차 리팩터링 | GPT-6 Sol / medium, 어려우면 high | 한 워커가 순서를 소유 |
-| 구현: 위험 영역 | Opus 5.5 또는 GPT-6 Sol / high | 다른 회사 모델의 독립 리뷰 필수 |
-| 리뷰 | 작성자와 다른 회사 모델. 일반은 Sonnet 5.5 또는 GPT-6 Sol / medium, 위험 영역은 Opus 5.5 / high | Flash는 최종 리뷰어로 쓰지 않는다 |
 | 원인 불명 장애·심층 분석 | Opus 5.5 / high | 읽기 전용 조사로 맡기고 편집은 구현 워커가 한다 |
 | 코드 조사·로그 분석 | Gemini 3.8 Flash / low, 범위가 넓으면 Sonnet 5.5 / medium | validate 요약 출력으로 충분하면 따로 맡기지 않는다 |
 | Phase C 회고 | Sonnet 5.5 / medium, 패턴 판단이 어려우면 Opus 5.5 / high | |
 | Quick Flow 단독 작업 | Sonnet 5.5 / medium | |
-
-"다른 회사 모델"은 Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6 Sol), Google(Gemini 3.8 Flash) 가운데 작성자와 다른 쪽을 말한다. 모델이 다르다는 사실을 정확성 보장으로 보지 않는다.
-
-## 위험 영역
-
-- 인증·권한·결제·DB 마이그레이션·트랜잭션·동시성은 위험 대응 역량이 확인된 작성자와 독립 리뷰어를 쓴다. 초기 후보는 Opus 5.5와 GPT-6 Sol이며 실측으로 보완한다.
-- Flash를 위험 영역의 단독 작성자나 최종 리뷰어로 배정하지 않는다.
-- 위험도는 파일 수보다 명세 불확실성·결합도·실패 영향으로 판정한다. 의존성 버전 변경도 영향을 확인한다.
-
-## effort 규칙
-
-- high는 어려운 추론에만 쓴다. xhigh는 실패 근거가 있거나 그 작업군에서 이점이 확인됐을 때만 쓴다. max와 경쟁 풀이(같은 범위를 여러 모델이 동시에 구현)는 자동으로 쓰지 않는다.
-- 같은 effort 이름이라도 모델마다 토큰 예산이 다르다. 지원되지 않는 effort를 전달하지 않고, 실제로 적용된 값을 기록한다.
-- Claude Code의 기본 effort는 xhigh다. Claude 세션과 워커는 effort를 항상 명시한다. 지정하지 않았다면 기본값으로 실행된 것으로 기록한다.
-- 모델을 내리기 전에 effort부터 조정한다. 작업이 끝나기는 하는데 필요 이상으로 오래 걸리면 effort를 낮춘다.
-- 권한·자격증명·환경 누락으로 실패하면 모델이나 effort를 올려 재시도하지 않는다. 모델·effort를 낮춰도 테스트·데이터 보호·독립 리뷰 기준은 낮추지 않는다.
 
 ## 설정 위치
 
@@ -56,11 +129,11 @@
 | Claude Code를 직접 열 때 | `/model`과 effort를 사람이 지정 (프로젝트 설정 파일 없음) |
 
 - 프로젝트 설정 파일을 고쳤다고 이미 실행 중인 세션의 모델이 바뀌었다고 보고하지 않는다. 요청한 값과 실제 적용된 값(`launch.effective` 등)을 구분해 기록한다.
-- 모델 접근 권한이 없으면 이 문서의 후보 밖에서 다른 모델을 고르지 않는다.
+- 모델 접근 권한이 없으면 승인된 배정안 밖에서 다른 모델을 고르지 않는다.
 - Codex 하위 에이전트용 역할 프로필은 두지 않는다. 작업 분배는 Orca 코디네이터가 하고, 워커는 BMAD 워크플로가 요구하는 내부 리뷰 외에는 하위 에이전트를 띄우지 않는다.
 
 ## 적용과 관찰
 
-대표 구현·리뷰·조사 작업에서 성공 여부, 재작업 횟수, 완료 시간, 확인 가능한 사용량을 `orca-runs.md`로 비교한다. 비교 결과가 쌓이기 전에는 이 배분이 품질·속도·비용을 개선한다고 보장하지 않는다. 처음에는 Story 2~3개로 시험하고, 2 Epic 이상 기록이 쌓이면 Phase C에서 이 표를 고친다.
+Story별 성공 여부, 리뷰 REJECTED 횟수, 재작업 횟수, 소요 시간을 `orca-runs.md`로 비교한다. 비교 결과가 쌓이기 전에는 이 배분이 품질·속도·비용을 개선한다고 보장하지 않는다. 처음에는 Story 2~3개로 시험하고, 2 Epic 이상 기록이 쌓이면 Phase C에서 위 표를 고친다. 예를 들어 Flash가 맡은 정형 Story의 REJECTED가 반복되면 그 칸을 Sonnet 5.5로 올린다.
 
 근거: [Orca orchestration 가이드](https://github.com/stablyai/orca/blob/main/skill-guides/orchestration.md), [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort), [Codex 설정](https://learn.chatgpt.com/docs/config-file/config-advanced). 역할별 배정은 이 프로젝트의 운영 결정이다.

@@ -22,12 +22,13 @@ Epic 시작 전 (코디네이터):
 1. `orca-rules.md`의 시작 확인을 한다. `state/orca/env.json`이 있고 도구 버전이 같으면 재사용한다.
 2. Windows PowerShell이면 `./scripts/doctor.ps1`로 Windows 런타임을 점검하고 `./scripts/phase-a/preflight.ps1 -Epic <N>`을 실행한다. bash/WSL/macOS/Linux에서는 같은 사전 조건(`develop` 원격 브랜치, BMAD 스킬, Epic 산출물, `sprint-status.yaml`)을 직접 확인한다.
 3. Windows/Codex에서 GitHub 원격 브랜치 존재 여부는 raw `git fetch origin develop`가 아니라 `gh api repos/<owner>/<repo>/git/ref/heads/develop` 경로로 확인한다.
-4. `develop`에서 Epic 통합 브랜치 `epic/<N>`을 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다. `sprint-status.yaml`의 `epic-<N>`을 `in-progress`로 바꿔 함께 커밋한다.
+4. `develop`에서 Epic 통합 브랜치 `epic/<N>`을 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
+5. Story별 모델 배정안을 `model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인 전에는 워커를 띄우지 않는다. 승인본을 계획 파일에 기록하고, `sprint-status.yaml`의 `epic-<N>`을 `in-progress`로 바꿔 함께 커밋한다.
 
 BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으로 한다. 프로젝트가 Epic을 sharding한 경우 `_bmad-output/planning-artifacts/epics/` 아래 markdown 파일도 허용한다.
 
 각 Story마다 순서대로:
-1. 코디네이터가 선행 Story의 해제 조건을 실제 커밋·검증 결과로 확인하고 계약(`templates/orca-worker-contract.md`)을 채운다. `sprint-status.yaml`을 `in-progress`로 바꾼다.
+1. 코디네이터가 선행 Story의 해제 조건을 실제 커밋·검증 결과로 확인하고, 승인된 배정안의 모델·effort로 계약(`templates/orca-worker-contract.md`)을 채운다. `sprint-status.yaml`을 `in-progress`로 바꾼다.
 2. 구현 워커가 `bmad-create-story`로 story 파일을 만들고 `bmad-dev-story`로 구현한다 (TDD: red-green-refactor).
 3. 구현 워커가 계약의 기준 커밋으로 quick validate를 실행한다 (lint + typecheck + 변경 관련 테스트만).
    - Windows PowerShell: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/validate-quick.ps1`
@@ -39,7 +40,7 @@ BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으�
 6. 리뷰 워커(작성자와 다른 회사 모델)가 구현 커밋을 읽기 전용으로 `bmad-code-review`한다. 판정은 `REVIEW.md` 형식이다.
 7. REJECTED면 같은 구현 워커가 후속 Dispatch로 고치고 quick 검증과 커밋을 다시 한다. 재확인 범위는 `orca-rules.md` §5를 따른다.
 8. 승인되면 코디네이터가 워커 브랜치를 `epic/<N>`에 병합하고, 검증 로그·리뷰 결과·Orca 실행 기록을 `reviews/epic-<N>/`에 남기고, `sprint-status.yaml`을 `done`으로 바꾼다. 사용자가 push를 허용했으면 Story 브랜치와 `epic/<N>`을 push한다.
-9. 실패 시 구현 워커가 수정 후 재검증한다. 같은 원인으로 워커 안에서 3회 실패하면 코디네이터가 다른 후보로 1회 재배정하고, 그것도 실패하면 기록 후 보류한다 (TDD RED 제외).
+9. 실패 시 구현 워커가 수정 후 재검증한다. 같은 원인으로 워커 안에서 3회 실패하면 코디네이터가 승인된 대체 모델로 1회 재배정하고, 그것도 실패하면 기록 후 보류한다 (TDD RED 제외).
 10. 실패 Story에 의존하지 않는 다음 Story로 진행한다. 의존성을 확인할 수 없으면 해당 Story를 보류한다.
 
 **중요:** 검증과 리뷰를 통과해 `epic/<N>`에 통합된 Story만 다음 Story의 기준이 된다. 위험도가 낮은 연쇄 Story는 계획에 적은 해제 조건("선행 커밋 + quick 통과")에 따라 선행 Story의 리뷰와 겹쳐 진행할 수 있다.
@@ -159,7 +160,7 @@ BMAD 풀코스가 필요 없는 간단한 작업:
 ## 실패 처리
 
 - 구현 워커의 validate-quick 실패: 워커가 수정 후 재시도 (같은 원인 3회까지, TDD RED 제외)
-- 워커 안에서 3회 실패: 코디네이터가 실패 근거를 넘겨 다른 후보 모델로 1회 재배정
+- 워커 안에서 3회 실패: 코디네이터가 실패 근거를 넘겨 승인된 대체 모델로 1회 재배정
 - Epic 단위 validate 실패: 코디네이터가 수정 워커를 배정하고 `--from=실패단계`로 재개, 처음부터 다시 돌리지 않음
 - 리뷰 REJECTED: 같은 구현 워커가 후속 Dispatch로 수정
 - 재배정까지 실패: `agent-execution-rules.md`에 따라 실패 근거를 남기고 해당 Story 및 의존 Story를 미완료로 표시. 독립 Story만 진행

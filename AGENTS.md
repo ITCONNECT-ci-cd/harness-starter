@@ -20,21 +20,22 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
 
 ## Orca 개발: 코디네이터 시작 루틴
 
-코디네이터 세션은 Sonnet 5.5 또는 GPT-6 Sol로 연다. 상세 절차는 `docs/agents/orca-rules.md`를 따른다.
+코디네이터 세션은 Sonnet 5.5 / medium으로 연다(위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium). 상세 절차는 `docs/agents/orca-rules.md`를 따른다.
 
 1. 이 파일과 `docs/agents/orca-rules.md`를 읽는다.
    - **필수**: `docs/agents/feedback-rules.md` (과거 반복 실수 패턴) 반드시 읽기
 2. 시작 확인: `state/orca/env.json`이 있으면 재사용하고, 없거나 도구 버전이 바뀌었으면 다시 확인한다 (orca-rules §2).
    - Windows PowerShell: `./scripts/doctor.ps1`와 `./scripts/phase-a/preflight.ps1 -Epic <N>`도 실행
 3. `_bmad-output/planning-artifacts/architecture.md`, 대상 Epic의 Story 목록, `_bmad-output/implementation-artifacts/sprint-status.yaml`을 확인한다.
-4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성·커밋한다.
-5. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다.
-6. 모든 Story가 통합되면 `epic/<N>`에서 현재 OS/셸에 맞는 전체 검증을 실행한다.
+4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
+5. Story별 모델 배정안(구현·리뷰 모델과 effort, 대체 모델, 이유)을 `docs/agents/model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인본을 계획 파일에 기록·커밋한 뒤에만 워커를 띄운다.
+6. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다.
+7. 모든 Story가 통합되면 `epic/<N>`에서 현재 OS/셸에 맞는 전체 검증을 실행한다.
    - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
    - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`
    - 실패 시 수정 워커를 배정하고 현재 OS의 `validate.ps1` 또는 `validate.sh`에 `--from=실패단계`로 재개
    - failed/skipped 또는 의존성으로 보류된 Story가 남으면 Epic 완료로 보고하지 않음
-7. `develop` 병합과 push는 사용자가 승인한 범위에서만 한다.
+8. `develop` 병합과 push는 사용자가 승인한 범위에서만 한다.
 
 ## Orca 워커 규칙
 
@@ -47,7 +48,7 @@ Orca 코디네이터가 띄운 워커로 실행될 때 적용한다. 코디네�
 - `sprint-status.yaml`, `deferred-work.md` 같은 공유 상태 파일은 BMAD 단계가 요구해도 고치지 않는다. 바뀌어야 할 상태는 보고에 적는다.
 - push·merge·배포를 하지 않는다. 의존성을 추가하거나 설치 명령을 바꾸지 않는다. 워크트리의 의존성 설치는 `orca.yaml`이 맡는다.
 - 긴 로그와 코드는 파일에 두고 경로를 보고한다.
-- `worker_done`은 계약의 Task·Dispatch로 정확히 한 번 보낸다. 끝냈으면 `--outcome succeeded`, 끝내지 못했으면 `--outcome failed`. 보고에는 커밋, 검증 결과와 로그 경로, 남은 위험, 알 수 있으면 사용량(모르면 unknown)을 적는다.
+- `worker_done`은 계약의 Task·Dispatch로 정확히 한 번 보낸다. 끝냈으면 `--outcome succeeded`, 끝내지 못했으면 `--outcome failed`. 보고에는 커밋, 검증 결과와 로그 경로, 남은 위험을 적는다.
 
 구현 워커:
 - 계약의 story 키로 `bmad-create-story`를 실행하고(story 파일이 이미 있으면 건너뜀), 만든 story 파일 경로를 `bmad-dev-story`에 직접 넘긴다.

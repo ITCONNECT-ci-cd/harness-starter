@@ -24,7 +24,7 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 
 ## 최근 변경
 
-2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개로 통일했습니다. [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요.
+2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개로 통일했고, 코디네이터가 Story별 모델 배정안을 먼저 보여 주고 사용자 승인을 받습니다(한도 계산은 하지 않음). [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [모델 배정 승인 방식](docs/changelog/2026-09-30-orca-model-approval.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요.
 
 이전 변경(Claude 프롬프팅 가이드 반영, Astra 모델 기본값 등)은 [변경 이력](docs/changelog/README.md)에 날짜별로 남아 있습니다. 그 기록에 적힌 모델 설정은 이번 변경으로 대체됐습니다.
 
@@ -93,7 +93,7 @@ CI/CD, Docker, DB 마이그레이션 설정은 사용자 확인 없이 위험하
 
 ## 개발 - Orca 프롬프트
 
-Orca에서 코디네이터 세션(Sonnet 5.5 또는 GPT-6 Sol)을 열고 입력합니다. 코디네이터가 Story마다 구현 워커와 리뷰 워커(작성자와 다른 회사 모델)를 띄우고, 검증과 리뷰를 통과한 Story를 `epic/<번호>` 브랜치에 모읍니다. 처음 쓰기 전에 [Orca 가이드](docs/harness/orca.md)의 준비물을 확인하세요.
+Orca에서 코디네이터 세션을 Sonnet 5.5 / medium으로 열고 입력합니다(위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium). 코디네이터는 먼저 Story별 모델 배정안을 보여 주고, OK를 받은 뒤 Story마다 구현 워커와 리뷰 워커(작성자와 다른 회사 모델)를 띄우고, 검증과 리뷰를 통과한 Story를 `epic/<번호>` 브랜치에 모읍니다. 처음 쓰기 전에 [Orca 가이드](docs/harness/orca.md)의 준비물을 확인하세요.
 
 ```text
 Orca 코디네이터로 Epic <번호>를 진행해줘.
@@ -103,34 +103,34 @@ Orca 코디네이터로 Epic <번호>를 진행해줘.
 시작 전에 AGENTS.md의 Orca 개발 루틴과 docs/agents/orca-rules.md를 읽고 그대로 따라줘.
 환경 확인은 state/orca/env.json이 있으면 재사용하고, 도구 버전이 바뀌었을 때만 다시 해줘.
 
-모델별 접근 경로와 계정 (역할은 docs/agents/model-routing-rules.md 기준):
+모델별 접근 경로와 계정:
 - Gemini 3.8 Flash: <경로 / 계정>
 - Sonnet 5.5: <경로 / 계정>
 - GPT-6 Sol: <경로 / 계정>
 - Opus 5.5: <경로 / 계정>
-Orca 상태바 기준 남은 사용량: <풀별 %와 리셋 시각. 모르면 "모름">
-추가 결제: <허용 한도. 없으면 "허용하지 않음">
+
+워커를 띄우기 전에 docs/agents/model-routing-rules.md의 선택 방법대로 Story별 모델 배정안(위험도, 작업 형태, 구현·리뷰 모델과 effort, 대체 모델, 이유)을 표로 보여 주고 내 OK를 기다려줘.
 
 승인 범위:
 - 검증과 리뷰를 통과한 Story 브랜치와 epic/<번호> push: <허용 / 허용하지 않음>
 - develop 병합과 배포: 하지 않음 (따로 요청할 때만)
 - 예산: orca-rules.md 기본값 <바꿀 값이 있으면 적기>
 
-완료 보고는 결과부터 써줘. Story별 담당 모델과 effort, 커밋, 검증 로그 경로, 남은 위험을 적고, 측정하지 못한 사용량은 unknown으로 적어줘.
+완료 보고는 결과부터 써줘. Story별 승인·실제 모델과 effort, 배정안과 달라진 부분과 이유, 커밋, 검증 로그 경로, 남은 위험을 적어줘.
 ```
 
 ### 이어서 하기
 
-한도나 시간 예산 때문에 멈췄거나 코디네이터를 바꿀 때 씁니다.
+한도 오류나 시간 예산 때문에 멈췄거나 코디네이터를 바꿀 때 씁니다.
 
 ```text
 Orca 코디네이터로 Epic <번호> 작업을 이어서 해줘.
 
 AGENTS.md의 Orca 개발 루틴과 docs/agents/orca-rules.md를 따라줘.
-plans/epic-<번호>-orca.md, reviews/epic-<번호>/orca-runs.md, state/epic-<번호>-progress.json, 현재 Git 상태를 대조해서 멈춘 지점부터 진행해줘.
+plans/epic-<번호>-orca.md(승인된 모델 배정안 포함), reviews/epic-<번호>/orca-runs.md, state/epic-<번호>-progress.json, 현재 Git 상태를 대조해서 멈춘 지점부터 진행해줘.
 끝난 Story를 다시 리뷰하거나 검증하지 말고, 멈춘 원인이 해결됐는지 먼저 확인해줘.
+승인된 모델 배정안을 그대로 쓰고, 남은 Story의 배정을 바꿔야 하면 바꿀 행만 보여 주고 내 OK를 기다려줘.
 
-Orca 상태바 기준 남은 사용량: <풀별 %와 리셋 시각. 모르면 "모름">
 승인 범위는 처음 요청과 같아. <바뀐 점이 있으면 적기>
 ```
 

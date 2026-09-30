@@ -41,7 +41,7 @@
 
 - 테스트 작성·실행 범위는 `testing-rules.md`, 실행 순서는 `workflow-rules.md`를 따른다. 구현을 그대로 복제하는 테스트를 추가하지 않는다.
 - 정상적인 TDD RED(구현 전 기대한 실패)는 실패 재시도 횟수에 포함하지 않는다. 구현·검증에서 같은 미해결 원인이 수정 후 다시 발생한 시도를 연속 실패로 기록한다. 성공하거나 원인이 해결되면 해당 횟수를 초기화한다.
-- 3회 실패하면(Orca 개발에서는 워커 안 3회 뒤 다른 후보로 1회 재배정한 것까지 실패하면) 로그·원인·시도한 수정·영향받는 Story를 `state/epic-N-progress.json`에 기록하고 해당 Story를 failed/skipped로 둔다. 추가 기록은 `failure_details` 객체에 Story 키별로 저장할 수 있다. 기존 completed/failed/skipped 배열 구조는 유지한다.
+- 3회 실패하면(Orca 개발에서는 워커 안 3회 뒤 승인된 대체 모델로 1회 재배정한 것까지 실패하면) 로그·원인·시도한 수정·영향받는 Story를 `state/epic-N-progress.json`에 기록하고 해당 Story를 failed/skipped로 둔다. 추가 기록은 `failure_details` 객체에 Story 키별로 저장할 수 있다. 기존 completed/failed/skipped 배열 구조는 유지한다.
 - 실패한 Story에 의존하는 Story는 진행하지 않는다. 의존성을 확인할 수 없으면 의존 작업을 보류한다. 독립적인 다음 Story만 진행하며, 실패·누락·보류 Story가 있으면 Epic 전체를 완료로 보고하지 않는다.
 - 통과한 검증은 새 변경·실패·미해결 우려 없이 반복하지 않는다. CI나 Epic 통합 검증(`epic/<N>`의 validate + smoke)처럼 다른 환경·변경을 확인하는 필수 게이트는 유지한다.
 - 진행이나 완료를 보고하기 전에 각 주장을 이번 세션의 실제 도구 결과에 대응시킨다. 근거는 `state/validate/latest/*.log`의 단계별 로그, 커밋 해시, 테스트 출력, 파일 diff처럼 다시 확인할 수 있는 것이어야 한다. 근거를 댈 수 없는 항목은 미검증이라고 명시한다.
