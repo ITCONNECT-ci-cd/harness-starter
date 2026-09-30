@@ -19,7 +19,7 @@
 | 항목 | 확인 방법 | 왜 필요한가 |
 |---|---|---|
 | Orca 설치 | `orca status --json`이 동작 | 워커 기동·메시지·정산 |
-| 모델 4개 접근 | Claude Code(Sonnet 5.5, Opus 5.5), Codex(GPT-6 Sol), Antigravity(Gemini 3.8 Flash) 로그인 | 역할별 배정은 [모델 배정 규칙](../agents/model-routing-rules.md) |
+| 모델 4개 접근 | Claude Code(Sonnet 5.5, Opus 5.5), Codex(GPT-6.1 Sol, 모델 목록에 `gpt-6.1-sol`이 보이는 버전), Antigravity(Gemini 3.8 Flash) 로그인 | 역할별 배정은 [모델 배정 규칙](../agents/model-routing-rules.md) |
 | 워크트리 준비 명령 | 루트 `orca.yaml`의 `scripts.setup`이 프로젝트의 의존성 설치 명령 (`templates/orca.yaml` 참고) | 새 워크트리에는 설치된 패키지가 없어 검증이 바로 실패함 |
 | git hook | `./scripts/setup/install-git-hooks.sh` (Windows는 `.ps1`) | Claude가 아닌 워커의 커밋에도 걸리는 유일한 검사 |
 | CI 자동 실행 (권장) | [CI/CD 기준](ci-cd.md) | 위험 명령 차단 hook은 Claude 세션에만 있음 |
@@ -33,7 +33,7 @@
 - **위험도**: 인증·권한·결제·개인정보·DB 마이그레이션·트랜잭션·동시성을 건드리면 높음, 일반 기능은 보통, 문서·설정·테스트처럼 되돌리기 쉬우면 낮음
 - **작업 형태**: 기존 패턴을 따르는 정형 작업, 일반 기능, 여러 파일을 잇는 연계 작업, 설계 판단이 필요한 작업
 
-대략 이렇게 배정됩니다. 정형 작업은 Gemini 3.8 Flash, 일반 기능은 Sonnet 5.5, 연계 작업은 GPT-6 Sol, 설계 판단은 Opus 5.5가 맡습니다. 위험도가 높으면 Opus 5.5나 GPT-6 Sol이 작성하고 다른 회사 모델이 리뷰합니다. 리뷰는 항상 작성자와 다른 회사의 모델이 하고, Flash는 리뷰하지 않습니다.
+대략 이렇게 배정됩니다. 정형 작업은 Gemini 3.8 Flash, 일반 기능은 Sonnet 5.5, 연계 작업은 GPT-6.1 Sol, 설계 판단은 Opus 5.5가 맡습니다. 위험도가 높으면 Opus 5.5나 GPT-6.1 Sol이 작성하고 다른 회사 모델이 리뷰합니다. 리뷰는 항상 작성자와 다른 회사의 모델이 하고, Flash는 리뷰하지 않습니다.
 
 추론 수준(effort)은 위험도로 정합니다. 낮음은 medium, 보통은 high, 높음은 xhigh이며 구현·리뷰·대체 모델 모두 같습니다. high·xhigh는 medium보다 토큰과 시간이 더 들므로, 시험 운영 기록으로 효과를 확인합니다.
 

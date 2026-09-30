@@ -16,7 +16,7 @@
 ## 결정
 
 1. **Phase A·B를 Orca 흐름으로 교체한다** (사용자 선택: 전면 교체). Story마다 구현 워커(create-story, dev-story, validate-quick, 로컬 커밋), 작성자와 다른 회사 모델의 읽기 전용 리뷰 워커(bmad-code-review), 같은 구현 워커의 수정, 코디네이터의 `epic/<N>` 통합 순서로 진행한다. Epic 끝에 validate + smoke를 한 번 실행한다.
-2. **모델은 네 개로 통일한다** (사용자 선택: Orca 기준). 기준은 `docs/agents/model-routing-rules.md` 한 곳이다. Codex 역할 프로필 5개를 삭제하고 `.codex/config.toml`을 GPT-6 Sol / medium으로 바꾼다. Orca 워커는 `--model`과 `--effort`를 매번 명시한다. 코디네이터는 기본 Sonnet 5.5 / medium, 위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium으로 연다.
+2. **모델은 네 개로 통일한다** (사용자 선택: Orca 기준). 기준은 `docs/agents/model-routing-rules.md` 한 곳이다. Codex 역할 프로필 5개를 삭제하고 `.codex/config.toml`을 GPT-6.1 Sol / medium으로 바꾼다(처음에는 GPT-6 Sol이었고, 같은 날 GPT-6.1 Sol이 나와 교체했다. [변경 기록](../changelog/2026-09-30-gpt-6-1-sol.md)). Orca 워커는 `--model`과 `--effort`를 매번 명시한다. 코디네이터는 기본 Sonnet 5.5 / medium, 위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium으로 연다.
 3. **프롬프트를 README에 통째로 넣지 않는다.** 규칙은 `docs/agents/orca-rules.md`(코디네이터)와 `AGENTS.md`의 「Orca 워커 규칙」(모든 워커)으로 옮기고, README에는 빈칸을 채우는 시작·이어서 하기·Epic 통합 프롬프트만 둔다. 워커는 채팅에 붙인 프롬프트를 보지 못하고 저장소 파일만 읽기 때문이다.
 4. **프롬프트 내용 중 다음을 바꿨다.**
    - 한도 압력 계산(4장): 계산하지 않는다. Orca가 사용량을 CLI로 제공하지 않아 계산할 수 없고, 사용자가 한도 계산 대신 배정안 승인을 선택했다. 코디네이터가 위험도 × 작업 형태 표로 Story별 구현·리뷰·대체 모델을 정하고, effort는 위험도로 정해(낮음 medium, 보통 high, 높음 xhigh) 보여 준다. 사용자가 승인한 뒤 워커를 띄운다. 승인 후에는 대체 모델 전환과 리뷰 상향만 기록하고 진행하며, 그 밖의 변경은 다시 승인받는다.
@@ -50,7 +50,7 @@
 - 배정안 승인 전에는 워커가 뜨지 않으므로, Epic 시작은 사용자가 응답할 때까지 기다린다.
 - Orca 없이 Phase A·B를 진행하는 경로는 없어졌다. 기획, Quick Flow(`bmad-quick-dev`), Phase C 회고는 단독 세션으로 계속 쓴다.
 - 선택 표와 예산은 실측이 아닌 초기값이다. 코디네이터가 `orca-runs.md`를 칸별로 요약해 조정안을 내고 사용자가 승인한다. 진행 중인 Epic은 남은 Story의 배정안에, 규칙 표는 Phase C에서 반영한다.
-- 확인하지 못한 것: GPT-6 Sol과 Gemini 3.8 Flash의 실제 등록 ID(`.codex/config.toml`의 `gpt-6-sol`은 프롬프트가 인용한 모델 문서 경로에서 추정), Orca `worker-start`의 `--worktree`·`--setup` 값, Gemini 워커의 `GEMINI.md` 로드. 코디네이터가 시작 확인에서 설치 버전으로 확인한다.
+- GPT-6.1 Sol의 등록 ID `gpt-6.1-sol`은 Codex 모델 목록에서 확인했다. 확인하지 못한 것: Gemini 3.8 Flash의 실제 등록 ID, Orca `worker-start`의 `--worktree`·`--setup` 값, Gemini 워커의 `GEMINI.md` 로드. 코디네이터가 시작 확인에서 설치 버전으로 확인한다.
 - `.claude/hooks`의 위험 명령 차단과 편집 시 lint는 Claude 세션에만 적용된다. Codex·Gemini 워커는 validate, git hook, CI로 확인하므로 CI 자동 실행을 권장한다.
 - 이미 설치된 프로젝트의 `.codex/agents/harness-*.toml`은 설치 스크립트가 지우지 않는다. 필요하면 직접 삭제한다.
 

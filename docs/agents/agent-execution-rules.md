@@ -65,8 +65,8 @@
 
 ## 모델 기본값
 
-- 모델과 effort의 기준은 [모델 배정 규칙](model-routing-rules.md) 한 곳이다. 사용하는 모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개이며, 모델 이름·수준을 다른 운영 문서나 실행 스크립트에 중복 기본값으로 두지 않는다.
-- Orca 워커는 기동할 때마다 모델과 effort를 명시한다. `.codex/config.toml`은 Codex를 직접 열 때의 기본값(GPT-6 Sol / medium)이다.
+- 모델과 effort의 기준은 [모델 배정 규칙](model-routing-rules.md) 한 곳이다. 사용하는 모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5 네 개이며, 모델 이름·수준을 다른 운영 문서나 실행 스크립트에 중복 기본값으로 두지 않는다.
+- Orca 워커는 기동할 때마다 모델과 effort를 명시한다. `.codex/config.toml`은 Codex를 직접 열 때의 기본값(GPT-6.1 Sol / medium)이다.
 - Claude Code에는 대응하는 프로젝트 설정 파일이 없다. 세션 모델은 `/model`로 고르고 effort를 명시한다. Claude Code 기본 effort는 `xhigh`이므로 그보다 낮은 값은 명시하지 않으면 적용되지 않는다.
 - 프로젝트 설정은 신뢰된 프로젝트에서 적용된다. 이미 열린 작업은 사용자가 선택한 모델·effort를 유지하고, CLI의 명시적 인자는 기본값보다 우선할 수 있다. 설정 파일을 수정했다고 실행 중인 작업의 모델이 바뀌었다고 보고하지 않는다.
 - 모델 접근 권한이 없으면 모델 배정 규칙의 후보 밖에서 임의로 다른 모델을 고르지 않는다.

@@ -21,7 +21,7 @@ BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 �
 | Story | 위험도 | 형태 | 구현 모델 / effort | 리뷰 모델 / effort | 대체 모델 | 이유 |
 |---|---|---|---|---|---|---|
 | <1-1-key> | 보통 | 정형 | Gemini 3.8 Flash / high | Sonnet 5.5 / high | Sonnet 5.5 / high | <한 줄> |
-| <1-2-key> | 높음 | 일반 | Opus 5.5 / xhigh | GPT-6 Sol / xhigh | GPT-6 Sol / xhigh | <한 줄> |
+| <1-2-key> | 높음 | 일반 | Opus 5.5 / xhigh | GPT-6.1 Sol / xhigh | GPT-6.1 Sol / xhigh | <한 줄> |
 | Epic 통합 리뷰 | — | — | — | Opus 5.5 / xhigh | — | 위험 높음 Story가 있을 때만 |
 
 승인: <YYYY-MM-DD, 사용자 OK. 사용자가 고친 내용이 있으면 적기>
@@ -39,7 +39,7 @@ BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 �
 
 | 시각 | Story | 변경 | 이유 | 구분 |
 |---|---|---|---|---|
-| <시각> | <story-key> | GPT-6 Sol / high → Sonnet 5.5 / high | <한도 오류 등> | 사전 승인(대체 모델) |
+| <시각> | <story-key> | GPT-6.1 Sol / high → Sonnet 5.5 / high | <한도 오류 등> | 사전 승인(대체 모델) |
 
 구분: `사전 승인`(대체 모델 전환, 리뷰 상향)은 기록만 하고 진행한다. 그 밖의 변경은 `재승인`을 받은 뒤 적는다.
 

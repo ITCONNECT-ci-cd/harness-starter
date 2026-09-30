@@ -24,7 +24,7 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 
 1. **Orca**: `orca status --json`, `orca skills get orchestration`을 읽는다. 모델·effort·재사용 규칙이 필요하면 `--reference references/coordinator-loop.md`도 읽는다. 참조를 지원하지 않으면 `--full`을 한 번 읽는다. 설치된 버전의 가이드가 이 문서보다 우선하며, 지원되지 않는 명령이나 플래그를 추측해서 쓰지 않는다.
 2. **워커 기동 옵션**: `worker-start`가 `--model`·`--effort`를 지원하는지 가이드와 `--help`로 확인한다. `--effort`는 `--model`과 함께, 그 모델이 지원하는 수준만 쓴다. `--terminal` 재사용과 두 override를 함께 쓰지 않는다.
-3. **모델 ID**: 모델 배정 규칙의 네 논리 모델을 실제 등록 ID·에이전트·계정에 대응시킨다. Antigravity는 `agy models`로 확인한다. 같은 모델이라도 호출 경로가 다르면 계정·설정이 같다고 가정하지 않는다.
+3. **모델 ID**: 모델 배정 규칙의 네 논리 모델을 실제 등록 ID·에이전트·계정에 대응시킨다. Antigravity는 `agy models`로 확인한다. Codex는 모델 목록(`/model`, 설치된 버전이 지원하면 `codex debug models`)에 `gpt-6.1-sol`과 지원 effort가 있는지 확인하고, 없으면 Codex CLI를 업데이트한다. 같은 모델이라도 호출 경로가 다르면 계정·설정이 같다고 가정하지 않는다.
 4. **저장소**:
    - 루트 `orca.yaml`이 없거나 `scripts.setup`이 현재 스택의 의존성 설치와 맞지 않으면 `templates/orca.yaml`을 바탕으로 만들고 커밋한다. 새 워크트리에는 설치된 패키지가 없어서 이 설정이 없으면 워커의 검증이 바로 실패한다.
    - `git config core.hooksPath`가 `.githooks`가 아니면 `scripts/setup/install-git-hooks.sh`(Windows는 `.ps1`)를 실행한다. git hook은 Claude가 아닌 워커의 커밋에도 걸리는 유일한 검사다.
@@ -117,7 +117,7 @@ orca orchestration check --wait --types worker_done,escalation,question --timeou
 
 - 요구 ID → Story → 실제 diff → 검증 증거가 이어져야 한다. 테스트 통과나 워커 요약만으로 성공을 판정하지 않는다. 불명확한 계약이나 위험 지점은 실제 코드로 확인한다.
 - 리뷰 결론은 [REVIEW.md](../../REVIEW.md) 기준을 따르고, 결함은 위치·근거·영향·필요 수정으로 기록한다. 모델이 다르다는 사실을 정확성 보장으로 보지 않는다.
-- 위험 높음 Story는 역량이 확인된 작성자(Opus 5.5 또는 GPT-6 Sol)와 다른 회사의 독립 리뷰어가 필요하다. 배정안에 Epic 통합 리뷰(Opus 5.5 / xhigh)가 승인돼 있으면 Epic 완료 보고 전에 위험 Story들의 통합된 변경을 리뷰한다. 코디네이터가 Sonnet 5.5일 때 최종 판단을 보완하기 위해서다.
+- 위험 높음 Story는 역량이 확인된 작성자(Opus 5.5 또는 GPT-6.1 Sol)와 다른 회사의 독립 리뷰어가 필요하다. 배정안에 Epic 통합 리뷰(Opus 5.5 / xhigh)가 승인돼 있으면 Epic 완료 보고 전에 위험 Story들의 통합된 변경을 리뷰한다. 코디네이터가 Sonnet 5.5일 때 최종 판단을 보완하기 위해서다.
 - 린트·타입·테스트·빌드는 셸 스크립트로 확인한다. 명령 실행만을 위해 LLM 세션을 추가하지 않는다. 통과시키려고 테스트를 완화하지 않는다.
 - 완료 조건: 필수 요구 충족, 허용되지 않은 회귀 없음, 보안·데이터 불변 조건 충족, 범위 밖 변경·불필요한 파일·의존성·추상화 없음, 필수 증거가 최종 커밋에 대응. 기존 실패·검증 불가·남은 위험은 구분해서 보고한다.
 

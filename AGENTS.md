@@ -16,7 +16,7 @@
 | Phase B: 리뷰·통합 | Orca 리뷰 워커 + 코디네이터 | 다른 회사 모델의 독립 리뷰, 수정, `epic/<N>` 통합, Epic 검증 | bmad-code-review |
 | Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | incident, regression, feedback-rules |
 
-Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용하는 모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개이며 배정 기준은 `docs/agents/model-routing-rules.md`에 있다.
+Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용하는 모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5 네 개이며 배정 기준은 `docs/agents/model-routing-rules.md`에 있다.
 
 ## Orca 개발: 코디네이터 시작 루틴
 
@@ -78,7 +78,7 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 | `_bmad-output/implementation-artifacts/` | sprint-status, story 파일, 구현 산출물 |
 | `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) — `.claude/skills/`와 byte 동기 유지 (harness-self-test가 검증) |
 | `.claude/skills/` | Claude Code용 BMAD 스킬 (code-review 등) |
-| `.codex/config.toml` | Codex를 직접 열 때의 모델 기본값 (GPT-6 Sol / medium) |
+| `.codex/config.toml` | Codex를 직접 열 때의 모델 기본값 (GPT-6.1 Sol / medium) |
 | `GEMINI.md` | Gemini 워커가 이 파일을 읽도록 연결 |
 | `orca.yaml` | Orca 워크트리 준비 명령. 없으면 코디네이터가 `templates/orca.yaml`로 생성 |
 | `docs/PROJECT_MAP.md` | 코드에서 도출한 구조 지도(Phase C 8단계 산출물). **장 단위로 Read** — §9 함정(수정 전 필독) · §4 아키텍처 · §5~6 모듈 지도 |

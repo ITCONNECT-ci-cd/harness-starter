@@ -6,7 +6,7 @@ tags: [harness, orca, model-routing]
 
 # 26.09.30 Orca 모델 배정 승인 방식
 
-> [전체 변경 이력](README.md) · [같은 날 선행 기록: Orca 오케스트레이션 적용](2026-09-30-orca-orchestration.md) · [모델 배정 규칙](../agents/model-routing-rules.md)
+> [전체 변경 이력](README.md) · [같은 날 선행 기록: Orca 오케스트레이션 적용](2026-09-30-orca-orchestration.md) · [후속 기록: GPT-6.1 Sol 교체](2026-09-30-gpt-6-1-sol.md) · [모델 배정 규칙](../agents/model-routing-rules.md)
 
 같은 날 적용한 Orca 흐름에서 모델 고르는 방식을 바꿨습니다. 코디네이터가 사용량·한도를 추적해 모델을 고르던 방식을 없애고, 시작할 때 Story별 모델 배정안을 보여 주고 사용자가 OK한 뒤에 워커를 띄웁니다.
 

@@ -20,11 +20,11 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 | Phase C 문서·project-map 준비 | [docs/agents/project-map-rules.md](docs/agents/project-map-rules.md) |
 | 날짜별 변경 이력·수정 파일 상세 | [docs/changelog/README.md](docs/changelog/README.md) |
 
-모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개만 쓰며, 기준은 [모델 배정 규칙](docs/agents/model-routing-rules.md) 한 곳에 있습니다. Orca 워커는 기동할 때마다 모델과 effort를 명시하고, [`.codex/config.toml`](.codex/config.toml)은 Codex를 직접 열 때의 기본값(GPT-6 Sol / medium)입니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
+모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5 네 개만 쓰며, 기준은 [모델 배정 규칙](docs/agents/model-routing-rules.md) 한 곳에 있습니다. Orca 워커는 기동할 때마다 모델과 effort를 명시하고, [`.codex/config.toml`](.codex/config.toml)은 Codex를 직접 열 때의 기본값(GPT-6.1 Sol / medium)입니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
 
 ## 최근 변경
 
-2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개로 통일했고, 코디네이터가 Story별 모델 배정안을 먼저 보여 주고 사용자 승인을 받습니다(한도 계산은 하지 않음). [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [모델 배정 승인 방식](docs/changelog/2026-09-30-orca-model-approval.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요.
+2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5 네 개로 통일했고, 코디네이터가 Story별 모델 배정안을 먼저 보여 주고 사용자 승인을 받습니다(한도 계산은 하지 않음). [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [모델 배정 승인 방식](docs/changelog/2026-09-30-orca-model-approval.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요. 같은 날 OpenAI가 GPT-6.1 Sol을 내놓아 GPT-6 Sol을 교체했습니다([변경 기록](docs/changelog/2026-09-30-gpt-6-1-sol.md)).
 
 이전 변경(Claude 프롬프팅 가이드 반영, Astra 모델 기본값 등)은 [변경 이력](docs/changelog/README.md)에 날짜별로 남아 있습니다. 그 기록에 적힌 모델 설정은 이번 변경으로 대체됐습니다.
 
@@ -107,7 +107,7 @@ Orca에서 코디네이터 세션을 Sonnet 5.5 / medium으로 열고 입력합�
 - **최상위 모델이 꼭 필요하지 않습니다.** 코디네이터의 일은 대부분 짧은 보고 읽기, 명령 실행, 계약 작성입니다. 가장 어려운 판단인 모델 배정은 사람이 승인하고, 위험 높음 Story에는 다른 회사 모델의 xhigh 리뷰가 따로 붙습니다.
 - **호출이 가장 많은 역할입니다.** Epic 내내 켜져 있으므로 Opus 5.5는 판단이 어려운 Epic에만 씁니다.
 - **Claude Code에서 엽니다.** 위험 명령 차단 hook이 코디네이터에도 걸립니다. merge와 push를 하는 유일한 역할이라 중요합니다.
-- **GPT-6 Sol과 Gemini 3.8 Flash는 쓰지 않습니다.** Sol은 연계·위험 구현의 주력 모델이라 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않습니다. Flash는 최종 판정 역할에 맞지 않습니다.
+- **GPT-6.1 Sol과 Gemini 3.8 Flash는 쓰지 않습니다.** Sol은 연계·위험 구현과 Sonnet·Opus가 쓴 코드의 리뷰를 맡아 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않습니다. Flash는 최종 판정 역할에 맞지 않습니다.
 - **effort를 medium으로 직접 지정합니다.** Claude Code의 기본 effort는 xhigh라서, 지정하지 않으면 더 비싼 설정으로 실행됩니다.
 
 워커 모델은 코디네이터가 Story의 위험도와 작업 형태로 고르고, effort는 위험도로 정합니다(낮음 medium, 보통 high, 높음 xhigh). 기준표는 [모델 배정 규칙](docs/agents/model-routing-rules.md)에 있습니다.
@@ -125,7 +125,7 @@ Orca 코디네이터로 Epic <번호>를 진행해줘.
 모델별 접근 경로와 계정:
 - Gemini 3.8 Flash: <경로 / 계정>
 - Sonnet 5.5: <경로 / 계정>
-- GPT-6 Sol: <경로 / 계정>
+- GPT-6.1 Sol: <경로 / 계정>
 - Opus 5.5: <경로 / 계정>
 
 워커를 띄우기 전에 docs/agents/model-routing-rules.md의 선택 방법대로 Story별 모델 배정안(위험도, 작업 형태, 구현·리뷰 모델과 effort, 대체 모델, 이유)을 표로 보여 주고 내 OK를 기다려줘.
