@@ -58,3 +58,21 @@ tags: [harness, orca, model-routing]
 
 - 선택 표와 코디네이터 기본값은 초기값입니다. Story 2~3개 파일럿 뒤 `orca-runs.md`의 REJECTED·재작업·시간으로 조정합니다.
 - 실제 Orca 실행과 모델 ID 확인은 선행 기록의 남은 항목과 같습니다.
+
+## 추가 수정 (같은 날)
+
+**effort를 위험도로 정합니다.** 낮음은 medium, 보통은 high, 높음은 xhigh입니다. 구현·리뷰·대체 모델에 모두 적용하고, Epic 통합 리뷰는 Opus 5.5 / xhigh입니다. 모델은 계속 작업 형태 × 위험도 표로 고릅니다. 위험도 기준에서 effort를 올리거나 내리려면 다시 승인받습니다. max와 경쟁 풀이는 실패 근거가 있을 때 승인을 받아서만 씁니다.
+
+**README에 코디네이터(오케스트레이터) 모델 설명을 넣었습니다.** 기본 Sonnet 5.5 / medium, 위험 위주 Epic은 Opus 5.5 / medium, GPT-6 Sol과 Gemini 3.8 Flash를 쓰지 않는 이유, effort를 medium으로 직접 지정해야 하는 이유를 적었습니다.
+
+**시험 운영과 배정 조정을 코디네이터가 맡습니다.** 시작 프롬프트에 진행 범위(전체 또는 처음 N개 Story)를 적으면 그만큼 진행하고 멈춥니다. 멈출 때와 Epic을 끝낼 때 `orca-runs.md`를 표의 칸별로 요약하고 조정 제안을 붙입니다. 같은 칸에서 반려나 대체 모델 전환이 절반 이상이면 한 단계 무거운 모델을, 3개 이상 Story가 모두 첫 리뷰에 통과하고 시간 예산의 절반 안에 끝나면 한 단계 가벼운 모델을 제안합니다. 사람은 제안을 승인만 합니다. 승인한 제안은 남은 Story의 배정안에 반영하고, 규칙 표는 Phase C에서 고칩니다.
+
+| 파일 | 변경 |
+|---|---|
+| `docs/agents/model-routing-rules.md` | 위험도별 effort, 리뷰·대체 모델 표 단순화, 예시, effort 원칙, 「기록과 조정 제안」 절 |
+| `docs/agents/orca-rules.md`, `AGENTS.md`, `docs/agents/workflow-rules.md` | 진행 범위(시험 운영), Epic 통합 리뷰 xhigh, 완료 보고의 조정 제안, 재승인 대상 |
+| `templates/orca-epic-plan.md` | 진행 범위 항목, 예시 effort |
+| `README.md` | 「코디네이터(오케스트레이터) 모델」 절, 진행 범위 줄, 조정 제안 보고 요청, 이어서 하기의 제안 승인 줄, Phase C 프롬프트 |
+| `docs/harness/orca.md`, `README-brownfield.md`, `docs/decisions/ADR-002-orca-orchestration.md` | effort 규칙, 코디네이터 설명 위치, 시험 운영 안내 |
+
+검증: template mode `validate.sh`·`validate-quick.sh` 통과, 스킬 트리 동기화, `git diff --check`, 바뀐 문서 11개 상대 링크 통과. 선택 표를 파싱해 교차 확인했다(모든 칸에 다른 회사 리뷰 모델과 대체 모델이 있고, 대체 뒤에도 유효한 리뷰 모델이 있으며, 위험 높음의 대체 모델은 GPT-6 Sol·Opus 5.5뿐). 문서·템플릿만 변경해 스크립트 문법 검사 대상은 없음.

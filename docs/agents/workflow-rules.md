@@ -50,7 +50,7 @@ Epic의 모든 Story 통합 후 (코디네이터):
    - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`
    - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
 2. 실패 시 원인에 맞는 워커에게 수정을 맡기고 현재 OS/셸에 맞는 `--from=실패단계`로 재개
-3. 전체 통과하고 failed/skipped/보류 Story가 없을 때만 Epic 완료로 보고한다. 위험 영역 Story가 있으면 보고 전에 Opus 5.5 리뷰를 거친다
+3. 전체 통과하고 failed/skipped/보류 Story가 없을 때만 Epic 완료로 보고한다. 승인된 Epic 통합 리뷰(Opus 5.5 / xhigh)가 있으면 보고 전에 거친다. 보고에는 모델 배정 요약과 조정 제안을 붙인다
 4. 사용자가 승인하면 `epic/<N>`을 **develop**에 merge하고 push한다. develop 푸시 시 GitHub CI가 작동하고, 통과하면 develop → main으로 승격한다 (main push 시 자동 배포)
 5. sprint-status.yaml: 기획의 해당 Epic Story 목록과 대조하여 모든 Story가 done이고 필수 리뷰·검증·승인된 develop 병합이 끝났으며 failed/skipped/보류 항목이 없을 때만 `development_status[epic-N]`을 done으로 기록한다. 누락된 Story나 미완료 게이트가 있으면 Epic은 in-progress로 유지한다.
 
@@ -76,7 +76,7 @@ Phase C는 출시 전 최종 검증이나 배포 준비가 아니라, 완료된 
 출시 전 검증과 배포 준비는 CI/CD 또는 Release Gate 흐름에서 별도로 다룹니다.
 
 Epic 통합(Phase B) 완료 후 실행:
-1. `reviews/epic-N/` 아래 리뷰 결과(*.md), 수집한 검증 로그(logs/*.log), Orca 실행 기록(orca-runs.md) 분석. orca-runs.md에서 모델·작업 유형별 성공·재작업·시간을 정리해 `model-routing-rules.md` 조정 근거로 쓴다
+1. `reviews/epic-N/` 아래 리뷰 결과(*.md), 수집한 검증 로그(logs/*.log), Orca 실행 기록(orca-runs.md) 분석. 코디네이터가 Epic 완료 보고에 붙인 조정 제안과 orca-runs.md를 검토해 `model-routing-rules.md`의 선택 표를 고칠지 정한다
 2. `state/epic-N-progress.json`에서 failed/skipped story 확인
 3. 반복된 REJECTED 패턴과 validate 실패 패턴을 식별
 4. `feedback/incidents/`에 incident YAML 생성 (incident-template.yaml 참고)

@@ -40,38 +40,39 @@
 
 ### 3. 구현 모델과 effort
 
-| 형태 \ 위험도 | 낮음 | 보통 | 높음 |
+effort는 위험도로 정한다. 낮음은 medium, 보통은 high, 높음은 xhigh다. 모델은 아래 표로 고른다.
+
+| 형태 \ 위험도 | 낮음 (medium) | 보통 (high) | 높음 (xhigh) |
 |---|---|---|---|
-| 정형 | Gemini 3.8 Flash / medium | Gemini 3.8 Flash / medium | GPT-6 Sol / high |
-| 일반 | Sonnet 5.5 / medium | Sonnet 5.5 / medium | Opus 5.5 / high |
-| 연계 | GPT-6 Sol / medium | GPT-6 Sol / medium | GPT-6 Sol / high |
-| 설계 판단 | Opus 5.5 / medium | Opus 5.5 / medium | Opus 5.5 / high |
+| 정형 | Gemini 3.8 Flash | Gemini 3.8 Flash | GPT-6 Sol |
+| 일반 | Sonnet 5.5 | Sonnet 5.5 | Opus 5.5 |
+| 연계 | GPT-6 Sol | GPT-6 Sol | GPT-6 Sol |
+| 설계 판단 | Opus 5.5 | Opus 5.5 | Opus 5.5 |
 
 ### 4. 리뷰 모델과 effort
 
-리뷰는 작성자와 다른 회사의 모델이 한다. Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6 Sol), Google(Gemini 3.8 Flash)을 서로 다른 회사로 본다. Flash는 리뷰하지 않는다.
+리뷰는 작성자와 다른 회사의 모델이 하고, effort는 구현과 같이 Story의 위험도를 따른다. Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6 Sol), Google(Gemini 3.8 Flash)을 서로 다른 회사로 본다. Flash는 리뷰하지 않는다.
 
 | 작성 모델 | 위험 낮음·보통 | 위험 높음 |
 |---|---|---|
-| Gemini 3.8 Flash | Sonnet 5.5 / medium | 해당 없음 (Flash는 위험 높음을 작성하지 않음) |
-| Sonnet 5.5 | GPT-6 Sol / medium | 해당 없음 (Sonnet은 위험 높음을 작성하지 않음) |
-| GPT-6 Sol | Sonnet 5.5 / medium | Opus 5.5 / high |
-| Opus 5.5 | GPT-6 Sol / medium | GPT-6 Sol / high |
+| Gemini 3.8 Flash | Sonnet 5.5 | 해당 없음 (Flash는 위험 높음을 작성하지 않음) |
+| Sonnet 5.5 | GPT-6 Sol | 해당 없음 (Sonnet은 위험 높음을 작성하지 않음) |
+| GPT-6 Sol | Sonnet 5.5 | Opus 5.5 |
+| Opus 5.5 | GPT-6 Sol | GPT-6 Sol |
 
-Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(Opus 5.5 / high)을 넣어 제안한다. 승인되면 Epic 완료 보고 전에 위험 Story들의 통합된 변경을 한 번 더 리뷰한다. 모델이 다르다는 사실을 정확성 보장으로 보지 않는다.
+Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(Opus 5.5 / xhigh)을 넣어 제안한다. 승인되면 Epic 완료 보고 전에 위험 Story들의 통합된 변경을 한 번 더 리뷰한다. 모델이 다르다는 사실을 정확성 보장으로 보지 않는다.
 
 ### 5. 대체 모델
 
-구현 모델을 쓸 수 없을 때(한도·접근 오류, 같은 원인 3회 실패 후 재배정) 바꿔 쓸 모델이다. 배정안에 함께 적어 승인받는다.
+구현 모델을 쓸 수 없을 때(한도·접근 오류, 같은 원인 3회 실패 후 재배정) 바꿔 쓸 모델이다. 배정안에 함께 적어 승인받는다. effort는 원래와 같이 위험도를 따른다.
 
-| 구현 모델 / effort | 대체 모델 / effort |
+| 구현 모델 | 대체 모델 |
 |---|---|
-| Gemini 3.8 Flash / medium | Sonnet 5.5 / medium |
-| Sonnet 5.5 / medium | GPT-6 Sol / medium |
-| GPT-6 Sol / medium | Sonnet 5.5 / medium |
-| GPT-6 Sol / high | Opus 5.5 / high |
-| Opus 5.5 / medium | GPT-6 Sol / high |
-| Opus 5.5 / high | GPT-6 Sol / high |
+| Gemini 3.8 Flash | Sonnet 5.5 |
+| Sonnet 5.5 | GPT-6 Sol |
+| GPT-6 Sol (위험 낮음·보통) | Sonnet 5.5 |
+| GPT-6 Sol (위험 높음) | Opus 5.5 |
+| Opus 5.5 | GPT-6 Sol |
 
 대체 모델로 바뀌어 작성 회사가 달라지면 리뷰 모델도 4번 표로 다시 고른다.
 
@@ -81,22 +82,22 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 
 | Story | 위험도 | 형태 | 구현 모델 / effort | 리뷰 모델 / effort | 대체 모델 | 이유 |
 |---|---|---|---|---|---|---|
-| 1-1 로그인 | 높음 | 일반 | Opus 5.5 / high | GPT-6 Sol / high | GPT-6 Sol / high | 인증 토큰 처리 |
-| 1-2 목록 화면 | 보통 | 정형 | Gemini 3.8 Flash / medium | Sonnet 5.5 / medium | Sonnet 5.5 / medium | 기존 목록 패턴 반복 |
-| Epic 통합 리뷰 | — | — | — | Opus 5.5 / high | — | 위험 높음 Story 1건 |
+| 1-1 로그인 | 높음 | 일반 | Opus 5.5 / xhigh | GPT-6 Sol / xhigh | GPT-6 Sol / xhigh | 인증 토큰 처리 |
+| 1-2 목록 화면 | 보통 | 정형 | Gemini 3.8 Flash / high | Sonnet 5.5 / high | Sonnet 5.5 / high | 기존 목록 패턴 반복 |
+| Epic 통합 리뷰 | — | — | — | Opus 5.5 / xhigh | — | 위험 높음 Story 1건 |
 
 - 승인된 배정안은 `plans/epic-<N>-orca.md`에 승인 날짜와 함께 기록하고 커밋한다.
 - 승인 후 기록만 하고 진행해도 되는 변경: 승인된 대체 모델로의 전환, 위험도가 계획보다 높게 드러났을 때 리뷰를 위험 높음 기준으로 올리는 것. 바꾼 사실과 이유는 `orca-runs.md`와 최종 보고에 적는다.
-- 다시 승인받아야 하는 변경: 배정안에 없는 모델, 구현 effort 상향, 리뷰 생략이나 약화, Story 추가·분할.
+- 다시 승인받아야 하는 변경: 배정안에 없는 모델, effort를 위험도 기준보다 올리거나 내리는 것, 리뷰 생략이나 약화, Story 추가·분할.
 
 ## effort 원칙
 
-- 표의 effort가 기본이다. high는 위험 높음과 설계 판단에만 쓴다. low는 Flash의 조사 작업에만 쓴다.
-- xhigh는 같은 원인으로 실패한 근거가 있을 때 사용자 승인을 받아서만 쓴다. max와 경쟁 풀이(같은 범위를 여러 모델이 동시에 구현)는 쓰지 않는다.
-- Claude Code의 기본 effort는 xhigh다. Claude 세션과 워커는 effort를 항상 명시한다. 지정하지 않았다면 기본값으로 실행된 것으로 기록한다.
+- Story 작업의 effort는 위험도로 정한다: 낮음 medium, 보통 high, 높음 xhigh. 구현·리뷰·대체 모델 모두 같다. low는 Flash의 조사 작업에만 쓴다.
+- 모델이 그 수준을 지원하지 않으면 지원하는 가장 가까운 수준을 배정안에 적어 승인받는다. 지원 수준은 시작 확인에서 `state/orca/env.json`에 기록한 값을 따른다.
+- max와 경쟁 풀이(같은 범위를 여러 모델이 동시에 구현)는 자동으로 쓰지 않는다. 같은 원인으로 실패한 근거가 있으면 사용자 승인을 받아 쓸 수 있다.
+- Claude Code의 기본 effort는 xhigh다. Claude 세션과 워커는 xhigh를 쓸 때도 effort를 항상 명시한다. 지정하지 않았다면 기본값으로 실행된 것으로 기록한다.
 - 같은 effort 이름이라도 모델마다 토큰 예산이 다르다. 지원되지 않는 effort를 전달하지 않고, 실제로 적용된 값을 기록한다.
-- 모델을 내리기 전에 effort부터 조정한다. 작업이 끝나기는 하는데 필요 이상으로 오래 걸리면 effort를 낮춘다.
-- 권한·자격증명·환경 누락으로 실패하면 모델이나 effort를 올려 재시도하지 않는다. 모델·effort를 낮춰도 테스트·데이터 보호·독립 리뷰 기준은 낮추지 않는다.
+- 권한·자격증명·환경 누락으로 실패하면 모델이나 effort를 올려 재시도하지 않는다. 모델을 바꿔도 테스트·데이터 보호·독립 리뷰 기준은 낮추지 않는다.
 
 ## 코디네이터
 
@@ -132,8 +133,16 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 - 모델 접근 권한이 없으면 승인된 배정안 밖에서 다른 모델을 고르지 않는다.
 - Codex 하위 에이전트용 역할 프로필은 두지 않는다. 작업 분배는 Orca 코디네이터가 하고, 워커는 BMAD 워크플로가 요구하는 내부 리뷰 외에는 하위 에이전트를 띄우지 않는다.
 
-## 적용과 관찰
+## 기록과 조정 제안
 
-Story별 성공 여부, 리뷰 REJECTED 횟수, 재작업 횟수, 소요 시간을 `orca-runs.md`로 비교한다. 비교 결과가 쌓이기 전에는 이 배분이 품질·속도·비용을 개선한다고 보장하지 않는다. 처음에는 Story 2~3개로 시험하고, 2 Epic 이상 기록이 쌓이면 Phase C에서 위 표를 고친다. 예를 들어 Flash가 맡은 정형 Story의 REJECTED가 반복되면 그 칸을 Sonnet 5.5로 올린다.
+배정 결과는 사람이 따로 분석하지 않아도 되게 코디네이터가 기록하고 조정안을 낸다. 사람은 제안을 승인만 한다.
+
+- 코디네이터는 Story마다 `orca-runs.md`에 승인·실제 모델과 effort, 리뷰 REJECTED 횟수, 수정 Dispatch 횟수, 대체 모델 전환, 소요 시간을 남긴다.
+- Epic 완료 보고(시험 운영이면 멈출 때의 보고)에 표의 칸(작업 형태 × 위험도)별 요약과 아래 기준에 걸린 칸의 조정 제안을 붙인다. 모델의 무게 순서는 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5다.
+  - 올림 제안: 같은 칸에서 첫 리뷰 REJECTED나 대체 모델 전환이 그 칸 Story의 절반 이상이면, 그 칸의 구현 모델을 한 단계 무거운 모델로 바꾸는 안을 낸다.
+  - 내림 제안: 같은 칸에서 Story 3개 이상이 모두 첫 리뷰에 APPROVED이고 시간 예산의 절반 안에 끝났으면, 한 단계 가벼운 모델로 바꾸는 안을 낸다. 위험 높음 칸은 GPT-6 Sol과 Opus 5.5 사이에서만 바꾼다.
+  - Story가 2개 이하인 칸은 요약만 하고 제안하지 않는다. effort는 위험도 기준을 유지한다.
+- 진행 중인 Epic에서는 승인된 제안을 남은 Story의 배정안 행에만 반영한다. 이 문서의 표는 Phase C 회고에서 제안과 기록을 검토해 고친다.
+- 기록이 쌓이기 전에는 이 배분이 품질·속도·비용을 개선한다고 보장하지 않는다.
 
 근거: [Orca orchestration 가이드](https://github.com/stablyai/orca/blob/main/skill-guides/orchestration.md), [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort), [Codex 설정](https://learn.chatgpt.com/docs/config-file/config-advanced). 역할별 배정은 이 프로젝트의 운영 결정이다.

@@ -95,6 +95,25 @@ CI/CD, Docker, DB 마이그레이션 설정은 사용자 확인 없이 위험하
 
 Orca에서 코디네이터 세션을 Sonnet 5.5 / medium으로 열고 입력합니다(위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium). 코디네이터는 먼저 Story별 모델 배정안을 보여 주고, OK를 받은 뒤 Story마다 구현 워커와 리뷰 워커(작성자와 다른 회사 모델)를 띄우고, 검증과 리뷰를 통과한 Story를 `epic/<번호>` 브랜치에 모읍니다. 처음 쓰기 전에 [Orca 가이드](docs/harness/orca.md)의 준비물을 확인하세요.
 
+### 코디네이터(오케스트레이터) 모델
+
+코디네이터는 Story를 워커에게 나눠 주고, 결과를 확인하고, 합격한 Story를 `epic/<번호>` 브랜치에 합치는 총괄 역할입니다. 직접 구현은 하지 않습니다.
+
+| 선택 | 모델 / effort | 언제 |
+|---|---|---|
+| 기본 | Sonnet 5.5 / medium (Claude Code) | 대부분의 Epic |
+| 상향 | Opus 5.5 / medium (Claude Code) | 위험 높음 Story가 Epic의 절반 이상이거나, 코디네이터의 판정·계약 작성 실수가 반복될 때 |
+
+- **최상위 모델이 꼭 필요하지 않습니다.** 코디네이터의 일은 대부분 짧은 보고 읽기, 명령 실행, 계약 작성입니다. 가장 어려운 판단인 모델 배정은 사람이 승인하고, 위험 높음 Story에는 다른 회사 모델의 xhigh 리뷰가 따로 붙습니다.
+- **호출이 가장 많은 역할입니다.** Epic 내내 켜져 있으므로 Opus 5.5는 판단이 어려운 Epic에만 씁니다.
+- **Claude Code에서 엽니다.** 위험 명령 차단 hook이 코디네이터에도 걸립니다. merge와 push를 하는 유일한 역할이라 중요합니다.
+- **GPT-6 Sol과 Gemini 3.8 Flash는 쓰지 않습니다.** Sol은 연계·위험 구현의 주력 모델이라 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않습니다. Flash는 최종 판정 역할에 맞지 않습니다.
+- **effort를 medium으로 직접 지정합니다.** Claude Code의 기본 effort는 xhigh라서, 지정하지 않으면 더 비싼 설정으로 실행됩니다.
+
+워커 모델은 코디네이터가 Story의 위험도와 작업 형태로 고르고, effort는 위험도로 정합니다(낮음 medium, 보통 high, 높음 xhigh). 기준표는 [모델 배정 규칙](docs/agents/model-routing-rules.md)에 있습니다.
+
+### 시작 프롬프트
+
 ```text
 Orca 코디네이터로 Epic <번호>를 진행해줘.
 
@@ -112,16 +131,17 @@ Orca 코디네이터로 Epic <번호>를 진행해줘.
 워커를 띄우기 전에 docs/agents/model-routing-rules.md의 선택 방법대로 Story별 모델 배정안(위험도, 작업 형태, 구현·리뷰 모델과 effort, 대체 모델, 이유)을 표로 보여 주고 내 OK를 기다려줘.
 
 승인 범위:
+- 진행 범위: <전체 Story / 처음 N개 Story만 하고 결과와 배정 조정 제안을 보고한 뒤 멈춤>
 - 검증과 리뷰를 통과한 Story 브랜치와 epic/<번호> push: <허용 / 허용하지 않음>
 - develop 병합과 배포: 하지 않음 (따로 요청할 때만)
 - 예산: orca-rules.md 기본값 <바꿀 값이 있으면 적기>
 
-완료 보고는 결과부터 써줘. Story별 승인·실제 모델과 effort, 배정안과 달라진 부분과 이유, 커밋, 검증 로그 경로, 남은 위험을 적어줘.
+완료 보고는 결과부터 써줘. Story별 승인·실제 모델과 effort, 배정안과 달라진 부분과 이유, 커밋, 검증 로그 경로, 남은 위험을 적고, 마지막에 모델 배정 요약과 조정 제안을 붙여줘.
 ```
 
 ### 이어서 하기
 
-한도 오류나 시간 예산 때문에 멈췄거나 코디네이터를 바꿀 때 씁니다.
+시험 운영(진행 범위를 일부 Story로 둔 경우)으로 멈췄거나, 한도 오류·시간 예산 때문에 멈췄거나, 코디네이터를 바꿀 때 씁니다.
 
 ```text
 Orca 코디네이터로 Epic <번호> 작업을 이어서 해줘.
@@ -131,7 +151,8 @@ plans/epic-<번호>-orca.md(승인된 모델 배정안 포함), reviews/epic-<�
 끝난 Story를 다시 리뷰하거나 검증하지 말고, 멈춘 원인이 해결됐는지 먼저 확인해줘.
 승인된 모델 배정안을 그대로 쓰고, 남은 Story의 배정을 바꿔야 하면 바꿀 행만 보여 주고 내 OK를 기다려줘.
 
-승인 범위는 처음 요청과 같아. <바뀐 점이 있으면 적기>
+직전 보고의 배정 조정 제안 중 승인하는 것: <없음 / 승인할 제안>
+승인 범위는 처음 요청과 같아. <진행 범위 등 바뀐 점이 있으면 적기>
 ```
 
 ### Epic 통합 (develop 병합)
@@ -165,7 +186,7 @@ state/epic-<번호>-progress.json이 있으면 failed/skipped story를 확인해
 필요하면 feedback/incidents/ 아래 incident YAML을 작성해줘.
 다음 Epic에서 자동으로 잡아야 하는 패턴이면 tests/regression/에 재현 테스트를 추가해줘.
 반복 규칙은 docs/agents/feedback-rules.md에 반영하고, 기계적으로 판별 가능한 치명 패턴만 validate blocking check로 승격해줘.
-orca-runs.md에서 모델별 성공·재작업·소요 시간을 정리하고, docs/agents/model-routing-rules.md의 배정을 바꿀 근거가 있으면 제안해줘.
+코디네이터가 Epic 완료 보고에 붙인 모델 배정 조정 제안과 orca-runs.md를 검토해서, docs/agents/model-routing-rules.md의 선택 표를 바꿀지 제안해줘.
 
 회고를 반영한 뒤 docs/agents/workflow-rules.md Phase C의 8단계(프로젝트 이해 문서 갱신)도 실행해줘.
 docs/PROJECT_MAP.md가 없으면 만들고 CLAUDE.md·AGENTS.md에 배선해줘. 있으면 이번 Epic에서 바뀐 장만 갱신해줘.

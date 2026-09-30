@@ -9,19 +9,20 @@ BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 �
 - Epic 목표: <누구를 위한 어떤 결과물인지>
 - 걱정되는 위험: <사용자가 알려 준 위험>
 - 통합 브랜치: epic/<N> (기준: develop <커밋 해시>)
+- 진행 범위: <전체 Story | 처음 N개 Story만 하고 결과와 조정 제안을 보고한 뒤 멈춤>
 - 승인 범위: Story 브랜치와 epic/<N> push <허용 | 허용하지 않음>, develop 병합 <요청 시에만>
 - 예산: 기본값(orca-rules.md §8) <또는 사용자가 바꾼 값>
 - 코디네이터: <Sonnet 5.5 / medium | Opus 5.5 / medium>
 
 ## 모델 배정안
 
-선택 방법은 `docs/agents/model-routing-rules.md`를 따른다.
+선택 방법은 `docs/agents/model-routing-rules.md`를 따른다. effort는 위험도로 정한다: 낮음 medium, 보통 high, 높음 xhigh.
 
 | Story | 위험도 | 형태 | 구현 모델 / effort | 리뷰 모델 / effort | 대체 모델 | 이유 |
 |---|---|---|---|---|---|---|
-| <1-1-key> | 보통 | 정형 | Gemini 3.8 Flash / medium | Sonnet 5.5 / medium | Sonnet 5.5 / medium | <한 줄> |
-| <1-2-key> | 높음 | 일반 | Opus 5.5 / high | GPT-6 Sol / high | GPT-6 Sol / high | <한 줄> |
-| Epic 통합 리뷰 | — | — | — | Opus 5.5 / high | — | 위험 높음 Story가 있을 때만 |
+| <1-1-key> | 보통 | 정형 | Gemini 3.8 Flash / high | Sonnet 5.5 / high | Sonnet 5.5 / high | <한 줄> |
+| <1-2-key> | 높음 | 일반 | Opus 5.5 / xhigh | GPT-6 Sol / xhigh | GPT-6 Sol / xhigh | <한 줄> |
+| Epic 통합 리뷰 | — | — | — | Opus 5.5 / xhigh | — | 위험 높음 Story가 있을 때만 |
 
 승인: <YYYY-MM-DD, 사용자 OK. 사용자가 고친 내용이 있으면 적기>
 
@@ -38,7 +39,7 @@ BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 �
 
 | 시각 | Story | 변경 | 이유 | 구분 |
 |---|---|---|---|---|
-| <시각> | <story-key> | GPT-6 Sol / medium → Sonnet 5.5 / medium | <한도 오류 등> | 사전 승인(대체 모델) |
+| <시각> | <story-key> | GPT-6 Sol / high → Sonnet 5.5 / high | <한도 오류 등> | 사전 승인(대체 모델) |
 
 구분: `사전 승인`(대체 모델 전환, 리뷰 상향)은 기록만 하고 진행한다. 그 밖의 변경은 `재승인`을 받은 뒤 적는다.
 

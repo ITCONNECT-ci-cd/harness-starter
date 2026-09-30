@@ -29,13 +29,14 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
 3. `_bmad-output/planning-artifacts/architecture.md`, 대상 Epic의 Story 목록, `_bmad-output/implementation-artifacts/sprint-status.yaml`을 확인한다.
 4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
 5. Story별 모델 배정안(구현·리뷰 모델과 effort, 대체 모델, 이유)을 `docs/agents/model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인본을 계획 파일에 기록·커밋한 뒤에만 워커를 띄운다.
-6. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다.
+6. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다. 시작 프롬프트의 진행 범위가 일부 Story면 거기까지 하고 보고한 뒤 멈춘다(시험 운영).
 7. 모든 Story가 통합되면 `epic/<N>`에서 현재 OS/셸에 맞는 전체 검증을 실행한다.
    - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
    - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`
    - 실패 시 수정 워커를 배정하고 현재 OS의 `validate.ps1` 또는 `validate.sh`에 `--from=실패단계`로 재개
    - failed/skipped 또는 의존성으로 보류된 Story가 남으면 Epic 완료로 보고하지 않음
 8. `develop` 병합과 push는 사용자가 승인한 범위에서만 한다.
+9. 완료 보고(시험 운영이면 멈출 때의 보고)에는 `orca-runs.md`의 모델 배정 요약과 조정 제안을 붙인다 (`docs/agents/model-routing-rules.md`의 「기록과 조정 제안」).
 
 ## Orca 워커 규칙
 

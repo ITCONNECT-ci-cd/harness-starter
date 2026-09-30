@@ -1272,7 +1272,7 @@ git push
 ### 다음 단계
 - 팀에 "harness 도입됨" 공지 (커밋 범위: <A..B>)
 - docs/agents/ 규칙 파일 팀 리뷰
-- 첫 Epic으로 Orca 개발 흐름(Story 2~3개)과 Phase C 회고 시험 적용
+- 첫 Epic은 시작 프롬프트의 진행 범위를 "처음 2~3개 Story"로 두고 Orca 개발 흐름과 Phase C 회고를 시험 적용
 - [CI rename yes인 경우] GitHub의 기존 required status checks 이름
   업데이트 확인
 
