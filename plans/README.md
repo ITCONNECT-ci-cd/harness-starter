@@ -13,3 +13,8 @@
 #
 # 파일명 형식: YYYY-MM-DD-작업이름.execplan.md
 # 템플릿: templates/execplan.md
+#
+# Orca Epic 실행 계획:
+#   - Orca 코디네이터가 Epic 시작 시 plans/epic-<N>-orca.md를 만듭니다.
+#   - 템플릿: templates/orca-epic-plan.md
+#   - BMAD story 파일에 없는 실행 정보(의존·해제 조건, 수정 범위, 위험도, 모델 후보, 리뷰, 예산)만 적습니다.

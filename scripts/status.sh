@@ -45,8 +45,7 @@ done
 
 if [ "$found" = false ]; then
   echo "  No epic progress files found in state/"
-  echo "  Start from the README Epic implementation prompt."
-  echo "  scripts/run-epic.sh is a legacy CLI fallback only."
+  echo "  Start from the README Orca development prompt."
 fi
 
 echo "══════════════════════════════════════════════════════"

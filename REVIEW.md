@@ -7,7 +7,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 ## 리뷰 범위
 
-- 현재 브랜치의 main 대비 diff만 리뷰
+- Orca 리뷰 워커는 계약의 기준 커밋 대비 diff만 리뷰. 그 밖의 리뷰는 현재 브랜치의 main 대비 diff만 리뷰
 - story 범위를 벗어난 변경이 있으면 지적
 - 기존 코드의 문제는 리뷰하지 않음 (pre-existing 이슈 무시)
 
@@ -68,7 +68,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 ### APPROVED 조건 (모두 충족 시)
 
-- 현재 OS/셸에 맞는 전체 validate 통과
+- 현재 OS/셸에 맞는 검증 통과 (Story 리뷰는 validate-quick, Epic 통합은 전체 validate + smoke)
 - 아키텍처 경계 위반 없음
 - 변경 동작에 테스트 존재
 - 보안 이슈 없음
@@ -77,7 +77,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 ### REJECTED 조건 (하나라도 해당 시)
 
-- 현재 OS/셸에 맞는 전체 validate 실패
+- 현재 OS/셸에 맞는 검증 실패 (Story 리뷰는 validate-quick, Epic 통합은 전체 validate + smoke)
 - 아키텍처 경계 위반
 - 보안 취약점 발견
 - 하드코딩된 시크릿/포트

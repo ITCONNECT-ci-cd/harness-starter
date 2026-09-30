@@ -28,7 +28,8 @@ BMAD 기획이 먼저 끝나 있어야 합니다.
 3. 프로젝트 scaffold를 만듭니다.
 4. harness 파일과 git hook을 적용합니다.
 5. `harness.validate.json` 또는 패키지 스크립트로 검증 명령을 확정합니다.
-6. 현재 OS에 맞는 검증 진입점을 실행합니다.
+6. `templates/orca.yaml`을 참고해 루트 `orca.yaml`의 워크트리 준비 명령을 스택의 의존성 설치 명령으로 만듭니다.
+7. 현재 OS에 맞는 검증 진입점을 실행합니다.
 
 Windows PowerShell:
 
@@ -50,7 +51,8 @@ bash/WSL/macOS/Linux:
 - `AGENTS.md`와 `docs/agents/` 규칙이 적용되어 있습니다.
 - project mode에서는 `typecheck`, `lint`, `test`, `build` 중 필수 명령이 누락되면 실패합니다.
 - template mode에서는 프로젝트 마커가 없을 때 무거운 검증을 빠르게 건너뜁니다.
-- Story 작업은 `story/*` 브랜치에서 진행하고 Phase B 승인 후 `develop`으로 병합합니다.
+- 루트 `orca.yaml`에 이 프로젝트의 의존성 설치 명령이 있습니다.
+- Story는 Orca 구현 워커의 `story/*` 브랜치에서 구현하고, 리뷰 승인 후 `epic/*` 브랜치에 모은 뒤 Epic 검증과 사용자 승인을 거쳐 `develop`으로 병합합니다.
 
 ## 비개발자용 완료 보고 형식
 
@@ -60,7 +62,8 @@ bash/WSL/macOS/Linux:
 - 제품 문서: 확인 완료
 - 기술 스택: <감지 결과>
 - 검증 명령: <설정 결과>
+- Orca 워크트리 준비 명령: <설정 결과>
 - 빠른 검증: <통과/실패>
 - 전체 검증: <통과/실패>
-- 다음에 입력할 프롬프트: <Epic 구현 프롬프트>
+- 다음에 입력할 프롬프트: <README의 Orca 개발 프롬프트>
 ```

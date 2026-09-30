@@ -348,7 +348,7 @@ safe_grep_rn() {
 # ============================================================================
 # harness.validate.json + 검증 명령 결정
 # (PowerShell scripts/lib/package-runner.ps1과 동일 계약의 bash 구현 —
-#  두 진입점이 같은 설정 소스를 읽어야 Phase A(Windows)와 Phase B(bash)의
+#  두 진입점이 같은 설정 소스를 읽어야 Windows와 bash 환경의
 #  판정이 갈라지지 않는다)
 #
 # 우선순위: HARNESS_*_CMD 환경변수 > harness.validate.json commands > 자동 감지

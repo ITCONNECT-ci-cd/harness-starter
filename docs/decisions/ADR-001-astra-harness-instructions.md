@@ -1,7 +1,7 @@
 # ADR-001: Astra에서 Harness 실행 기준과 모델 기본값 통일
 
 - 날짜: 2026-09-09
-- 상태: 적용
+- 상태: 일부 대체 — 결정 5(모델 기본값)와 Codex Desktop 기반 Phase A 흐름은 [ADR-002](ADR-002-orca-orchestration.md)로 대체
 - 범위: Harness 운영 지침, Story/Quick Flow 스킬, Codex 모델 기본값
 
 ## 배경

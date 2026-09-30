@@ -65,17 +65,13 @@ ESSENTIAL_PATHS=(
   # 최상위 문서
   "CLAUDE.md"
   "AGENTS.md"
+  "GEMINI.md"
   "REVIEW.md"
   "README-brownfield.md"
   # Git·GitHub 설정
   ".gitattributes"
   ".gitleaks.toml"
   ".codex/config.toml"
-  ".codex/agents/harness-planner.toml"
-  ".codex/agents/harness-worker.toml"
-  ".codex/agents/harness-explorer.toml"
-  ".codex/agents/harness-reviewer.toml"
-  ".codex/agents/harness-deep-reviewer.toml"
   # 규칙 문서
   "docs/agents"
   "docs/checklists"
@@ -258,6 +254,7 @@ if [ "$DRY_RUN" = false ]; then
 
 # ── Harness Engineering rules ──────────────────────
 state/validate/
+state/orca/
 state/db-backups/
 state/epic-*-progress.json
 reviews/*/logs/

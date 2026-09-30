@@ -29,9 +29,6 @@ jobs:
             echo "skill dirs missing — skip"
           fi
 
-      - name: Codex project defaults and explicit overrides
-        run: bash scripts/tests/codex-options.test.sh
-
       - name: Template validate
         run: ./scripts/validate.sh
 
@@ -41,7 +38,7 @@ jobs:
   powershell-entrypoints:
     runs-on: windows-latest
     # 비용 가이드: windows-latest는 GitHub Actions 분을 2배로 소비한다. 자동 트리거(push 등)를
-    # 켠 프로젝트에서는 모든 push가 아니라 main push + 수동 실행에서만 Windows(Codex/Phase A)
+    # 켠 프로젝트에서는 모든 push가 아니라 main push + 수동 실행에서만 Windows(PowerShell 워커)
     # 경로를 검증한다. workflow_dispatch 기본 상태에서는 항상 실행된다.
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     steps:

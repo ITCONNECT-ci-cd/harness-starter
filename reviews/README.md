@@ -1,26 +1,27 @@
 # reviews/README.md
 #
-# 이 폴더는 코드 리뷰와 명시적으로 요청된 Harness 독립 리뷰 결과를 저장합니다.
-# run-epic.sh가 자동으로 Epic별 하위 폴더를 생성합니다.
+# 이 폴더는 코드 리뷰 결과, Orca 실행 기록, 명시적으로 요청된 Harness 독립 리뷰 결과를 저장합니다.
+# Orca 코디네이터가 Story를 epic/<N>에 통합할 때 Epic별 하위 폴더에 기록합니다.
 #
 # 구조:
 #   reviews/
 #   ├── epic-1/
-#   │   ├── story-1-review.md        ← 리뷰 결과
-#   │   └── logs/
-#   │       ├── story-1-codex.log    ← Codex 실행 로그
-#   │       ├── story-1-claude.log   ← Claude 실행 로그
-#   │       └── story-1-validate.log ← 검증 로그
+#   │   ├── <story-key>-review.md   ← 리뷰 워커의 판정과 findings (코디네이터가 저장)
+#   │   ├── orca-runs.md            ← Story별 계획/실제 모델·effort, 커밋, 재시도, 시간, 사용량
+#   │   └── logs/                   ← 워커 워크트리에서 복사한 검증 로그 (커밋 제외)
+#   │       └── <story-key>-*.log
 #   ├── epic-2/
 #   │   └── ...
 #   └── ...
 #
 # 리뷰 결과 확인:
-#   cat reviews/epic-1/story-1-review.md
+#   cat reviews/epic-1/<story-key>-review.md
+#
+# 모델별 결과 확인 (Phase C 회고 입력):
+#   cat reviews/epic-1/orca-runs.md
 #
 # 실패 원인 분석:
-#   cat reviews/epic-1/logs/story-1-codex.log
-#   cat reviews/epic-1/logs/story-1-validate.log
+#   ls reviews/epic-1/logs/
 
 ## Harness 검토 기록
 

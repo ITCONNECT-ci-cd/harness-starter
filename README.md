@@ -10,25 +10,23 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 |---|---|
 | 새 프로젝트 시작 | [docs/harness/greenfield.md](docs/harness/greenfield.md) |
 | 기존 프로젝트에 하네스 적용 | [docs/harness/brownfield.md](docs/harness/brownfield.md) |
+| Orca로 개발 맡기기 (준비물·흐름·비용 원칙) | [docs/harness/orca.md](docs/harness/orca.md) |
 | 검증이 언제 도는지 | [docs/harness/validation.md](docs/harness/validation.md) |
 | CI/CD 켜기 또는 수동 모드 유지 | [docs/harness/ci-cd.md](docs/harness/ci-cd.md) |
 | Docker/DB 작업 지시 문구 | [docs/harness/docker-db.md](docs/harness/docker-db.md) |
-| Astra 모델 설정·자율 진행·스킬 충돌 기준 | [docs/agents/agent-execution-rules.md](docs/agents/agent-execution-rules.md) |
-| Claude·Codex 모델과 effort 배정 | [docs/agents/model-routing-rules.md](docs/agents/model-routing-rules.md) |
+| Orca 코디네이터·워커 규칙 | [docs/agents/orca-rules.md](docs/agents/orca-rules.md) |
+| 4개 모델(Flash·Sonnet·Sol·Opus)과 effort 배정 | [docs/agents/model-routing-rules.md](docs/agents/model-routing-rules.md) |
+| 자율 진행·승인 범위·스킬 충돌 기준 | [docs/agents/agent-execution-rules.md](docs/agents/agent-execution-rules.md) |
 | Phase C 문서·project-map 준비 | [docs/agents/project-map-rules.md](docs/agents/project-map-rules.md) |
 | 날짜별 변경 이력·수정 파일 상세 | [docs/changelog/README.md](docs/changelog/README.md) |
 
-Codex 프로젝트 기본값은 [`.codex/config.toml`](.codex/config.toml)에서 관리합니다. 신뢰된 프로젝트에서 적용되며, 이미 열린 작업의 모델은 사용자가 선택한 값을 유지합니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
+모델은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개만 쓰며, 기준은 [모델 배정 규칙](docs/agents/model-routing-rules.md) 한 곳에 있습니다. Orca 워커는 기동할 때마다 모델과 effort를 명시하고, [`.codex/config.toml`](.codex/config.toml)은 Codex를 직접 열 때의 기본값(GPT-6 Sol / medium)입니다. 설치 스크립트는 기존 설정 파일을 기본적으로 보존합니다. 개인 설정·권한을 바꾸지 않으며, BMAD 원본을 별도로 설치한 프로젝트에도 `AGENTS.md`의 공통 실행 규칙을 적용합니다.
 
 ## 최근 변경
 
-2026-09-10: Claude Fable 5 공식 프롬프팅 가이드를 반영해 근거 기반 완료 보고, 보고·소통 형식, 구현 범위 제한, Claude 측 모델·effort 배정을 추가했습니다. [변경 요약](docs/changelog/2026-09-10-claude-fable5-harness.md), [수정 파일·검증 상세](docs/changelog/2026-09-10-claude-fable5-changed-files.md)를 확인하세요.
+2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6 Sol, Opus 5.5 네 개로 통일했습니다. [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요.
 
-2026-09-10: 기본값을 Astra / High로 조정하고 계획·구현·조사·리뷰 역할별 모델 배정을 추가했습니다. [모델 배정 규칙](docs/agents/model-routing-rules.md), [변경 기록](docs/changelog/2026-09-10-astra-high-model-routing.md), [공통 하네스 수정 파일·검증 상세](docs/changelog/2026-09-10-harness-changed-files.md)를 확인하세요.
-
-2026-09-09: Astra / Extra High 기본값을 정리하고, 스킬의 불필요한 대기·반복 검증 지침과 Phase C 문서 생성 조건을 보완했습니다. [변경 전·후, 적용 방법, 검증 결과](docs/changelog/2026-09-09-astra-harness-guidance.md)를 확인하세요.
-
-후속 [독립 에이전트 리뷰와 행동 시험](reviews/astra-guidance-2026-09-09/review.md)에서 승인 대기 상태·기존 변경 보존·Epic 완료 조건을 보완하고, 격리 시나리오 4개를 검증했습니다.
+이전 변경(Claude 프롬프팅 가이드 반영, Astra 모델 기본값 등)은 [변경 이력](docs/changelog/README.md)에 날짜별로 남아 있습니다. 그 기록에 적힌 모델 설정은 이번 변경으로 대체됐습니다.
 
 ---
 
@@ -59,6 +57,7 @@ _bmad-output/planning-artifacts/ 아래의 PRD, architecture, epics 산출물을
 BMAD 스킬 경로가 있는지 확인해줘.
 docs/agents/project-map-rules.md에 따라 Phase C에서 사용할 project-map의 실제 경로·출처도 확인해줘.
 현재 프로젝트의 기술 스택을 감지하고, 필요한 scaffold와 harness 파일을 적용해줘.
+templates/orca.yaml을 참고해서 루트 orca.yaml의 워크트리 준비 명령을 이 프로젝트의 의존성 설치 명령으로 만들어줘.
 검증 스크립트는 현재 OS에 맞는 공식 진입점으로 실행해줘.
 
 중요:
@@ -77,6 +76,7 @@ docs/agents/project-map-rules.md에 따라 Phase C에서 사용할 project-map�
 기존 코드와 문서를 먼저 읽고, 하네스 적용 계획을 세워줘.
 기존 변경사항과 harness 설치 산출물을 분리해서 확인해줘.
 충돌이 없는 파일은 추가하고, 기존 규칙과 충돌하는 부분은 백업 후 수정해줘.
+Orca로 개발할 수 있게 templates/orca.yaml을 참고해서 루트 orca.yaml의 워크트리 준비 명령도 이 프로젝트에 맞춰줘.
 CI/CD, Docker, DB 마이그레이션 설정은 사용자 확인 없이 위험하게 바꾸지 말아줘.
 
 기본 원칙:
@@ -91,48 +91,60 @@ CI/CD, Docker, DB 마이그레이션 설정은 사용자 확인 없이 위험하
 
 ---
 
-## Phase A - Epic 구현 프롬프트
+## 개발 - Orca 프롬프트
 
-Codex Desktop에서 Epic 단위 구현을 시작할 때 입력합니다.
+Orca에서 코디네이터 세션(Sonnet 5.5 또는 GPT-6 Sol)을 열고 입력합니다. 코디네이터가 Story마다 구현 워커와 리뷰 워커(작성자와 다른 회사 모델)를 띄우고, 검증과 리뷰를 통과한 Story를 `epic/<번호>` 브랜치에 모읍니다. 처음 쓰기 전에 [Orca 가이드](docs/harness/orca.md)의 준비물을 확인하세요.
 
 ```text
-Epic <번호>의 story를 순서대로 처리해.
+Orca 코디네이터로 Epic <번호>를 진행해줘.
 
-이 Epic은 <누구를 위한 어떤 결과물인지, 완료되면 무엇이 가능해지는지>를 위한 작업이야.
+이 Epic은 <누구를 위한 어떤 결과물인지, 완료되면 무엇이 가능해지는지>이고, 가장 걱정되는 위험은 <위험>이야.
 
-시작 전에 AGENTS.md, architecture.md, sprint-status.yaml, docs/agents/feedback-rules.md를 읽어줘.
-Windows PowerShell이면 ./scripts/doctor.ps1 와 ./scripts/phase-a/preflight.ps1 -Epic <번호> 를 먼저 실행해줘.
+시작 전에 AGENTS.md의 Orca 개발 루틴과 docs/agents/orca-rules.md를 읽고 그대로 따라줘.
+환경 확인은 state/orca/env.json이 있으면 재사용하고, 도구 버전이 바뀌었을 때만 다시 해줘.
 
-각 story마다:
-1. bmad-create-story로 story 파일을 만들어줘.
-2. bmad-dev-story로 TDD 방식으로 구현해줘.
-3. 현재 OS에 맞는 validate-quick을 실행해줘.
-4. 통과하면 story 브랜치에 commit + push 해줘.
-5. push가 끝난 뒤에만 다음 story로 넘어가줘.
+모델별 접근 경로와 계정 (역할은 docs/agents/model-routing-rules.md 기준):
+- Gemini 3.8 Flash: <경로 / 계정>
+- Sonnet 5.5: <경로 / 계정>
+- GPT-6 Sol: <경로 / 계정>
+- Opus 5.5: <경로 / 계정>
+Orca 상태바 기준 남은 사용량: <풀별 %와 리셋 시각. 모르면 "모름">
+추가 결제: <허용 한도. 없으면 "허용하지 않음">
 
-모든 story가 끝나면 현재 OS에 맞는 validate를 실행해줘.
-실패하면 state/validate/latest/*.log를 읽고 고친 뒤 --from 옵션으로 재개해줘.
-완료 보고는 결과부터 써줘. 보고하는 항목은 실제 실행 결과(검증 로그 경로, 커밋)에 근거해야 하고, 확인하지 못한 건 확인하지 못했다고 적어줘.
+승인 범위:
+- 검증과 리뷰를 통과한 Story 브랜치와 epic/<번호> push: <허용 / 허용하지 않음>
+- develop 병합과 배포: 하지 않음 (따로 요청할 때만)
+- 예산: orca-rules.md 기본값 <바꿀 값이 있으면 적기>
+
+완료 보고는 결과부터 써줘. Story별 담당 모델과 effort, 커밋, 검증 로그 경로, 남은 위험을 적고, 측정하지 못한 사용량은 unknown으로 적어줘.
 ```
 
----
+### 이어서 하기
 
-## Phase B - 리뷰 프롬프트
-
-Claude Code에서 Epic 구현 결과를 리뷰하고 보강할 때 입력합니다.
+한도나 시간 예산 때문에 멈췄거나 코디네이터를 바꿀 때 씁니다.
 
 ```text
-Epic <번호>의 구현 결과를 리뷰하고 수정해줘.
+Orca 코디네이터로 Epic <번호> 작업을 이어서 해줘.
 
-이 Epic은 <무엇을 위한 것인지>이고, 가장 걱정되는 건 <어떤 위험인지>야.
+AGENTS.md의 Orca 개발 루틴과 docs/agents/orca-rules.md를 따라줘.
+plans/epic-<번호>-orca.md, reviews/epic-<번호>/orca-runs.md, state/epic-<번호>-progress.json, 현재 Git 상태를 대조해서 멈춘 지점부터 진행해줘.
+끝난 Story를 다시 리뷰하거나 검증하지 말고, 멈춘 원인이 해결됐는지 먼저 확인해줘.
 
-sprint-status.yaml에서 review 상태인 story를 확인해줘.
-각 story를 bmad-code-review로 리뷰해줘.
-REJECTED 항목은 직접 수정하고, 누락된 테스트를 보강해줘.
-현재 OS에 맞는 validate와 smoke를 실행해줘.
-모든 story가 APPROVED이면 develop 브랜치에 merge할 준비 상태로 정리해줘.
+Orca 상태바 기준 남은 사용량: <풀별 %와 리셋 시각. 모르면 "모름">
+승인 범위는 처음 요청과 같아. <바뀐 점이 있으면 적기>
+```
 
-완료 보고는 결과부터 써줘. 승인·수정·검증 주장은 각각 근거가 되는 실행 결과에 연결하고, 남은 위험은 따로 적어줘.
+### Epic 통합 (develop 병합)
+
+Epic 완료 보고를 확인한 뒤 develop에 합칠 때 씁니다.
+
+```text
+Epic <번호>의 epic/<번호> 브랜치를 develop에 병합해줘.
+
+docs/agents/orca-rules.md의 완료 조건과 docs/agents/workflow-rules.md의 Epic 통합 기준을 먼저 확인해줘.
+전체 validate와 smoke 결과가 epic/<번호>의 현재 커밋 기준인지 확인하고, 아니면 다시 실행해줘.
+조건을 만족하면 develop에 병합하고, sprint-status.yaml의 epic-<번호>를 done으로 바꿔 커밋한 뒤 push해줘.
+만족하지 않으면 병합하지 말고 무엇이 남았는지 알려줘.
 ```
 
 ---
@@ -145,14 +157,15 @@ Phase C는 출시 전 배포 준비가 아니라, Epic이 끝난 뒤 반복 실�
 ```text
 Epic <번호>의 회고를 진행하고 Harness를 강화해줘.
 
-Phase B가 끝났는지 먼저 확인해줘.
-reviews/epic-<번호>/ 아래 리뷰 결과, validate 로그, codex 로그를 분석해줘.
+Epic 통합(epic/<번호>의 전체 검증)이 끝났는지 먼저 확인해줘.
+reviews/epic-<번호>/ 아래 리뷰 결과, 검증 로그, Orca 실행 기록(orca-runs.md)을 분석해줘.
 state/epic-<번호>-progress.json이 있으면 failed/skipped story를 확인해줘.
 
 반복된 REJECTED 패턴, validate 실패 패턴, 수동으로 놓치기 쉬운 실수를 찾아줘.
 필요하면 feedback/incidents/ 아래 incident YAML을 작성해줘.
 다음 Epic에서 자동으로 잡아야 하는 패턴이면 tests/regression/에 재현 테스트를 추가해줘.
 반복 규칙은 docs/agents/feedback-rules.md에 반영하고, 기계적으로 판별 가능한 치명 패턴만 validate blocking check로 승격해줘.
+orca-runs.md에서 모델별 성공·재작업·소요 시간을 정리하고, docs/agents/model-routing-rules.md의 배정을 바꿀 근거가 있으면 제안해줘.
 
 회고를 반영한 뒤 docs/agents/workflow-rules.md Phase C의 8단계(프로젝트 이해 문서 갱신)도 실행해줘.
 docs/PROJECT_MAP.md가 없으면 만들고 CLAUDE.md·AGENTS.md에 배선해줘. 있으면 이번 Epic에서 바뀐 장만 갱신해줘.
@@ -239,7 +252,9 @@ DB 마이그레이션은 AI에게 이렇게 지시합니다.
 ## 핵심 원칙
 
 - 사람은 프롬프트를 입력하고, AI가 저장소 규칙과 스크립트를 읽습니다.
-- Story 중에는 `validate-quick`, Epic 끝에는 `validate`, 리뷰 끝에는 `validate + smoke`를 사용합니다.
+- 개발은 Orca 코디네이터가 Story별로 워커에게 맡기고, 리뷰는 작성자와 다른 회사의 모델이 합니다.
+- Story 중에는 `validate-quick`, Epic 통합 끝에는 `validate + smoke`를 사용합니다.
+- develop 병합과 배포는 사람이 따로 요청할 때만 합니다.
 - Phase C는 배포 준비가 아니라 Epic 회고와 Harness 강화 단계입니다.
 - 출시 전 최종 검증과 배포 준비는 `CI/CD / Release Gate` 흐름으로 분리합니다.
 - 실제 프로젝트에서는 필수 검증 명령이 없으면 통과로 보지 않습니다.

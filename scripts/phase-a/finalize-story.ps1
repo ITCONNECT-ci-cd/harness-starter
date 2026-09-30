@@ -3,7 +3,8 @@ param(
   [string]$StoryName,
   [string]$BranchName = "",
   [string]$CommitMessage = "",
-  [switch]$AllowNoVerifyFallback
+  [switch]$AllowNoVerifyFallback,
+  [switch]$NoPush
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,7 +15,12 @@ Repair-HarnessWindowsEnvironment
 Set-Location ((& git rev-parse --show-toplevel 2>$null) | Select-Object -First 1)
 
 if ([string]::IsNullOrWhiteSpace($BranchName)) {
-  $BranchName = "story/$StoryName"
+  if ($NoPush) {
+    # Orca workers stay on the branch Orca created for their worktree.
+    $BranchName = (& git rev-parse --abbrev-ref HEAD).Trim()
+  } else {
+    $BranchName = "story/$StoryName"
+  }
 }
 if ([string]::IsNullOrWhiteSpace($CommitMessage)) {
   $CommitMessage = "feat($StoryName): implement story"
@@ -54,6 +60,12 @@ if ([string]::IsNullOrWhiteSpace(($staged -join ""))) {
     & git commit --no-verify -m $CommitMessage
     if ($LASTEXITCODE -ne 0) { throw "git commit --no-verify fallback failed" }
   }
+}
+
+# Orca workers commit locally; the coordinator pushes within the approved scope.
+if ($NoPush) {
+  Write-Host "Story committed without push (-NoPush): $BranchName"
+  exit 0
 }
 
 $push = Invoke-HarnessGitPush -Branch $BranchName

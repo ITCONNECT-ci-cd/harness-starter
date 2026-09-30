@@ -37,7 +37,7 @@ function Format-SafeUrl {
 Write-Host "======================================"
 Write-Host " Harness Doctor (Windows/Codex)"
 Write-Host "======================================"
-Write-Host "Note: doctor warnings are diagnostics. Phase A is blocked only when the"
+Write-Host "Note: doctor warnings are diagnostics. A story is blocked only when the"
 Write-Host "project validate entrypoint fails, for example ./scripts/validate-quick.ps1."
 Write-Host "Raw node/npm/npx/bun failures outside harness entrypoints are not validation gates."
 Write-Host ""

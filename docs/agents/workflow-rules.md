@@ -1,51 +1,59 @@
 # docs/agents/workflow-rules.md
 #
 # 이 프로젝트의 작업 흐름 규칙입니다.
-# BMAD + Harness Engineering 통합 워크플로우를 정의합니다.
+# BMAD + Orca + Harness Engineering 통합 워크플로우를 정의합니다.
 
 실행 범위·승인·스킬 충돌·실패 횟수·위임은 `agent-execution-rules.md`를 먼저 적용한다. 이 문서의 Phase 루프는 해당 Phase 작업이 요청됐을 때 실행한다.
 
 ## 도구별 역할 분담
 
-| Phase | 도구 | 역할 | BMAD 스킬 |
+| 단계 | 실행 | 역할 | BMAD 스킬 |
 |---|---|---|---|
-| 기획/설계 | Claude Code | PRD, Architecture, Epics 생성 | bmad-create-prd, bmad-create-architecture, bmad-create-epics-and-stories |
-| Phase A: 구현 | Codex Desktop | Story 생성 + 구현 (Epic 단위) | bmad-create-story, bmad-dev-story |
-| Phase B: 품질 보장 | Claude Code | 코드 리뷰 + 수정 + 테스트 보강 (Epic 단위) | bmad-code-review |
-| Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | 리뷰/검증 결과 분석, feedback-rules, incident, regression |
+| 기획/설계 | Claude Code (Opus 5.5) | PRD, Architecture, Epics 생성 | bmad-create-prd, bmad-create-architecture, bmad-create-epics-and-stories, bmad-sprint-planning |
+| Phase A: 구현 | Orca 구현 워커 | Story 생성 + TDD 구현 + validate-quick + 로컬 커밋 | bmad-create-story, bmad-dev-story |
+| Phase B: 리뷰·통합 | Orca 리뷰 워커 + 코디네이터 | 다른 회사 모델의 독립 리뷰, 수정, `epic/<N>` 통합, Epic 검증 | bmad-code-review |
+| Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | 리뷰/검증/Orca 실행 기록 분석, feedback-rules, incident, regression |
 
-## Phase A: Codex Desktop 흐름 (Epic 단위)
+Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 코디네이터 절차는 [Orca 개발 규칙](orca-rules.md), 모델 배정은 [모델 배정 규칙](model-routing-rules.md)을 따른다.
 
-Epic 시작 전:
-1. Windows PowerShell이면 `./scripts/doctor.ps1`로 Codex/Windows 런타임을 점검한다.
-2. 현재 OS/셸에 맞는 preflight를 실행한다.
-   - Windows PowerShell: `./scripts/phase-a/preflight.ps1 -Epic <N>`
-   - bash/WSL/macOS/Linux: README의 Loop A 사전 조건 또는 `scripts/phase-a/preflight.sh`가 있는 경우 해당 스크립트
+## Phase A·B: Orca 흐름
+
+Epic 시작 전 (코디네이터):
+1. `orca-rules.md`의 시작 확인을 한다. `state/orca/env.json`이 있고 도구 버전이 같으면 재사용한다.
+2. Windows PowerShell이면 `./scripts/doctor.ps1`로 Windows 런타임을 점검하고 `./scripts/phase-a/preflight.ps1 -Epic <N>`을 실행한다. bash/WSL/macOS/Linux에서는 같은 사전 조건(`develop` 원격 브랜치, BMAD 스킬, Epic 산출물, `sprint-status.yaml`)을 직접 확인한다.
 3. Windows/Codex에서 GitHub 원격 브랜치 존재 여부는 raw `git fetch origin develop`가 아니라 `gh api repos/<owner>/<repo>/git/ref/heads/develop` 경로로 확인한다.
+4. `develop`에서 Epic 통합 브랜치 `epic/<N>`을 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다. `sprint-status.yaml`의 `epic-<N>`을 `in-progress`로 바꿔 함께 커밋한다.
 
 BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으로 한다. 프로젝트가 Epic을 sharding한 경우 `_bmad-output/planning-artifacts/epics/` 아래 markdown 파일도 허용한다.
 
-각 story마다 순서대로:
-1. `bmad-create-story` 스킬로 story 파일 생성 (풀 컨텍스트 엔진)
-2. `bmad-dev-story` 스킬로 구현 (TDD: red-green-refactor)
-3. 현재 OS/셸에 맞는 quick validate 실행 (lint + typecheck + 변경 관련 테스트만)
-   - Windows PowerShell: `./scripts/validate-quick.ps1`
-   - bash/WSL/macOS/Linux: `./scripts/validate-quick.sh`
-4. 통과 시 **commit + push 필수**. Windows PowerShell/Codex에서는 raw git 대신:
-   `./scripts/phase-a/finalize-story.ps1 -StoryName <story-이름>`
-   이 스크립트가 최종 3~4번을 처리하므로 호출 직전에 수동 quick을 추가하지 않는다. BMAD Step 9의 `review` 전 검증은 별도 필수 게이트이며, 현재 finalizer가 그 결과를 재사용하지는 않는다. 기존 사용자 변경이 있는 작업 트리에서 실행하지 않도록 `agent-execution-rules.md`의 분리 기준을 먼저 적용한다.
-5. sprint-status.yaml 업데이트 (스킬이 자동 처리)
-6. 실패 시 수정 후 재검증. 동일 원인으로 수정 후 3회 실패하면 기록 후 skip (TDD RED 제외)
-7. 실패 Story에 의존하지 않는 다음 Story로 진행. 의존성을 확인할 수 없으면 해당 Story를 보류
+각 Story마다 순서대로:
+1. 코디네이터가 선행 Story의 해제 조건을 실제 커밋·검증 결과로 확인하고 계약(`templates/orca-worker-contract.md`)을 채운다. `sprint-status.yaml`을 `in-progress`로 바꾼다.
+2. 구현 워커가 `bmad-create-story`로 story 파일을 만들고 `bmad-dev-story`로 구현한다 (TDD: red-green-refactor).
+3. 구현 워커가 계약의 기준 커밋으로 quick validate를 실행한다 (lint + typecheck + 변경 관련 테스트만).
+   - Windows PowerShell: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/validate-quick.ps1`
+   - bash/WSL/macOS/Linux: `VALIDATE_BASE_REF=<기준 커밋> ./scripts/validate-quick.sh`
+4. 통과하면 구현 워커가 자기 브랜치에 **로컬 commit**한다. push는 하지 않는다. Windows PowerShell/Codex에서는 raw git 대신:
+   `./scripts/phase-a/finalize-story.ps1 -StoryName <story-이름> -NoPush` (현재 브랜치에 커밋하고 push하지 않음)
+   이 스크립트가 quick 검증과 커밋을 함께 처리하므로 호출 직전에 수동 quick을 추가하지 않는다. BMAD Step 9의 완료 전 검증은 별도 필수 게이트이며, 현재 finalizer가 그 결과를 재사용하지는 않는다. 기존 사용자 변경이 있는 작업 트리에서 실행하지 않도록 `agent-execution-rules.md`의 분리 기준을 먼저 적용한다.
+5. 코디네이터가 워커 보고와 커밋을 확인하고 `sprint-status.yaml`을 `review`로 바꾼다. 워커는 `sprint-status.yaml`을 고치지 않는다.
+6. 리뷰 워커(작성자와 다른 회사 모델)가 구현 커밋을 읽기 전용으로 `bmad-code-review`한다. 판정은 `REVIEW.md` 형식이다.
+7. REJECTED면 같은 구현 워커가 후속 Dispatch로 고치고 quick 검증과 커밋을 다시 한다. 재확인 범위는 `orca-rules.md` §5를 따른다.
+8. 승인되면 코디네이터가 워커 브랜치를 `epic/<N>`에 병합하고, 검증 로그·리뷰 결과·Orca 실행 기록을 `reviews/epic-<N>/`에 남기고, `sprint-status.yaml`을 `done`으로 바꾼다. 사용자가 push를 허용했으면 Story 브랜치와 `epic/<N>`을 push한다.
+9. 실패 시 구현 워커가 수정 후 재검증한다. 같은 원인으로 워커 안에서 3회 실패하면 코디네이터가 다른 후보로 1회 재배정하고, 그것도 실패하면 기록 후 보류한다 (TDD RED 제외).
+10. 실패 Story에 의존하지 않는 다음 Story로 진행한다. 의존성을 확인할 수 없으면 해당 Story를 보류한다.
 
-**중요:** validate-quick 통과한 story는 반드시 commit과 push를 완료해야 다음 story로 진행할 수 있다. push 없이 다음 story 진행은 금지.
+**중요:** 검증과 리뷰를 통과해 `epic/<N>`에 통합된 Story만 다음 Story의 기준이 된다. 위험도가 낮은 연쇄 Story는 계획에 적은 해제 조건("선행 커밋 + quick 통과")에 따라 선행 Story의 리뷰와 겹쳐 진행할 수 있다.
 
-Epic의 모든 story 완료 후:
-1. 현재 OS/셸에 맞는 전체 validate 실행
-   - Windows PowerShell: `./scripts/validate.ps1`
-   - bash/WSL/macOS/Linux: `./scripts/validate.sh`
-2. 실패 시 수정 후 현재 OS/셸에 맞는 `--from=실패단계`로 재개
-3. 전체 통과하고 failed/skipped/보류 Story가 없을 때 Phase B로 이동. 미완료 Story가 있으면 완료로 보고하지 않음
+Epic의 모든 Story 통합 후 (코디네이터):
+1. `epic/<N>`에서 현재 OS/셸에 맞는 전체 validate + smoke 실행
+   - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`
+   - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
+2. 실패 시 원인에 맞는 워커에게 수정을 맡기고 현재 OS/셸에 맞는 `--from=실패단계`로 재개
+3. 전체 통과하고 failed/skipped/보류 Story가 없을 때만 Epic 완료로 보고한다. 위험 영역 Story가 있으면 보고 전에 Opus 5.5 리뷰를 거친다
+4. 사용자가 승인하면 `epic/<N>`을 **develop**에 merge하고 push한다. develop 푸시 시 GitHub CI가 작동하고, 통과하면 develop → main으로 승격한다 (main push 시 자동 배포)
+5. sprint-status.yaml: 기획의 해당 Epic Story 목록과 대조하여 모든 Story가 done이고 필수 리뷰·검증·승인된 develop 병합이 끝났으며 failed/skipped/보류 항목이 없을 때만 `development_status[epic-N]`을 done으로 기록한다. 누락된 Story나 미완료 게이트가 있으면 Epic은 in-progress로 유지한다.
+
+주의: develop 병합과 develop → main 흐름은 승인 후 통합/배포 경로입니다. Phase C를 출시 전 배포 준비로 해석하지 않습니다.
 
 **--from 옵션:** 테스트에서 실패했으면 `--from=test`, 빌드에서 실패했으면 `--from=build`로 해당 단계부터 재실행. 처음부터 다시 돌리지 않음.
 
@@ -55,33 +63,19 @@ Epic의 모든 story 완료 후:
 
 **Windows/Codex 원칙:** `.ps1` entrypoint는 native PowerShell 경로다. Git Bash 또는 WSL을 내부 필수 의존성으로 삼지 않는다. Bash 기반 hook이 실패하면 native validate/check 통과 후에만 no-verify fallback을 사용한다.
 
-**Windows/Codex JS 런타임 판정:** raw `node`, `npm`, `npx`, `bun` sanity check 실패만으로 Phase A를 중단하지 않는다. Codex Windows 프로세스는 기본 Windows env가 비어 있을 수 있고, harness entrypoint가 이를 복구한다. 작업 가능 여부는 `./scripts/validate-quick.ps1` 또는 `./scripts/validate.ps1` 실패로만 판정한다. `doctor.ps1`의 `node child_process` 경고는 worker/fork-heavy 도구 주의 신호이지 단독 중단 사유가 아니다.
+**Windows/Codex JS 런타임 판정:** raw `node`, `npm`, `npx`, `bun` sanity check 실패만으로 구현을 중단하지 않는다. Codex Windows 프로세스는 기본 Windows env가 비어 있을 수 있고, harness entrypoint가 이를 복구한다. 작업 가능 여부는 `./scripts/validate-quick.ps1` 또는 `./scripts/validate.ps1` 실패로만 판정한다. `doctor.ps1`의 `node child_process` 경고는 worker/fork-heavy 도구 주의 신호이지 단독 중단 사유가 아니다.
 
 **Windows/Codex GitHub 판정:** GitHub 읽기/사전 조건 확인은 `gh`를 사용한다. `scripts/lib/git-utils.ps1`는 Windows 기본 env를 복구하고, `GH_TOKEN`이 없으면 Git credential helper의 GitHub 토큰을 재사용한다. `fatal: unable to access ... getaddrinfo() thread failed to start`가 raw git 네트워크 호출에서 발생하면 원격 장애로 단정하지 말고 `./scripts/phase-a/preflight.ps1 -Epic <N>`로 재확인한다. 이 경로에서 토큰 없음/권한 부족이 확인될 때만 새 PAT를 요청한다.
 
-Codex 모델·reasoning 기본값은 `.codex/config.toml` 한 곳에서 관리한다. Desktop 기존 작업의 사용자 선택과 CLI의 명시적 오버라이드를 존중한다. 적용 범위는 `agent-execution-rules.md`의 모델 기본값을 참조한다.
-
-## Phase B: Claude Code 흐름 (Epic 단위)
-
-Epic 전체를 대상으로:
-1. sprint-status.yaml에서 완료된 story 확인
-2. 각 story 브랜치의 코드를 `bmad-code-review` 스킬로 리뷰
-3. REJECTED 항목 직접 수정 (Edit/Write, Hooks 자동 작동)
-4. 누락 테스트 보강
-5. 현재 OS/셸에 맞는 `validate` + `smoke` 최종 검증 (이미 Epic 단위 validate를 통과했으므로 재확인 성격)
-6. 모든 story APPROVED 후 **develop** 브랜치에 merge
-7. develop 푸시 시 GitHub CI 작동, 통과하면 develop → main으로 승격 (main push 시 자동 배포)
-8. sprint-status.yaml의 각 Story를 review → done으로 업데이트한다. 기획의 해당 Epic Story 목록과 대조하여 모든 Story가 done이고 필수 리뷰·검증·승인된 통합이 끝났으며 failed/skipped/보류 항목이 없을 때만 `development_status[epic-N]`도 done으로 기록한다. 누락된 Story나 미완료 게이트가 있으면 Epic은 in-progress로 유지한다.
-
-주의: Phase B의 validate/smoke와 develop → main 흐름은 승인 후 통합/배포 경로입니다. Phase C를 출시 전 배포 준비로 해석하지 않습니다.
+모델·effort 기준은 `model-routing-rules.md` 한 곳에서 관리한다. Orca 워커는 기동할 때 모델과 effort를 명시하고, `.codex/config.toml`은 Codex를 직접 열 때의 기본값이다. 적용 범위는 `agent-execution-rules.md`의 모델 기본값을 참조한다.
 
 ## Phase C: Claude Code 회고 + Harness 강화 (Epic 완료 후)
 
 Phase C는 출시 전 최종 검증이나 배포 준비가 아니라, 완료된 Epic에서 배운 실패 패턴을 다음 Epic 전에 하네스에 반영하는 회고 단계입니다.
 출시 전 검증과 배포 준비는 CI/CD 또는 Release Gate 흐름에서 별도로 다룹니다.
 
-Phase B 완료 후 실행:
-1. `reviews/epic-N/` 아래 리뷰 결과 (*.md + logs/*-validate.log + *-codex.log) 분석
+Epic 통합(Phase B) 완료 후 실행:
+1. `reviews/epic-N/` 아래 리뷰 결과(*.md), 수집한 검증 로그(logs/*.log), Orca 실행 기록(orca-runs.md) 분석. orca-runs.md에서 모델·작업 유형별 성공·재작업·시간을 정리해 `model-routing-rules.md` 조정 근거로 쓴다
 2. `state/epic-N-progress.json`에서 failed/skipped story 확인
 3. 반복된 REJECTED 패턴과 validate 실패 패턴을 식별
 4. `feedback/incidents/`에 incident YAML 생성 (incident-template.yaml 참고)
@@ -108,14 +102,14 @@ Phase B 완료 후 실행:
      `docs/SPEC.html` 신규 생성은 이미 요청·승인됐으면 진행하고, 아니면 생성 여부를 한 번 확인합니다. 추가 사람용 문서는 승인된 파일명·대상 독자·범위가 있을 때만 생성합니다. 거절된 선택 문서는 완료 조건에서 제외합니다.
      **판정**: `_bmad-output/implementation-artifacts/sprint-status.yaml`의 `development_status`에서 정규식 `^epic-[0-9]+$`에 맞는 Epic 키만 봅니다. `epic-N-retrospective`와 Story 키는 제외합니다.
      이번 Epic 키가 존재하고 `done`이며, 나머지 Epic이 모두 `done`이고, 기획의 Epic 목록과 일치할 때 마지막으로 판정합니다. 파일·키 누락, 알 수 없는 상태, 목록 불일치는 미확정으로 보고 필요한 정보만 확인합니다. 빈 목록을 마지막 Epic으로 간주하지 않습니다.
-     모든 Story가 done인데 Epic 키만 in-progress라면 Phase B 8번의 기획 목록·리뷰·검증·통합 근거를 확인합니다. 모두 충족하면 누락된 Epic 상태 갱신을 기록한 뒤 다시 판정하고, 근거가 부족하면 미확정으로 남깁니다. §10 생성을 위해 상태만 임의로 done으로 바꾸지 않습니다.
+     모든 Story가 done인데 Epic 키만 in-progress라면 Phase A·B 「Epic의 모든 Story 통합 후」 5번의 기획 목록·리뷰·검증·통합 근거를 확인합니다. 모두 충족하면 누락된 Epic 상태 갱신을 기록한 뒤 다시 판정하고, 근거가 부족하면 미확정으로 남깁니다. §10 생성을 위해 상태만 임의로 done으로 바꾸지 않습니다.
 
    회고에서 나온 반복 실수 중 **원인이 코드베이스 구조인 것**은 `PROJECT_MAP.md` §9 함정으로,
    **작업 습관인 것**은 `docs/agents/feedback-rules.md`로 보냅니다 (중복 방지).
 
    검증: 커버리지(양방향 diff)·경로 실존·근거 생존을 스크립트로 확인해 0건을 봅니다.
    **재생성 스크립트는 리포에 남깁니다** — 안 남기면 다음 Epic에서 재현되지 않습니다.
-9. **`.claude/hooks/`는 Claude Phase B에만 적용됨** — 공통 강제는 validate 진입점 양쪽(`validate.sh`·`validate.ps1`) 또는 CI 우선
+9. **`.claude/hooks/`는 Claude Code 세션(코디네이터·워커)에만 적용됨** — Codex·Gemini 워커에도 걸리는 공통 강제는 validate 진입점 양쪽(`validate.sh`·`validate.ps1`), git hook, CI 우선
 10. **완료 기준**: harness 파일(validate, rules, hooks)을 수정했으면 반드시 현재 OS/셸에 맞는 검증을 재실행하여 harness 자체가 깨지지 않았는지 확인
    - Windows PowerShell: `./scripts/validate.ps1`
    - bash/WSL/macOS/Linux: `bash -n scripts/validate.sh && ./scripts/validate.sh`
@@ -150,23 +144,25 @@ BMAD 풀코스가 필요 없는 간단한 작업:
 
 ## 브랜치 규칙
 
-회사 표준 흐름: `story/* → develop → main → 자동 배포`
+회사 표준 흐름: `story/* → epic/* → develop → main → 자동 배포`
 
-- story별 브랜치: `story/<story-이름>`
-- develop: 개발 통합 브랜치 (모든 story가 먼저 merge되는 곳)
+- story별 브랜치: Orca 구현 워커의 브랜치. 가능하면 `story/<story-이름>`으로 맞추고, Orca가 정한 이름이면 `orca-runs.md`에 기록
+- `epic/<N>`: Epic 통합 브랜치. 리뷰 승인된 Story를 코디네이터가 병합하고, 다음 Story 워크트리의 기준이 된다
+- develop: 개발 통합 브랜치 (Epic 검증과 사용자 승인 후 병합)
 - main: 배포 브랜치 (push 시 사내 Docker 서버로 자동 배포)
-- Phase A에서는 story 브랜치에 커밋
-- Phase B에서 APPROVED 후 **develop에 merge** (main 직접 push 금지)
+- 구현 워커는 자기 story 브랜치에 커밋만 한다. push·merge는 코디네이터가 승인 범위 안에서 한다
+- Epic 검증·승인 후 `epic/<N>`을 **develop에 merge** (main 직접 push 금지)
 - CI가 develop에서 통과하면 develop → main 승격 PR 생성
 - main과 develop은 항상 검증 통과 상태 유지
-- merge된 story 브랜치는 Phase C 회고 단계에서 `scripts/cleanup-branches.sh`로 정리됨 (archive tag로 복구 보존)
+- merge된 story·epic 브랜치는 Phase C 회고 단계에서 `scripts/cleanup-branches.sh`로 정리됨 (archive tag로 복구 보존)
 
 ## 실패 처리
 
-- Phase A validate-quick 실패: Codex가 수정 후 재시도 (3회까지)
-- Phase A validate.sh (Epic 단위) 실패: `--from=실패단계`로 재개, 처음부터 다시 돌리지 않음
-- Phase B 리뷰 거부: Claude Code가 직접 수정
-- 같은 원인의 수정 후 3회 실패: `agent-execution-rules.md`에 따라 실패 근거를 남기고 해당 Story 및 의존 Story를 미완료로 표시. 독립 Story만 진행
+- 구현 워커의 validate-quick 실패: 워커가 수정 후 재시도 (같은 원인 3회까지, TDD RED 제외)
+- 워커 안에서 3회 실패: 코디네이터가 실패 근거를 넘겨 다른 후보 모델로 1회 재배정
+- Epic 단위 validate 실패: 코디네이터가 수정 워커를 배정하고 `--from=실패단계`로 재개, 처음부터 다시 돌리지 않음
+- 리뷰 REJECTED: 같은 구현 워커가 후속 Dispatch로 수정
+- 재배정까지 실패: `agent-execution-rules.md`에 따라 실패 근거를 남기고 해당 Story 및 의존 Story를 미완료로 표시. 독립 Story만 진행
 
 ## Hang/Timeout 가드
 

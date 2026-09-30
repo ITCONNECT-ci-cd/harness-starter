@@ -79,7 +79,7 @@ Brownfield 정상 경로에서는 install.sh 직후 harness 파일들이 uncommi
 
 ```bash
 # harness 설치 경로 (install.sh의 ESSENTIAL_PATHS와 일치)
-HARNESS_RE='^(CLAUDE\.md|AGENTS\.md|REVIEW\.md|README-brownfield\.md|\.gitattributes|\.gitleaks\.toml|docs/agents/|docs/checklists/|docs/future-upgrades/|docs/decisions/README\.md|docs/org/docker-port-registry\.template\.md|templates/|scripts/|\.claude/hooks/|\.claude/settings\.json|\.githooks/|\.github/workflows/(ci|security|release|deploy|dependabot-auto-merge)\.yml|\.github/dependabot\.yml|state/learning-loop\.json|state/progress-template\.json|state/README\.md|feedback/incident-template\.yaml|feedback/incidents/README\.md|reviews/README\.md|plans/README\.md|private/README\.md)'
+HARNESS_RE='^(CLAUDE\.md|AGENTS\.md|GEMINI\.md|REVIEW\.md|README-brownfield\.md|\.gitattributes|\.gitleaks\.toml|\.codex/config\.toml|docs/agents/|docs/checklists/|docs/future-upgrades/|docs/decisions/README\.md|docs/org/docker-port-registry\.template\.md|templates/|scripts/|\.claude/hooks/|\.claude/settings\.json|\.githooks/|\.github/workflows/(ci|security|release|deploy|dependabot-auto-merge)\.yml|\.github/dependabot\.yml|state/learning-loop\.json|state/progress-template\.json|state/README\.md|feedback/incident-template\.yaml|feedback/incidents/README\.md|reviews/README\.md|plans/README\.md|private/README\.md)'
 
 TOTAL_DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
 NON_HARNESS_DIRTY=$(git status --porcelain | awk '{ $1=""; sub(/^ /,""); print }' \
@@ -1272,7 +1272,7 @@ git push
 ### 다음 단계
 - 팀에 "harness 도입됨" 공지 (커밋 범위: <A..B>)
 - docs/agents/ 규칙 파일 팀 리뷰
-- 첫 Epic으로 Phase A/B/C 흐름 시험 적용
+- 첫 Epic으로 Orca 개발 흐름(Story 2~3개)과 Phase C 회고 시험 적용
 - [CI rename yes인 경우] GitHub의 기존 required status checks 이름
   업데이트 확인
 
@@ -1399,7 +1399,7 @@ git commit -am "revert(harness): restore CLAUDE.md from legacy"
 | Monorepo에서 루트만 적용 → 개별 패키지에서 validate 안 됨 | 각 패키지에서 프롬프트 재실행 (scope=per-package) 또는 수동으로 scripts 복사 |
 | Python 프로젝트인데 scripts/validate.sh가 npm 그대로 | 4단계 커스터마이징이 제대로 안 됨. 수동으로 validate.sh 편집하여 `ruff check`, `pytest` 등으로 교체 |
 | Windows에서 install.sh 실행 안 됨 | `install.ps1` 사용. 검증 진입점(`validate.ps1`, `validate-quick.ps1`, `smoke.ps1`)은 native PowerShell이며 Git Bash가 필수 조건이 아님 |
-| Codex Desktop Windows에서 git/node/validate가 Claude와 다르게 실패 | `./scripts/doctor.ps1`로 Windows env, Git, Node child-process 상태를 먼저 확인. Phase A에서는 `./scripts/phase-a/preflight.ps1`와 `./scripts/phase-a/finalize-story.ps1` 사용 |
+| Windows에서 Codex 워커의 git/node/validate가 Claude와 다르게 실패 | `./scripts/doctor.ps1`로 Windows env, Git, Node child-process 상태를 먼저 확인. Epic 시작 전에는 `./scripts/phase-a/preflight.ps1`, Windows 구현 워커의 커밋은 `./scripts/phase-a/finalize-story.ps1 -NoPush` 사용 |
 
 ---
 

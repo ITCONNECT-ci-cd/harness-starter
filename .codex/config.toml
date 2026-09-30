@@ -1,3 +1,4 @@
-# Project defaults. See docs/agents/agent-execution-rules.md.
-model = "gpt-6-astra"
-model_reasoning_effort = "high"
+# Codex를 직접 열 때의 프로젝트 기본값. Orca 워커는 기동할 때 --model/--effort를 명시한다.
+# 모델 기준: docs/agents/model-routing-rules.md (GPT-6 Sol). 실제 등록 ID는 설치된 Codex에서 확인한다.
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
