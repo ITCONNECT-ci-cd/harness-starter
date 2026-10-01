@@ -170,6 +170,40 @@ docs/agents/orca-rules.md의 완료 조건과 docs/agents/workflow-rules.md의 E
 
 ---
 
+## 가벼운 수정 - Quick Flow 프롬프트
+
+BMAD 기획(PRD·Epic)과 Orca 없이, Claude Code 한 세션에서 끝내는 작은 수정에 씁니다. `bmad-quick-dev` 스킬이 내용 정리, 구현, 리뷰, 결과 보고까지 진행합니다. Claude Code를 Sonnet 5.5 / medium으로 열고 입력합니다(기본 effort가 xhigh라 medium을 직접 지정합니다).
+
+```text
+bmad-quick-dev로 진행해줘.
+
+수정 내용: <무엇을 어떻게 바꿀지. 예: 로그인 화면의 오류 문구를 "..."로 바꿔줘>
+작업 브랜치: develop에서 fix/<짧은 이름> 브랜치를 만들어 작업해줘.
+진행 범위: <구현까지 해줘 / 계획만 보여 주고 내 OK를 기다려줘>
+끝나면 현재 OS에 맞는 validate-quick을 실행하고 로컬 커밋까지만 해줘. push는 하지 마.
+```
+
+스킬이 수정 크기에 따라 진행 방식을 고릅니다.
+
+| 경우 | 진행 |
+|---|---|
+| 아주 작고 다른 곳에 영향이 없음 (문구, 오타, 스타일) | 바로 수정 → 스스로 리뷰 → 검증 → 로컬 커밋 |
+| 그 밖의 경우 (작은 기능, 버그 수정) | 짧은 계획서(`_bmad-output/implementation-artifacts/spec-<이름>.md`) 작성 → 구현 → 리뷰 → 보고 |
+
+- 결과를 확인한 뒤 "fix 브랜치를 push하고 develop에 병합해줘"처럼 따로 요청해야 올라갑니다. main에는 직접 올리지 않습니다.
+- 스킬 이름 없이 "이거 고쳐줘"라고만 해도 Quick Flow로 처리됩니다. 위 프롬프트처럼 브랜치와 진행 범위를 적으면 결과가 더 일정합니다.
+
+다음 경우에는 Quick Flow 대신 다른 흐름을 씁니다.
+
+| 상황 | 대신 할 것 |
+|---|---|
+| 따로 배포할 수 있는 목표가 2개 이상 | 하나씩 나눠 요청 |
+| 요구사항이 불분명하거나 설계 결정이 필요 | 「먼저 고르기」의 BMAD 기획부터 |
+| 인증·결제·개인정보·DB 마이그레이션처럼 위험이 높음 | 「개발 - Orca 프롬프트」 (다른 회사 모델의 리뷰가 붙음) |
+| Docker·DB 작업 | 크기와 상관없이 「Docker / DB 작업 프롬프트」와 `AGENTS.md`의 의무 규칙 |
+
+---
+
 ## Phase C - Epic 회고 + Harness 강화 프롬프트
 
 Phase C는 출시 전 배포 준비가 아니라, Epic이 끝난 뒤 반복 실수와 검증 실패를 하네스에 반영하는 회고 단계입니다.
@@ -274,6 +308,7 @@ DB 마이그레이션은 AI에게 이렇게 지시합니다.
 
 - 사람은 프롬프트를 입력하고, AI가 저장소 규칙과 스크립트를 읽습니다.
 - 개발은 Orca 코디네이터가 Story별로 워커에게 맡기고, 리뷰는 작성자와 다른 회사의 모델이 합니다.
+- 작은 수정은 Orca 없이 Claude Code 한 세션의 Quick Flow(`bmad-quick-dev`)로 합니다.
 - Story 중에는 `validate-quick`, Epic 통합 끝에는 `validate + smoke`를 사용합니다.
 - develop 병합과 배포는 사람이 따로 요청할 때만 합니다.
 - Phase C는 배포 준비가 아니라 Epic 회고와 Harness 강화 단계입니다.

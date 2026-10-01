@@ -142,6 +142,9 @@ BMAD 풀코스가 필요 없는 간단한 작업:
 - Claude Code에서 `bmad-quick-dev` 스킬 사용
 - 또는 `bmad-agent-quick-flow-solo-dev` (Barry) 호출
 - spec → implement → review → present를 한 세션에서 처리
+- 모델은 Sonnet 5.5 / medium ([모델 배정 규칙](model-routing-rules.md)의 「그 밖의 역할」)
+- 사용자가 브랜치를 정하지 않으면 develop(없으면 기본 브랜치)에서 `fix/<이름>` 브랜치를 만들어 작업한다. main에 직접 커밋하지 않는다
+- 검증은 현재 OS/셸에 맞는 validate-quick. 커밋은 로컬까지 하고, push·병합은 사용자가 요청할 때만 한다
 
 ## 브랜치 규칙
 
