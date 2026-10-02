@@ -11,7 +11,7 @@ import { claudeUsage, claudeVerdict } from "../orca/claude-usage.mjs";
 import { codexVerdict, lastLimits } from "../orca/codex-usage.mjs";
 import { install, settingsKey as installKey, uninstall } from "../orca/install-statusline-tee.mjs";
 import { readLimits, stopFile } from "../orca/limits.mjs";
-import { bannerModel, briefState, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
+import { bannerModel, briefState, effortProblem, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
 import { originalCommand, settingsKey as teeKey, usageRecord } from "../orca/statusline-tee.mjs";
 
 const TMP = mkdtempSync(join(tmpdir(), "orca-scripts-"));
@@ -264,6 +264,16 @@ test("rollover — 인계 줄 상태: 제출됨·입력만·새 세션·불확�
   assert.equal(briefState(`Claude Code v2\n❯ Orca … ${m}`, m), "typed");
   assert.equal(briefState("Claude Code v2.1\n❯ ", m), "fresh");
   assert.equal(briefState("● 무언가\n  ⎿ 결과\n❯ ", m), "uncertain");
+});
+
+test("rollover — 코디네이터 effort 하한: Sonnet은 high 이상, 그 밖은 medium 이상, 어휘 밖은 거부", () => {
+  assert.match(effortProblem("claude-sonnet-5-5", "medium"), /하한은 high/);
+  assert.match(effortProblem("sonnet", "low"), /하한은 high/);
+  assert.equal(effortProblem("claude-sonnet-5-5", "high"), null);
+  assert.equal(effortProblem("claude-sonnet-5-5", "xhigh"), null);
+  assert.equal(effortProblem("claude-opus-5-5", "medium"), null);
+  assert.match(effortProblem("claude-opus-5-5", "low"), /하한은 medium/);
+  assert.match(effortProblem("claude-opus-5-5", "ultra"), /중 하나/);
 });
 
 test("rollover — 체인 형식과 인계 줄", () => {

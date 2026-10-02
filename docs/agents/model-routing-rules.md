@@ -41,18 +41,18 @@
 
 ### 3. 구현 모델과 effort
 
-effort는 위험도로 정한다. 낮음은 medium, 보통은 high, 높음은 xhigh다. 모델은 아래 표로 고른다.
+effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)로 정하고 모델별 하한을 적용한다(아래 「effort 원칙」). 그래서 Sonnet 5.5·GPT-6.1 Sol은 위험 낮음이어도 high이고, 설계 판단은 Opus 5.5라도 high부터다. 모델과 effort는 아래 표로 고른다.
 
-| 형태 \ 위험도 | 낮음 (medium) | 보통 (high) | 높음 (xhigh) |
+| 형태 \ 위험도 | 낮음 | 보통 | 높음 |
 |---|---|---|---|
-| 정형 | Gemini 3.8 Flash | Gemini 3.8 Flash | GPT-6.1 Sol |
-| 일반 | Sonnet 5.5 | Sonnet 5.5 | Opus 5.5 |
-| 연계 | GPT-6.1 Sol | GPT-6.1 Sol | GPT-6.1 Sol |
-| 설계 판단 | Opus 5.5 | Opus 5.5 | Opus 5.5 |
+| 정형 | Gemini 3.8 Flash / medium | Gemini 3.8 Flash / high | GPT-6.1 Sol / xhigh |
+| 일반 | Sonnet 5.5 / high | Sonnet 5.5 / high | Opus 5.5 / xhigh |
+| 연계 | GPT-6.1 Sol / high | GPT-6.1 Sol / high | GPT-6.1 Sol / xhigh |
+| 설계 판단 | Opus 5.5 / high | Opus 5.5 / high | Opus 5.5 / xhigh |
 
 ### 4. 리뷰 모델과 effort
 
-리뷰는 작성자와 다른 회사의 모델이 하고, effort는 구현과 같이 Story의 위험도를 따른다. Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6.1 Sol), Google(Gemini 3.8 Flash)을 서로 다른 회사로 본다. Flash는 리뷰하지 않는다.
+리뷰는 작성자와 다른 회사의 모델이 한다. 리뷰는 검증 작업이라 effort는 **최소 high**이고, 위험 높음이면 xhigh다(리뷰 모델이 Sonnet 5.5·GPT-6.1 Sol·Opus 5.5 중 무엇이든 같다). Anthropic(Sonnet 5.5, Opus 5.5), OpenAI(GPT-6.1 Sol), Google(Gemini 3.8 Flash)을 서로 다른 회사로 본다. Flash는 리뷰하지 않는다.
 
 | 작성 모델 | 위험 낮음·보통 | 위험 높음 |
 |---|---|---|
@@ -65,7 +65,7 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 
 ### 5. 대체 모델
 
-구현 모델을 쓸 수 없을 때(한도·접근 오류, 같은 원인 3회 실패 후 재배정) 바꿔 쓸 모델이다. 배정안에 함께 적어 승인받는다. effort는 원래와 같이 위험도를 따른다.
+구현 모델을 쓸 수 없을 때(한도·접근 오류, 같은 원인 3회 실패 후 재배정) 바꿔 쓸 모델이다. 배정안에 함께 적어 승인받는다. effort는 위험도와 **대체 모델의** 하한을 따른다(예: Gemini 3.8 Flash / medium의 대체가 Sonnet 5.5면 high).
 
 | 구현 모델 | 대체 모델 |
 |---|---|
@@ -89,16 +89,28 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 
 - 승인된 배정안은 `plans/epic-<N>-orca.md`에 승인 날짜와 함께 기록하고 커밋한다.
 - 승인 후 기록만 하고 진행해도 되는 변경: 승인된 대체 모델로의 전환, 위험도가 계획보다 높게 드러났을 때 리뷰를 위험 높음 기준으로 올리는 것. 바꾼 사실과 이유는 `orca-runs.md`와 최종 보고에 적는다.
-- 다시 승인받아야 하는 변경: 배정안에 없는 모델, effort를 위험도 기준보다 올리거나 내리는 것, 리뷰 생략이나 약화, Story 추가·분할.
+- 다시 승인받아야 하는 변경: 배정안에 없는 모델, effort를 「effort 원칙」의 기준보다 올리거나 내리는 것(하한 아래로는 승인으로도 내리지 않는다), 리뷰 생략이나 약화, Story 추가·분할.
 - 무인 진행(시작 프롬프트에서 고른 경우)이면 OK를 기다리지 않고 배정안을 적용하고, Story 분할은 부모 행을 물려받아 기록하고 진행한다. 나머지 재승인 대상은 하지 않고 그 Story를 보류한다. 기준은 [Orca 개발 규칙](orca-rules.md) §4.2이고, 사람은 `owner-digest.md`를 읽고 뒤집는다.
 
 ## effort 원칙
 
-- Story 작업의 effort는 위험도로 정한다: 낮음 medium, 보통 high, 높음 xhigh. 구현·리뷰·대체 모델 모두 같다. low는 Flash의 조사 작업에만 쓴다.
+- Story 작업의 effort는 위험도로 정한다: 낮음 medium, 보통 high, 높음 xhigh. 여기에 모델·역할별 **하한**을 적용해 둘 중 높은 값을 쓴다.
+
+  | 대상 | 하한 | 이유 |
+  |---|---|---|
+  | Sonnet 5.5 | high (모든 역할) | 운영 결정(2026-10-02): 품질 우선. effort를 낮추면 도구 호출과 확인이 줄어든다(Claude effort 문서) — 워커의 재작업이 그보다 비싸다고 본다. 효과는 `orca-runs.md` 기록으로 확인한다 |
+  | GPT-6.1 Sol | high (Orca 워커의 모든 역할) | 같은 운영 결정. Codex에서 effort를 빠뜨리면 low로 돈다 — 아래 「도구마다 기본 effort」 |
+  | 리뷰·검증(모든 모델) | high, 위험 높음은 xhigh | 놓친 결함은 뒤에서 더 비싸다 |
+  | 설계 판단·원인 분석(Opus 5.5) | high | 난이도가 높은 일이다 |
+  | Opus 5.5의 그 밖의 일 | medium (Opus 5.5의 기본값) | 조정·명령 실행·기획 대화. 판단이 어려워지면 high |
+  | Gemini 3.8 Flash | 위험도 기준 그대로, 조사는 low | |
+
+- 모델이 스스로 effort 수준을 올리지 않는다. 같은 수준 안에서 생각의 깊이만 조절하므로, 어려운 일·검증에 높은 수준을 쓰려면 배정안에 그 값을 적어 띄워야 한다.
+- low는 Flash의 조사 작업에만 쓴다.
 - 모델이 그 수준을 지원하지 않으면 지원하는 가장 가까운 수준을 배정안에 적어 승인받는다. 지원 수준은 시작 확인에서 `state/orca/env.json`에 기록한 값을 따른다.
 - max와 경쟁 풀이(같은 범위를 여러 모델이 동시에 구현)는 자동으로 쓰지 않는다. 같은 원인으로 실패한 근거가 있으면 사용자 승인을 받아 쓸 수 있다.
 - Codex의 ultra는 추론에 더해 작업을 하위 에이전트에게 자동으로 나눠 맡기는 수준이다. 워커는 다른 에이전트를 띄우지 않으므로 Orca 워커에는 쓰지 않는다.
-- 도구마다 기본 effort가 다르다. Claude Code는 xhigh, Codex의 GPT-6.1 Sol은 low다(API 기본값 medium과 다름). 워커와 직접 여는 세션은 effort를 항상 명시하고, 지정하지 않았다면 그 도구의 기본값으로 실행된 것으로 기록한다.
+- 도구마다 기본 effort가 다르다. Claude Code는 xhigh, Codex의 GPT-6.1 Sol은 low다(API 기본값 medium과 다름). 워커와 직접 여는 세션은 effort를 항상 명시하고, 지정하지 않았다면 그 도구의 기본값으로 실행된 것으로 기록한다. Codex를 직접 열 때의 기본값은 `.codex/config.toml`의 medium이다 — 이 줄을 지우면 low로 돌므로 지우거나 낮추지 않는다(Orca 워커는 위 하한대로 high 이상을 명시한다).
 - 같은 effort 이름이라도 모델마다 토큰 예산이 다르다. 지원되지 않는 effort를 전달하지 않고, 실제로 적용된 값을 기록한다.
 - 권한·자격증명·환경 누락으로 실패하면 모델이나 effort를 올려 재시도하지 않는다. 모델을 바꿔도 테스트·데이터 보호·독립 리뷰 기준은 낮추지 않는다.
 
@@ -106,8 +118,8 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 
 | 선택 | 모델 / effort | 언제 |
 |---|---|---|
-| 기본 | Sonnet 5.5 / medium (Claude Code) | 대부분의 Epic |
-| 상향 | Opus 5.5 / medium (Claude Code) | 위험 높음 Story가 Epic의 절반 이상이거나, 기록상 코디네이터의 판정·계약 작성 오류가 반복될 때 |
+| 기본 | Sonnet 5.5 / high (Claude Code) | 대부분의 Epic (Sonnet 하한 high) |
+| 상향 | Opus 5.5 / medium (Claude Code) | 위험 높음 Story가 Epic의 절반 이상이거나, 기록상 코디네이터의 판정·계약 작성 오류가 반복될 때. 오류가 Opus / medium에서도 반복되면 Opus 5.5 / high |
 
 - 코디네이터의 일은 대부분 짧은 보고 읽기, 명령 실행, 계약 작성이다. 가장 어려운 판단인 모델 배정은 사용자가 승인하고, 위험 Story에는 강한 모델의 독립 리뷰가 따로 붙는다. 그래서 기본은 최상위 모델이 아니어도 된다.
 - 코디네이터는 Epic 내내 켜져 있어 호출 횟수가 가장 많은 역할이다. Opus 5.5는 판단이 어려운 Epic에만 쓴다.
@@ -120,9 +132,9 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 |---|---|---|
 | BMAD 기획·설계 (사람과 대화) | Opus 5.5 / medium, 어려운 결정은 high | Claude Code에서 `/model`과 effort를 직접 고른다 |
 | 원인 불명 장애·심층 분석 | Opus 5.5 / high | 읽기 전용 조사로 맡기고 편집은 구현 워커가 한다 |
-| 코드 조사·로그 분석 | Gemini 3.8 Flash / low, 범위가 넓으면 Sonnet 5.5 / medium | validate 요약 출력으로 충분하면 따로 맡기지 않는다 |
-| Phase C 회고 | Sonnet 5.5 / medium, 패턴 판단이 어려우면 Opus 5.5 / high | |
-| Quick Flow 단독 작업 | Sonnet 5.5 / medium | |
+| 코드 조사·로그 분석 | Gemini 3.8 Flash / low, 범위가 넓으면 Sonnet 5.5 / high | validate 요약 출력으로 충분하면 따로 맡기지 않는다 |
+| Phase C 회고 | Sonnet 5.5 / high, 패턴 판단이 어려우면 Opus 5.5 / high | |
+| Quick Flow 단독 작업 | Sonnet 5.5 / high | |
 
 ## 설정 위치
 
@@ -144,7 +156,7 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 - Epic 완료 보고(시험 운영이면 멈출 때의 보고)에 표의 칸(작업 형태 × 위험도)별 요약과 아래 기준에 걸린 칸의 조정 제안을 붙인다. 모델의 무게 순서는 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5다.
   - 올림 제안: 같은 칸에서 첫 리뷰 REJECTED나 대체 모델 전환이 그 칸 Story의 절반 이상이면, 그 칸의 구현 모델을 한 단계 무거운 모델로 바꾸는 안을 낸다.
   - 내림 제안: 같은 칸에서 Story 3개 이상이 모두 첫 리뷰에 APPROVED이고 시간 예산의 절반 안에 끝났으면, 한 단계 가벼운 모델로 바꾸는 안을 낸다. 위험 높음 칸은 GPT-6.1 Sol과 Opus 5.5 사이에서만 바꾼다.
-  - Story가 2개 이하인 칸은 요약만 하고 제안하지 않는다. effort는 위험도 기준을 유지한다.
+  - Story가 2개 이하인 칸은 요약만 하고 제안하지 않는다. effort는 「effort 원칙」(위험도 + 하한)을 유지한다.
 - 진행 중인 Epic에서는 승인된 제안을 남은 Story의 배정안 행에만 반영한다. 이 문서의 표는 Phase C 회고에서 제안과 기록을 검토해 고친다.
 - 기록이 쌓이기 전에는 이 배분이 품질·속도·비용을 개선한다고 보장하지 않는다.
 

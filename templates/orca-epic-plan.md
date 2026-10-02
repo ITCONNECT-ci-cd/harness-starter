@@ -12,14 +12,14 @@ BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 �
 - 진행 범위: <전체 Story | 처음 N개 Story만 하고 결과와 조정 제안을 보고한 뒤 멈춤>
 - 승인 범위: Story 브랜치와 epic/<N> push <허용 | 허용하지 않음>, develop 병합 <요청 시에만>
 - 예산: 기본값(orca-rules.md §8) <또는 사용자가 바꾼 값>
-- 코디네이터: <Sonnet 5.5 / medium | Opus 5.5 / medium> (등록 ID: <확인한 ID>)
+- 코디네이터: <Sonnet 5.5 / high | Opus 5.5 / medium> (등록 ID: <확인한 ID>)
 - 진행 방식: <승인 대기 | 무인 — 결정은 reviews/epic-<N>/owner-digest.md> (orca-rules.md §4)
 - 코디네이터 인계: Story <3>개마다, 체인 상한 <ceil(Story 수 / 주기) + 2>, Orca Run <run id> (orca-rules.md §11)
 - 사용량 가드: <꺼짐 | 켜짐 — ~/.orchestrator/limits.json> (orca-rules.md §8.1)
 
 ## 모델 배정안
 
-선택 방법은 `docs/agents/model-routing-rules.md`를 따른다. effort는 위험도로 정한다: 낮음 medium, 보통 high, 높음 xhigh.
+선택 방법은 `docs/agents/model-routing-rules.md`를 따른다. effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)에 모델·역할별 하한을 적용한다: Sonnet 5.5·GPT-6.1 Sol·모든 리뷰는 최소 high, 설계 판단 Opus 5.5는 최소 high.
 
 | Story | 위험도 | 형태 | 구현 모델 / effort | 리뷰 모델 / effort | 대체 모델 | 이유 |
 |---|---|---|---|---|---|---|

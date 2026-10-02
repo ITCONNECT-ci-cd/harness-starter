@@ -16,7 +16,7 @@
  *
  * 사용:
  *   인계:  node scripts/orca/session-rollover.mjs --worktree <코디네이터 체크아웃 절대 경로> --brief-file <인계문.md>
- *            --title "<프로젝트> 코디네이터 Epic <N> #<k>" --chain <n>/<max> --model <코디네이터 모델 ID> [--effort medium]
+ *            --title "<프로젝트> 코디네이터 Epic <N> #<k>" --chain <n>/<max> --model <코디네이터 모델 ID> --effort <high|medium…>
  *            [--run-id <Orca Run ID>] [--unattended] [--skip-permissions] [--agent-cmd "<직접 지정>"] [--stop-name <이름>] [--wait-ms 90000]
  *            [--no-predecessor] [--dry-run]
  *   정리:  node scripts/orca/session-rollover.mjs --close-predecessor <terminal handle> [--wait-ms 1800000]
@@ -76,6 +76,19 @@ export function bannerModel(screen) {
   return (/\b((?:Opus|Sonnet|Fable|Haiku)[^\n·]*?)\s*(?:·|with |$)/m.exec(screen)?.[1] ?? "").trim() || null;
 }
 
+const EFFORT_ORDER = ["low", "medium", "high", "xhigh", "max"];
+
+/**
+ * 코디네이터 모델·effort가 하한을 지키나(docs/agents/model-routing-rules.md 「effort 원칙」).
+ * Sonnet은 high 이상, 그 밖(Opus 등)은 medium 이상. 어휘 밖 effort도 거부한다. 문제가 없으면 null, 있으면 사유.
+ */
+export function effortProblem(model, effort) {
+  const i = EFFORT_ORDER.indexOf(effort);
+  if (i < 0) return `effort는 ${EFFORT_ORDER.join("|")} 중 하나 (받은 값: ${effort})`;
+  const floor = /sonnet/i.test(model) ? "high" : "medium";
+  return i < EFFORT_ORDER.indexOf(floor) ? `${model}의 effort 하한은 ${floor}다 (받은 값: ${effort})` : null;
+}
+
 /** "n/max" → {n,max}; 형식이 틀리거나 1 미만·안전한 정수 밖이면 null. */
 export function parseChain(s) {
   const m = /^(\d+)\/(\d+)$/.exec(s ?? "");
@@ -118,7 +131,7 @@ export function handoffLine({ relBrief, unattended, runId, predecessor }) {
 // ── 실행 ────────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const a = { worktree: null, briefFile: null, title: null, chain: null, agentCmd: null, model: null, effort: "medium", runId: null, unattended: false, stopName: null, waitMs: 90_000, waitMsSet: false, dryRun: false, noPredecessor: false, closePredecessor: null };
+  const a = { worktree: null, briefFile: null, title: null, chain: null, agentCmd: null, model: null, effort: null, runId: null, unattended: false, stopName: null, waitMs: 90_000, waitMsSet: false, dryRun: false, noPredecessor: false, closePredecessor: null };
   const valued = { "--worktree": "worktree", "--brief-file": "briefFile", "--title": "title", "--chain": "chain", "--agent-cmd": "agentCmd", "--model": "model", "--effort": "effort", "--run-id": "runId", "--stop-name": "stopName", "--close-predecessor": "closePredecessor" };
   for (let i = 0; i < argv.length; i += 1) {
     const k = argv[i];
@@ -230,7 +243,18 @@ function closePredecessor(a) {
 
 function handoff(a) {
   if (!a.worktree || !a.briefFile || !a.title || !a.model) {
-    console.error("필수: --worktree <경로> --brief-file <파일> --title <탭 제목> --model <코디네이터 모델 ID>");
+    console.error("필수: --worktree <경로> --brief-file <파일> --title <탭 제목> --model <코디네이터 모델 ID> --effort <수준>");
+    return 1;
+  }
+  // effort는 기본값을 두지 않는다 — 모델마다 하한이 달라(Sonnet high, Opus medium) 하나의 기본값이 틀린 쪽이 된다.
+  // 시험(--dry-run)은 아무 값이나 받는다(계산 문제만 보낸다).
+  if (!a.effort) {
+    console.error("--effort가 필요하다(코디네이터 모델의 하한 이상 — Sonnet 5.5는 high, Opus 5.5는 medium)");
+    return 1;
+  }
+  const effortWhy = a.dryRun ? null : effortProblem(a.model, a.effort);
+  if (effortWhy) {
+    console.error(`[rollover] ${effortWhy} — docs/agents/model-routing-rules.md 「effort 원칙」`);
     return 1;
   }
   a.worktree = resolve(a.worktree);
