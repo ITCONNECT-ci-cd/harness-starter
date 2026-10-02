@@ -286,6 +286,10 @@ test("rollover — 시작 배너의 effort: 배너 두 줄 안, 모델 이름 �
   // 입력문·작업 로그 속 같은 글자는 배너가 아니다(리뷰 재현), 컨텍스트 표기가 끼어도 읽는다
   assert.equal(bannerEffort("Claude Code v2\nSonnet 5.5 · Max\n❯ Explain with low effort\n? for shortcuts"), null);
   assert.equal(bannerEffort("Claude Code v2\n❯ Sonnet 5.5 with low effort"), null);
+  // 입력문 속 「Claude Code v…」는 배너 머리가 아니다(3차 재검증 재현)
+  assert.equal(bannerEffort("❯ Explain this Claude Code v2.1.287\n  Sonnet 5.5 with high effort\n? for shortcuts"), null);
+  assert.equal(bannerEffort("● 출력: Claude Code v2.1.287\n Sonnet 5.5 with high effort"), null);
+  assert.equal(bannerEffort("❯ 이전 입력\n ▐▛███▛█   Claude Code v2.1.287\n Sonnet 5.5 with high effort"), null);
   assert.equal(bannerEffort("Claude Code v2\nOpus 5.5 (1M context) with high effort · Max"), "high");
   assert.match(effortProblem("claude-sonnet-5-5", bannerEffort(" Claude Code v2\n Sonnet 5.5 with medium effort")), /하한은 high/);
 });

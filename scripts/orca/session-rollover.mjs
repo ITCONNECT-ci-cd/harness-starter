@@ -97,8 +97,9 @@ export function effortProblem(model, effort) {
  */
 export function bannerEffort(screen) {
   const lines = screen.split("\n");
-  const at = lines.findIndex((l) => /Claude Code v\d/.test(l));
-  if (at < 0) return null;
+  // 배너 머리 줄은 「… Claude Code v2.1.287」로 **끝나는** 줄이고, 그보다 앞에 입력 줄(❯)이 없다 — 입력문·출력문 속 같은 글자는 배너가 아니다.
+  const at = lines.findIndex((l) => /Claude Code v\d+(?:\.\d+)*\s*$/.test(l) && !/^\s*(❯|●|⎿)/.test(l));
+  if (at < 0 || lines.slice(0, at).some((l) => /^\s*❯/.test(l))) return null;
   const banner = [];
   for (const l of lines.slice(at + 1, at + 3)) {
     if (/^\s*(❯|─)/.test(l) || l.trim() === "") break;
@@ -269,6 +270,11 @@ function handoff(a) {
   // 시험(--dry-run)도 실제 모델을 띄우므로 같은 하한을 지킨다.
   if (!a.effort) {
     console.error("--effort가 필요하다(코디네이터 모델의 하한 이상 — Sonnet 5.5는 high, Opus 5.5는 medium)");
+    return 1;
+  }
+  // 모델은 셸에 그대로 들어가므로 하나의 ID(영숫자·점·하이픈)만 받는다 — 값에 다른 옵션을 끼워 넣지 못하게.
+  if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(a.model)) {
+    console.error(`[rollover] --model은 하나의 모델 ID(영숫자·점·하이픈)여야 한다 (받은 값: ${JSON.stringify(a.model)})`);
     return 1;
   }
   const effortWhy = effortProblem(a.model, a.effort);
