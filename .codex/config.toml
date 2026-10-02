@@ -1,5 +1,6 @@
 # Codex를 직접 열 때의 프로젝트 기본값. Orca 워커는 기동할 때 --model/--effort를 명시한다.
 # 모델 기준: docs/agents/model-routing-rules.md (GPT-6.1 Sol). 등록 ID는 2026-09-30 Codex 모델 목록에서 확인했다.
-# Codex에서 GPT-6.1 Sol의 기본 effort는 low이므로 effort를 지우지 않는다.
+# Codex에서 GPT-6.1 Sol의 기본 effort는 low이므로 effort를 지우거나 low로 낮추지 않는다(직접 열 때 최소 medium).
+# Orca 워커로 띄우는 GPT-6.1 Sol은 이 값과 상관없이 high 이상을 --effort로 명시한다(model-routing-rules.md 「effort 원칙」).
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"

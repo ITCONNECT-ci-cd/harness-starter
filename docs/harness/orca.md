@@ -35,13 +35,13 @@
 
 대략 이렇게 배정됩니다. 정형 작업은 Gemini 3.8 Flash, 일반 기능은 Sonnet 5.5, 연계 작업은 GPT-6.1 Sol, 설계 판단은 Opus 5.5가 맡습니다. 위험도가 높으면 Opus 5.5나 GPT-6.1 Sol이 작성하고 다른 회사 모델이 리뷰합니다. 리뷰는 항상 작성자와 다른 회사의 모델이 하고, Flash는 리뷰하지 않습니다.
 
-추론 수준(effort)은 위험도로 정합니다. 낮음은 medium, 보통은 high, 높음은 xhigh이며 구현·리뷰·대체 모델 모두 같습니다. high·xhigh는 medium보다 토큰과 시간이 더 들므로, 시험 운영 기록으로 효과를 확인합니다.
+추론 수준(effort)은 위험도로 정합니다. 낮음은 medium, 보통은 high, 높음은 xhigh입니다. 다만 Sonnet 5.5와 GPT-6.1 Sol은 어떤 일이든 high 이상, Gemini 3.8 Flash 구현은 high(Flash의 최상위 — 수준은 `gemini-3.8-flash-high`처럼 모델 ID로 고릅니다), 리뷰(검증)는 모델과 상관없이 high 이상, Opus 5.5의 설계 판단도 high 이상입니다. 모델이 스스로 수준을 올리지는 않으므로 배정안에 적힌 값으로 띄웁니다. high·xhigh는 medium보다 토큰과 시간이 더 들므로, 시험 운영 기록으로 효과를 확인합니다.
 
 배정안에는 모델을 못 쓰게 됐을 때 바꿔 쓸 **대체 모델**도 함께 적습니다. 승인 뒤에는 대체 모델로의 전환과 리뷰 강화만 코디네이터가 알아서 하고, 그 밖의 변경은 다시 묻습니다.
 
 ## 코디네이터는 어떤 모델로 여나
 
-기본은 **Sonnet 5.5 / medium**(Claude Code), 위험 높음 Story가 Epic의 절반 이상이면 Opus 5.5 / medium입니다. 이유와 주의점은 README의 「코디네이터(오케스트레이터) 모델」 절에 있습니다.
+기본은 **Sonnet 5.5 / high**(Claude Code), 위험 높음 Story가 Epic의 절반 이상이면 Opus 5.5 / medium입니다. 이유와 주의점은 README의 「코디네이터(오케스트레이터) 모델」 절에 있습니다.
 
 ## 비용과 시간 원칙
 

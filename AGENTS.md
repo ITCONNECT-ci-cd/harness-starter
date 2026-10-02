@@ -20,7 +20,7 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
 
 ## Orca 개발: 코디네이터 시작 루틴
 
-코디네이터 세션은 Sonnet 5.5 / medium으로 연다(위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium). 상세 절차는 `docs/agents/orca-rules.md`를 따른다.
+코디네이터 세션은 Sonnet 5.5 / high로 연다(위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium). 상세 절차는 `docs/agents/orca-rules.md`를 따른다.
 
 1. 이 파일과 `docs/agents/orca-rules.md`를 읽는다.
    - **필수**: `docs/agents/feedback-rules.md` (과거 반복 실수 패턴) 반드시 읽기

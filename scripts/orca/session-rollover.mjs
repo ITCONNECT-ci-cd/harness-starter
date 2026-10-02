@@ -16,8 +16,8 @@
  *
  * 사용:
  *   인계:  node scripts/orca/session-rollover.mjs --worktree <코디네이터 체크아웃 절대 경로> --brief-file <인계문.md>
- *            --title "<프로젝트> 코디네이터 Epic <N> #<k>" --chain <n>/<max> --model <코디네이터 모델 ID> [--effort medium]
- *            [--run-id <Orca Run ID>] [--unattended] [--skip-permissions] [--agent-cmd "<직접 지정>"] [--stop-name <이름>] [--wait-ms 90000]
+ *            --title "<프로젝트> 코디네이터 Epic <N> #<k>" --chain <n>/<max> --model <코디네이터 모델 ID> --effort <high|medium…>
+ *            [--run-id <Orca Run ID>] [--unattended] [--skip-permissions] [--stop-name <이름>] [--wait-ms 90000]
  *            [--no-predecessor] [--dry-run]
  *   정리:  node scripts/orca/session-rollover.mjs --close-predecessor <terminal handle> [--wait-ms 1800000]
  *            — 후임이 시작 직후 **백그라운드로** 부른다. 앞 탭 화면에 작업 표시가 없는 상태가 15초 간격 두 번일 때만 닫는다.
@@ -76,6 +76,43 @@ export function bannerModel(screen) {
   return (/\b((?:Opus|Sonnet|Fable|Haiku)[^\n·]*?)\s*(?:·|with |$)/m.exec(screen)?.[1] ?? "").trim() || null;
 }
 
+const EFFORT_ORDER = ["low", "medium", "high", "xhigh", "max"];
+
+/**
+ * 코디네이터 모델·effort가 하한을 지키나(docs/agents/model-routing-rules.md 「effort 원칙」).
+ * Sonnet은 high 이상, 그 밖(Opus 등)은 medium 이상. 어휘 밖 effort도 거부한다. 문제가 없으면 null, 있으면 사유.
+ */
+export function effortProblem(model, effort) {
+  const i = EFFORT_ORDER.indexOf(effort);
+  if (i < 0) return `effort는 ${EFFORT_ORDER.join("|")} 중 하나 (받은 값: ${effort})`;
+  const floor = /sonnet/i.test(model) ? "high" : "medium";
+  return i < EFFORT_ORDER.indexOf(floor) ? `${model}의 effort 하한은 ${floor}다 (받은 값: ${effort})` : null;
+}
+
+
+/**
+ * 시작 배너의 effort(「Sonnet 5.5 with high effort · Claude Max」). 배너는 「Claude Code v…」 줄 **다음 두 줄**까지이고,
+ * 입력 줄(`❯`)·구분선(─)·빈 줄에서 끝난다. 그 안에서 **모델 이름 뒤에 바로 이어지는** 「with … effort」만 인정한다(입력문·작업
+ * 로그 속 같은 글자는 배너 밖이라 읽지 않는다). 모델 줄이 터미널 폭으로 접혀도 이어 붙여 읽는다. 못 읽으면 null.
+ */
+export function bannerEffort(screen) {
+  const lines = screen.split("\n");
+  // 배너 머리 줄은 「… Claude Code v2.1.287」로 **끝나는** 줄이고, 그보다 앞에 입력 줄(❯)이 없다 — 입력문·출력문 속 같은 글자는 배너가 아니다.
+  // 실제 배너 머리 줄에는 로고 글자(▐▛███▛█ 등)가 앞에 붙고, 새 탭에서는 화면 맨 위 세 줄(빈 줄 제외) 안에 있다 — 출력·입력 속
+  // 「Claude Code v…」(로고 없음, 또는 아래쪽)는 배너가 아니다(4차 재검증 재현).
+  const at = lines.findIndex((l) => /^\s*[▐▛▜▝▘▗▖█▌▀▄\s]*[▐▛▜▝▘▗▖█▌▀▄]\s+Claude Code v\d+(?:\.\d+)*\s*$/.test(l));
+  if (at < 0) return null;
+  const nonEmptyBefore = lines.slice(0, at).filter((l) => l.trim() !== "").length;
+  if (nonEmptyBefore > 2 || lines.slice(0, at).some((l) => /^\s*(❯|●|⎿)/.test(l))) return null;
+  const banner = [];
+  for (const l of lines.slice(at + 1, at + 3)) {
+    if (/^\s*(❯|─)/.test(l) || l.trim() === "") break;
+    banner.push(l.trim());
+  }
+  const m = /\b(?:Opus|Sonnet|Fable|Haiku)\s+[\d.]+(?:\s*\([^)]*\))?\s+with\s+(low|medium|high|xhigh|max)\s+effort\b/i.exec(banner.join(" "));
+  return m ? m[1].toLowerCase() : null;
+}
+
 /** "n/max" → {n,max}; 형식이 틀리거나 1 미만·안전한 정수 밖이면 null. */
 export function parseChain(s) {
   const m = /^(\d+)\/(\d+)$/.exec(s ?? "");
@@ -118,8 +155,8 @@ export function handoffLine({ relBrief, unattended, runId, predecessor }) {
 // ── 실행 ────────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const a = { worktree: null, briefFile: null, title: null, chain: null, agentCmd: null, model: null, effort: "medium", runId: null, unattended: false, stopName: null, waitMs: 90_000, waitMsSet: false, dryRun: false, noPredecessor: false, closePredecessor: null };
-  const valued = { "--worktree": "worktree", "--brief-file": "briefFile", "--title": "title", "--chain": "chain", "--agent-cmd": "agentCmd", "--model": "model", "--effort": "effort", "--run-id": "runId", "--stop-name": "stopName", "--close-predecessor": "closePredecessor" };
+  const a = { worktree: null, briefFile: null, title: null, chain: null, model: null, effort: null, runId: null, unattended: false, stopName: null, waitMs: 90_000, waitMsSet: false, dryRun: false, noPredecessor: false, closePredecessor: null };
+  const valued = { "--worktree": "worktree", "--brief-file": "briefFile", "--title": "title", "--chain": "chain", "--model": "model", "--effort": "effort", "--run-id": "runId", "--stop-name": "stopName", "--close-predecessor": "closePredecessor" };
   for (let i = 0; i < argv.length; i += 1) {
     const k = argv[i];
     if (valued[k]) {
@@ -230,7 +267,23 @@ function closePredecessor(a) {
 
 function handoff(a) {
   if (!a.worktree || !a.briefFile || !a.title || !a.model) {
-    console.error("필수: --worktree <경로> --brief-file <파일> --title <탭 제목> --model <코디네이터 모델 ID>");
+    console.error("필수: --worktree <경로> --brief-file <파일> --title <탭 제목> --model <코디네이터 모델 ID> --effort <수준>");
+    return 1;
+  }
+  // effort는 기본값을 두지 않는다 — 모델마다 하한이 달라(Sonnet high, Opus medium) 하나의 기본값이 틀린 쪽이 된다.
+  // 시험(--dry-run)도 실제 모델을 띄우므로 같은 하한을 지킨다.
+  if (!a.effort) {
+    console.error("--effort가 필요하다(코디네이터 모델의 하한 이상 — Sonnet 5.5는 high, Opus 5.5는 medium)");
+    return 1;
+  }
+  // 모델은 셸에 그대로 들어가므로 하나의 ID(영숫자·점·하이픈)만 받는다 — 값에 다른 옵션을 끼워 넣지 못하게.
+  if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(a.model)) {
+    console.error(`[rollover] --model은 하나의 모델 ID(영숫자·점·하이픈)여야 한다 (받은 값: ${JSON.stringify(a.model)})`);
+    return 1;
+  }
+  const effortWhy = effortProblem(a.model, a.effort);
+  if (effortWhy) {
+    console.error(`[rollover] ${effortWhy} — docs/agents/model-routing-rules.md 「effort 원칙」`);
     return 1;
   }
   a.worktree = resolve(a.worktree);
@@ -275,14 +328,13 @@ function handoff(a) {
   if (g0) return g0;
 
   const unattendedPrompt = join(a.worktree, "templates", "orca-unattended-system-prompt.md");
-  if (!a.agentCmd) {
-    const parts = ["claude"];
-    // 권한 확인 생략은 따로 고른다 — 무인 진행과 묶지 않는다(hook은 돌지만 push·merge 승인 범위는 검사하지 않는다).
-    if (a.skipPermissions) parts.push("--dangerously-skip-permissions");
-    parts.push("--model", a.model, "--effort", a.effort);
-    if (a.unattended && existsSync(unattendedPrompt)) parts.push("--append-system-prompt-file", `"${unattendedPrompt}"`);
-    a.agentCmd = parts.join(" ");
-  }
+  // 후임 명령은 정해진 부품으로만 만든다(직접 명령을 받지 않는다 — 셸 문자열 속 --model·--effort를 믿을 수 없다, 2026-10-02 리뷰).
+  const parts = ["claude"];
+  // 권한 확인 생략은 따로 고른다 — 무인 진행과 묶지 않는다(hook은 돌지만 push·merge 승인 범위는 검사하지 않는다).
+  if (a.skipPermissions) parts.push("--dangerously-skip-permissions");
+  parts.push("--model", a.model, "--effort", a.effort);
+  if (a.unattended && existsSync(unattendedPrompt)) parts.push("--append-system-prompt-file", `"${unattendedPrompt}"`);
+  a.agentCmd = parts.join(" ");
   const expect = expectModelOf(a.model);
 
   const logDir = join(a.worktree, "state", "orca");
@@ -329,8 +381,22 @@ function handoff(a) {
   const predecessor = a.noPredecessor ? null : (process.env.ORCA_TERMINAL_HANDLE ?? null);
   let handle = unsent.at(-1) ?? null;
   let createdNow = false;
-  if (handle) console.log(`[rollover] 인계문을 아직 받지 못한 후임 탭 ${handle}이 열려 있다 — 그 탭에 이어 보낸다.`);
-  else {
+  if (handle) {
+    // 앞선 실행이 만든 탭을 이어 쓴다 — 이번 --effort는 그 탭에 적용되지 않는다. **어떤 전송·재전송·Enter 제출보다 먼저**
+    // ① 기록(created)의 모델·effort가 지금 기대와 같고 ② 그 탭 화면의 시작 배너에서 읽은 effort가 기대와 같을 때만 이어 보낸다.
+    // 하나라도 확인하지 못하면 보내지 않는다(그 탭을 닫고 다시 실행한다).
+    const createdRec = [...prior].reverse().find((r) => r.event === "created" && r.successor === handle);
+    const seenNow = bannerEffort(screenTail(handle));
+    let reuseWhy = null;
+    if (!createdRec || createdRec.model !== a.model || createdRec.effort !== a.effort) reuseWhy = `기록의 모델·effort(${createdRec?.model ?? "?"}·${createdRec?.effort ?? "?"})가 기대(${a.model}·${a.effort})와 다르거나 기록이 없다`;
+    else if (seenNow !== a.effort) reuseWhy = `시작 배너의 effort(${seenNow ?? "읽지 못함"})가 기대 ${a.effort}와 다르다`;
+    if (reuseWhy) {
+      log("reuse-refused", { successor: handle, why: reuseWhy });
+      console.log(`[rollover] 미전송 후임 탭 ${handle}: ${reuseWhy} — 이어 보내지 않는다. 그 탭을 닫고 다시 실행한다.`);
+      return 9;
+    }
+    console.log(`[rollover] 인계문을 아직 받지 못한 후임 탭 ${handle}이 열려 있다(기록·배너 모두 ${a.model}·${a.effort}) — 그 탭에 이어 보낸다.`);
+  } else {
     const created = orca(["terminal", "create", "--worktree", `path:${a.worktree}`, "--title", a.title, "--command", a.agentCmd]);
     handle = findHandle(created.json);
     if (!handle) {
@@ -344,7 +410,7 @@ function handoff(a) {
       return 8;
     }
     createdNow = true;
-    log("created", { worktree: a.worktree, predecessor, successor: handle, agentCmd: a.agentCmd });
+    log("created", { worktree: a.worktree, predecessor, successor: handle, agentCmd: a.agentCmd, model: a.model, effort: a.effort });
   }
 
   const relBrief = relative(a.worktree, a.briefFile).split("\\").join("/");
@@ -406,6 +472,18 @@ function handoff(a) {
     orca(["terminal", "close", "--terminal", handle]);
     return 9;
   }
+  // 실제로 뜬 effort도 배너로 본다(미전송 후임 탭을 이어 쓸 때·직접 준 명령에도 걸린다). 배너에서 읽히는데 하한 아래면
+  // 보내지 않고 닫는다. 배너 형식이 바뀌어 못 읽으면 막지 않고 기록만 한다(명령 인자 검사는 이미 통과했다).
+  const effortSeen = bannerEffort(ready);
+  const effortSeenWhy = effortSeen ? effortProblem(a.model, effortSeen) : null;
+  if (effortSeenWhy) {
+    log("effort-below-floor", { successor: handle, model, effort: effortSeen });
+    console.log(`[rollover] 후임 ${handle}의 effort가 하한 아래다(${effortSeenWhy}) — 보내지 않고 탭을 닫는다.`);
+    orca(["terminal", "close", "--terminal", handle]);
+    return 9;
+  }
+  // 배너를 못 읽어도 이번에 만든 탭이면 명령을 우리가 정해진 부품으로 만들었다. 이어 쓰는 탭은 위에서 배너 일치를 이미 요구했다.
+  if (!effortSeen) console.log(`[rollover] 후임 ${handle}의 effort를 배너에서 읽지 못했다 — 띄운 명령의 --effort ${a.effort}(이번에 만든 명령)로 진행한다.`);
   // 준비를 기다리는 동안 멈춤 파일·사용량 멈춤이 생겼을 수 있다 — 첫 전송 직전에 다시 본다. 아직 아무것도 보내지
   // 않았으므로, 이번 실행이 만든 탭이면 닫고 끝낸다(남겨 두면 다음 실행이 「미전송 후임」으로 이어 보낸다).
   const g1 = gate();
