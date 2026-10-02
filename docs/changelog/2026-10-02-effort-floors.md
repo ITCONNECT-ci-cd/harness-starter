@@ -58,6 +58,7 @@ tags: [harness, model-routing, effort]
 - 닫힘 재검증: 5/6 닫힘 + 새 medium 3(따옴표·중복 옵션 속임, 미전송 탭 재사용 경로가 effort 검사를 건너뜀, 배너 판독이 배너 밖·줄바꿈에 약함) → 인자 분해·기록 대조로 고침
 - 2차 닫힘 재검증: 직접 명령의 셸 이스케이프(PowerShell 백틱)·`--` 뒤 옵션, 재사용 탭의 재전송·Enter 경로가 배너 검사보다 앞섬, 배너 판독이 입력문 속 글자를 읽음 → 같은 식으로 메우지 않고 구조를 바꿈: `--agent-cmd` 제거(인자 분해도 함께 삭제), 재사용은 기록과 배너의 일치를 모든 제출보다 먼저 요구, 배너 영역 한정. 문서: `worker-start` effort 규칙의 Gemini 예외, 대체 모델 예시
 - 3차 닫힘 재검증: 4/5 닫힘 + 입력문 속 「Claude Code v…」를 배너 머리로 오인, `--model` 값으로 옵션 삽입 → 배너 머리는 버전으로 끝나고 앞에 입력 줄이 없는 줄만, `--model`은 하나의 ID(영숫자·점·하이픈)만 받음
+- 4차 닫힘 재검증: `--model` 삽입 닫힘, 여러 줄 출력 속 배너 모양을 배너로 오인 → 배너 머리는 로고 글자가 붙은 「Claude Code v…」 줄이고 화면 맨 위 세 줄 안에 있어야 함
 - 실제 Orca 인계 시험을 구조 변경 뒤 다시 돌림(Sonnet / high, 배너 effort 판독·`ROLLOVER-5555` 확인)
 - `session-rollover.mjs`에 Sonnet / medium을 주면 종료 1과 하한 안내, `--effort`를 빼면 종료 1
 - template mode `validate.sh`·`validate-quick.sh`, `git diff --check`, 바뀐 문서 상대 링크

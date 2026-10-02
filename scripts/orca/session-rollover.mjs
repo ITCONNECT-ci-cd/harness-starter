@@ -98,8 +98,12 @@ export function effortProblem(model, effort) {
 export function bannerEffort(screen) {
   const lines = screen.split("\n");
   // 배너 머리 줄은 「… Claude Code v2.1.287」로 **끝나는** 줄이고, 그보다 앞에 입력 줄(❯)이 없다 — 입력문·출력문 속 같은 글자는 배너가 아니다.
-  const at = lines.findIndex((l) => /Claude Code v\d+(?:\.\d+)*\s*$/.test(l) && !/^\s*(❯|●|⎿)/.test(l));
-  if (at < 0 || lines.slice(0, at).some((l) => /^\s*❯/.test(l))) return null;
+  // 실제 배너 머리 줄에는 로고 글자(▐▛███▛█ 등)가 앞에 붙고, 새 탭에서는 화면 맨 위 세 줄(빈 줄 제외) 안에 있다 — 출력·입력 속
+  // 「Claude Code v…」(로고 없음, 또는 아래쪽)는 배너가 아니다(4차 재검증 재현).
+  const at = lines.findIndex((l) => /^\s*[▐▛▜▝▘▗▖█▌▀▄\s]*[▐▛▜▝▘▗▖█▌▀▄]\s+Claude Code v\d+(?:\.\d+)*\s*$/.test(l));
+  if (at < 0) return null;
+  const nonEmptyBefore = lines.slice(0, at).filter((l) => l.trim() !== "").length;
+  if (nonEmptyBefore > 2 || lines.slice(0, at).some((l) => /^\s*(❯|●|⎿)/.test(l))) return null;
   const banner = [];
   for (const l of lines.slice(at + 1, at + 3)) {
     if (/^\s*(❯|─)/.test(l) || l.trim() === "") break;
