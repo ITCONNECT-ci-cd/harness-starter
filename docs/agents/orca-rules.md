@@ -55,7 +55,7 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 - 워커를 띄우기 전에 배정안을 모델 배정 규칙 6번 형식의 표로 보여 주고 사용자의 OK를 기다린다. 답이 없으면 승인으로 보지 않는다. 기다리는 동안에도 워커 없이 할 수 있는 준비(시작 확인, `orca.yaml` 점검)는 진행한다.
 - 승인된 배정안을 `plans/epic-<N>-orca.md`에 승인 날짜와 함께 기록하고 커밋한다. 이후 워커는 배정안의 모델·effort로만 기동한다.
 - 승인 후 배정안과 다르게 해도 되는 경우는 두 가지뿐이다. 한도·접근 오류나 같은 원인 3회 실패로 승인된 대체 모델로 바꿀 때, 위험도가 계획보다 높게 드러나 리뷰를 위험 높음 기준으로 올릴 때다. 이때는 바꾼 사실과 이유를 `orca-runs.md`와 최종 보고에 적는다. 그 밖의 변경(배정안에 없는 모델, effort를 「위험도 + 모델·역할별 하한」 기준(모델 배정 규칙 「effort 원칙」)보다 올리거나 내리는 것 — 하한 아래로는 승인으로도 내리지 않는다, 리뷰 생략·약화, Story 추가·분할)은 다시 승인받는다.
-- `worker-start`에는 항상 `--agent`, `--model`, `--effort`를 명시한다. 생략하면 `.codex/config.toml`이나 Claude Code 기본값(xhigh)으로 실행된다. effort가 모델 배정 규칙 「effort 원칙」의 하한(Sonnet 5.5·GPT-6.1 Sol·리뷰는 high)보다 낮으면 띄우지 않고 배정안을 고친다.
+- `worker-start`에는 항상 `--agent`, `--model`, `--effort`를 명시한다. 생략하면 `.codex/config.toml`이나 Claude Code 기본값(xhigh)으로 실행된다. 예외: Gemini(Antigravity)는 수준이 모델 ID에 붙으므로(`--model gemini-3.8-flash-high`) `--effort`를 따로 줄지는 시작 확인에서 정한 대로 한다(모델 배정 규칙 「설정 위치」) — 어느 쪽이든 수준은 모델 ID로 하한을 지킨다. effort가 모델 배정 규칙 「effort 원칙」의 하한(Sonnet 5.5·GPT-6.1 Sol·리뷰는 high)보다 낮으면 띄우지 않고 배정안을 고친다.
 - 기동한 뒤 `launch.requested`와 `launch.effective`를 대조해 둘 다 `orca-runs.md`에 적는다. `/model` 메시지를 보낸 것만으로 모델이 바뀌었다고 보지 않는다. 실제 적용값이 배정안과 다르면 그 워커에게 일을 맡기기 전에 원인을 확인한다.
 - 새 유료 API나 자동 초과 과금을 켜지 않는다. 대체 모델까지 막히면 그 Story만 보류하고 독립 Story를 진행한다.
 - 네 모델을 매 Story에 모두 쓰거나 같은 비율로 맞추지 않는다.

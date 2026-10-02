@@ -47,15 +47,17 @@ tags: [harness, model-routing, effort]
 | `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/harness/orca.md`, `templates/orca-epic-plan.md` | 코디네이터·effort 설명 |
 | `docs/decisions/ADR-002-orca-orchestration.md` | 결정 2·4의 effort가 이번 하한으로 바뀌었다는 보완 표시(본문은 당시 기록으로 보존) |
 | `.codex/config.toml` | 주석: 직접 사용 최소 medium, Orca 워커는 high 이상 명시 |
-| `scripts/orca/session-rollover.mjs` | `--effort` 필수, `effortProblem` 하한 검사(Sonnet high, 그 밖 medium — 시험 모드 포함), `--agent-cmd`의 `--model`·`--effort` 대조, 후임 배너의 실제 effort 대조(하한 아래면 보내지 않고 닫음) |
-| `scripts/tests/orca-scripts.test.mjs` | 하한·명령·배너 effort 시험 2개 추가(전체 17개) |
+| `scripts/orca/session-rollover.mjs` | `--effort` 필수, `effortProblem` 하한 검사(Sonnet high, 그 밖 medium — 시험 모드 포함). 후임 명령은 정해진 부품으로만 만든다(`--agent-cmd` 제거). 미전송 탭을 이어 쓸 때는 기록의 모델·effort와 그 탭 시작 배너의 effort가 모두 기대와 같아야 어떤 전송이든 한다. 새로 띄운 탭도 배너 effort가 하한 아래면 닫는다(배너는 「Claude Code v…」 다음 두 줄, 모델 이름 뒤의 「with … effort」만) |
+| `scripts/tests/orca-scripts.test.mjs` | 하한·배너 effort 시험 추가(전체 17개) |
 
 ## 실행한 검증
 
 - `node --test scripts/tests/orca-scripts.test.mjs` 17/17
 - 실제 Orca 인계 시험(`--dry-run`, Sonnet / high): 배너에서 effort를 읽어 하한 통과, 응답 `ROLLOVER-5555`
 - 독립 리뷰(Codex GPT-6 Astra, high): medium 4·low 2 — `--agent-cmd`·`--dry-run` 우회, `CLAUDE.md` 잔재, 재승인 기준 문구, ADR-002 보완 표시, 시험 수 표기 → 전부 반영
-- 닫힘 재검증: 5/6 닫힘 + 새 medium 3(따옴표·중복 옵션 속임, 미전송 탭 재사용 경로가 effort 검사를 건너뜀, 배너 판독이 배너 밖·줄바꿈에 약함) → 인자 분해(`splitArgs`), 재사용 탭은 기록된 명령을 대조해 다르면 보내지 않음, 배너 영역 안에서만 읽기
+- 닫힘 재검증: 5/6 닫힘 + 새 medium 3(따옴표·중복 옵션 속임, 미전송 탭 재사용 경로가 effort 검사를 건너뜀, 배너 판독이 배너 밖·줄바꿈에 약함) → 인자 분해·기록 대조로 고침
+- 2차 닫힘 재검증: 직접 명령의 셸 이스케이프(PowerShell 백틱)·`--` 뒤 옵션, 재사용 탭의 재전송·Enter 경로가 배너 검사보다 앞섬, 배너 판독이 입력문 속 글자를 읽음 → 같은 식으로 메우지 않고 구조를 바꿈: `--agent-cmd` 제거(인자 분해도 함께 삭제), 재사용은 기록과 배너의 일치를 모든 제출보다 먼저 요구, 배너 영역 한정. 문서: `worker-start` effort 규칙의 Gemini 예외, 대체 모델 예시
+- 실제 Orca 인계 시험을 구조 변경 뒤 다시 돌림(아래 실행 결과)
 - `session-rollover.mjs`에 Sonnet / medium을 주면 종료 1과 하한 안내, `--effort`를 빼면 종료 1
 - template mode `validate.sh`·`validate-quick.sh`, `git diff --check`, 바뀐 문서 상대 링크
 

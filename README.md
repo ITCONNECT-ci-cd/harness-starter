@@ -24,7 +24,7 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 
 ## 최근 변경
 
-2026-10-02: effort에 하한을 두었습니다 — Sonnet 5.5와 GPT-6.1 Sol은 어떤 일이든 high 이상, 리뷰는 모델과 상관없이 high 이상, 코디네이터 기본은 Sonnet 5.5 / high입니다. Opus 5.5는 기본 medium이고 설계 판단·원인 분석은 high부터입니다. Codex를 직접 열 때 Sol은 medium이며 low로 낮추지 않습니다. [변경 기록](docs/changelog/2026-10-02-effort-floors.md).
+2026-10-02: effort에 하한을 두었습니다 — Sonnet 5.5와 GPT-6.1 Sol은 어떤 일이든 high 이상, Gemini 3.8 Flash 구현은 high(Flash의 최상위 — 수준은 `gemini-3.8-flash-high`처럼 모델 ID로 고르며, 리뷰·검증에는 쓰지 않습니다), 리뷰는 모델과 상관없이 high 이상, 코디네이터 기본은 Sonnet 5.5 / high입니다. Opus 5.5는 기본 medium이고 설계 판단·원인 분석은 high부터입니다. Codex를 직접 열 때 Sol은 medium이며 low로 낮추지 않습니다. [변경 기록](docs/changelog/2026-10-02-effort-floors.md).
 
 2026-10-02: Orca 코디네이터를 보완했습니다. ① **무인 진행**을 고를 수 있습니다 — 코디네이터가 질문으로 멈추지 않고 배정안을 적용하며, 사람 대신 정한 것을 `owner-digest.md`에 남깁니다(기본은 지금처럼 승인 대기). ② **사용량 가드**를 선택으로 켤 수 있습니다 — `~/.orchestrator/limits.json`의 Claude·Codex 주간 사용률 한도와 멈춤 파일. ③ 코디네이터가 Story 몇 개마다 **새 세션에 스스로 인계**합니다 — 한 세션이 Epic 전체를 돌며 비용이 커지는 것을 막습니다. 모델 선택 규칙은 바꾸지 않았습니다. [변경 기록](docs/changelog/2026-10-02-coordinator-autonomy.md), [결정 기록 ADR-003](docs/decisions/ADR-003-coordinator-autonomy.md).
 
@@ -114,7 +114,7 @@ Orca에서 코디네이터 세션을 Sonnet 5.5 / high로 열고 입력합니다
 - **GPT-6.1 Sol과 Gemini 3.8 Flash는 쓰지 않습니다.** Sol은 연계·위험 구현과 Sonnet·Opus가 쓴 코드의 리뷰를 맡아 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않습니다. Flash는 최종 판정 역할에 맞지 않습니다.
 - **effort를 직접 지정합니다 — Sonnet 5.5는 high, Opus 5.5는 medium.** Claude Code의 기본 effort는 xhigh라서, 지정하지 않으면 더 비싼 설정으로 실행됩니다. Sonnet 5.5는 하한이 high라 medium으로 낮추지 않습니다.
 
-워커 모델은 코디네이터가 Story의 위험도와 작업 형태로 고르고, effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)로 정하되 Sonnet 5.5·GPT-6.1 Sol과 모든 리뷰는 최소 high입니다. 기준표는 [모델 배정 규칙](docs/agents/model-routing-rules.md)에 있습니다.
+워커 모델은 코디네이터가 Story의 위험도와 작업 형태로 고르고, effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)로 정하되 Sonnet 5.5·GPT-6.1 Sol·Gemini 3.8 Flash 구현과 모든 리뷰는 최소 high입니다(Gemini는 모델 ID 접미사로 고릅니다). 기준표는 [모델 배정 규칙](docs/agents/model-routing-rules.md)에 있습니다.
 
 ### 시작 프롬프트
 
