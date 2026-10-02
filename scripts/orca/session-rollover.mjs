@@ -377,6 +377,12 @@ function handoff(a) {
       return 0;
     }
     if (st === "typed") {
+      // 입력란에만 있는 인계 줄을 제출하는 것도 새 전송이다 — 멈춤 파일·사용량을 다시 본다.
+      const gt = gate();
+      if (gt) {
+        log("gated", { successor: handle, code: gt, at_stage: "typed" });
+        return gt;
+      }
       const r = orca(["terminal", "send", "--terminal", handle, "--enter"]);
       log("sent", { successor: handle, accepted: hasTrue(r.json, "accepted"), via: "enter-only" });
       return hasTrue(r.json, "accepted") ? 0 : 7;

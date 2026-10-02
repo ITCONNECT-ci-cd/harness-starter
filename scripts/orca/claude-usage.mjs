@@ -61,10 +61,13 @@ function readJson(file) {
 export function claudeUsage(dir = orchestratorDir(), now = Date.now()) {
   const l = readLimits(dir);
   if (l.state === "off") return { verdict: "off", why: "한도 파일 없음 — 가드 꺼짐" };
-  if (l.state === "error") return { verdict: "stop", why: `${l.why} — 한도 파일을 고칠 때까지 멈춘다` };
-  if (l.limits.claudeStopAtUsedPercent === undefined) return { verdict: "off", why: "claudeStopAtUsedPercent 없음 — Claude 가드 꺼짐" };
+  if (l.state === "on" && l.limits.claudeStopAtUsedPercent === undefined) return { verdict: "off", why: "claudeStopAtUsedPercent 없음 — Claude 가드 꺼짐" };
   const lastFile = join(dir, "claude-verdict-last.json");
-  const r = carryVerdict(claudeVerdict(readJson(join(dir, "claude-usage.json")), l.limits, now), readJson(lastFile));
+  // 한도 파일 오류의 stop도 저장한다 — 파일을 고친 뒤 값이 아직 없을(unknown) 때 직전 stop을 이어야 한다.
+  const r =
+    l.state === "error"
+      ? { verdict: "stop", why: `${l.why} — 한도 파일을 고칠 때까지 멈춘다`, usedPercent: null }
+      : carryVerdict(claudeVerdict(readJson(join(dir, "claude-usage.json")), l.limits, now), readJson(lastFile));
   if (!r.carried && (r.verdict === "ok" || r.verdict === "stop")) {
     try {
       writeFileSync(`${lastFile}.tmp`, JSON.stringify({ verdict: r.verdict, usedPercent: r.usedPercent, at: new Date(now).toISOString() }));

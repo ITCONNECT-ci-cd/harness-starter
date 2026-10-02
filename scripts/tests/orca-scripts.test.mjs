@@ -9,10 +9,10 @@ import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { claudeUsage, claudeVerdict } from "../orca/claude-usage.mjs";
 import { codexVerdict, lastLimits } from "../orca/codex-usage.mjs";
-import { install, uninstall } from "../orca/install-statusline-tee.mjs";
+import { install, settingsKey as installKey, uninstall } from "../orca/install-statusline-tee.mjs";
 import { readLimits, stopFile } from "../orca/limits.mjs";
 import { bannerModel, briefState, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
-import { usageRecord } from "../orca/statusline-tee.mjs";
+import { originalCommand, settingsKey as teeKey, usageRecord } from "../orca/statusline-tee.mjs";
 
 const TMP = mkdtempSync(join(tmpdir(), "orca-scripts-"));
 after(() => rmSync(TMP, { recursive: true, force: true }));
@@ -91,6 +91,20 @@ test("claudeUsage — unknown은 직전 stop을 잇고, 한도 파일이 깨지�
   assert.equal(claudeUsage(d, now).verdict, "unknown"); // 직전이 ok면 unknown 그대로
   writeFileSync(join(d, "limits.json"), "{");
   assert.equal(claudeUsage(d, now).verdict, "stop");
+  // 한도 파일 오류의 stop도 이어진다: 파일을 고쳤는데 값이 아직 없으면(unknown) stop
+  writeFileSync(join(d, "limits.json"), JSON.stringify({ claudeStopAtUsedPercent: 80 }));
+  rmSync(join(d, "claude-usage.json"));
+  assert.equal(claudeUsage(d, now).verdict, "stop");
+});
+
+test("settingsKey·originalCommand — 같은 설정 파일의 다른 표기(역슬래시·대소문자)를 같은 키로 본다", () => {
+  assert.equal(teeKey("C:\\Users\\A\\.claude\\settings.json", "win32"), teeKey("c:/users/a/.claude/SETTINGS.json", "win32"));
+  assert.equal(installKey("C:\\Users\\A\\.claude\\settings.json", "win32"), teeKey("C:/Users/A/.claude/settings.json", "win32"));
+  assert.notEqual(teeKey("/home/a/.claude/settings.json", "linux"), teeKey("/home/A/.claude/settings.json", "linux"));
+  const store = { "c:/users/a/.claude/settings.json": { statusLine: { command: "echo A" } }, "c:/users/b/.claude/settings.json": { statusLine: { command: "echo B" } } };
+  assert.equal(originalCommand(store, "C:\\Users\\A\\.claude\\settings.json", "win32"), "echo A");
+  assert.equal(originalCommand(store, "C:\\Users\\C\\.claude\\settings.json", "win32"), null);
+  assert.equal(originalCommand({ k: { statusLine: { command: 'node "statusline-tee.mjs"' } } }, "k", "linux"), null);
 });
 
 test("codexVerdict — 경계와 한쪽 키만 있는 경우, 한도 거부는 exhausted", () => {
@@ -185,6 +199,15 @@ test("install/uninstall — 원래 statusLine을 보존하고 정확히 되돌�
     process.env.CLAUDE_CONFIG_DIR = claudeB;
     uninstall();
     assert.deepEqual(JSON.parse(readFileSync(settingsB, "utf8")), origB);
+
+    // Windows: 같은 폴더를 대소문자만 바꿔 가리켜도 제거된다
+    if (process.platform === "win32") {
+      process.env.CLAUDE_CONFIG_DIR = claudeDir;
+      install();
+      process.env.CLAUDE_CONFIG_DIR = claudeDir.toUpperCase();
+      uninstall();
+      assert.deepEqual(JSON.parse(readFileSync(settings, "utf8")), origA);
+    }
   } finally {
     if (prev.c === undefined) delete process.env.CLAUDE_CONFIG_DIR;
     else process.env.CLAUDE_CONFIG_DIR = prev.c;

@@ -19,6 +19,15 @@ import { orchestratorDir } from "./limits.mjs";
 const MARK = "statusline-tee.mjs";
 const fwd = (p) => p.split("\\").join("/");
 
+/**
+ * 설정 파일 경로 → 원본 저장소의 키. 같은 파일이 다른 표기(역슬래시·대소문자)로 와도 같은 키가 되게 한다
+ * (Windows 경로는 대소문자를 가리지 않는다). statusline-tee.mjs에도 같은 함수가 있다 — 그 파일은 홀로 복사되므로 import하지 않는다.
+ */
+export function settingsKey(p, platform = process.platform) {
+  const s = fwd(resolve(p));
+  return platform === "win32" ? s.toLowerCase() : s;
+}
+
 export function settingsPath() {
   return resolve(join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "settings.json"));
 }
@@ -48,7 +57,7 @@ function origStore(dir) {
 
 export function install({ dryRun = false } = {}) {
   const file = settingsPath();
-  const key = fwd(file);
+  const key = settingsKey(file);
   const dir = orchestratorDir();
   const s = readJsonObject(file, {});
   if (typeof s.statusLine?.command === "string" && s.statusLine.command.includes(MARK)) return "이미 설치됨";
@@ -66,7 +75,7 @@ export function install({ dryRun = false } = {}) {
 
 export function uninstall({ dryRun = false } = {}) {
   const file = settingsPath();
-  const key = fwd(file);
+  const key = settingsKey(file);
   const dir = orchestratorDir();
   const s = readJsonObject(file, {});
   if (!(typeof s.statusLine?.command === "string" && s.statusLine.command.includes(MARK))) return "설치돼 있지 않음";

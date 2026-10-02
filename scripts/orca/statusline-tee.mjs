@@ -23,6 +23,24 @@ export function usageRecord(input, now = new Date()) {
   return { at: now.toISOString(), usedPercent: s.used_percentage, resetsAt: s.resets_at ?? null, fiveHour: d?.rate_limits?.five_hour?.used_percentage ?? null, sessionId: d?.session_id ?? null };
 }
 
+/** 설정 파일 경로 → 원본 저장소 키. install-statusline-tee.mjs의 settingsKey와 같은 규칙(이 파일은 홀로 복사되어 import하지 않는다). */
+export function settingsKey(p, platform = process.platform) {
+  const s = resolve(p).split("\\").join("/");
+  return platform === "win32" ? s.toLowerCase() : s;
+}
+
+/** 원본 저장소에서 그 설정의 원래 명령을 찾는다 — 저장소 키도 같은 규칙으로 맞춰 비교한다. */
+export function originalCommand(store, settingsArg, platform = process.platform) {
+  if (!store || typeof store !== "object" || !settingsArg) return null;
+  const want = settingsKey(settingsArg, platform);
+  for (const [k, v] of Object.entries(store)) {
+    if (settingsKey(k, platform) !== want) continue;
+    const c = v?.statusLine?.command;
+    return typeof c === "string" && c && !c.includes("statusline-tee.mjs") ? c : null;
+  }
+  return null;
+}
+
 /** 원래 statusLine 명령을 Claude Code처럼 셸로 실행한다(Windows는 Git Bash). */
 function runOriginal(command, input) {
   const shell = process.platform === "win32" ? "bash" : "/bin/sh";
@@ -46,11 +64,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     // 어느 설정에서 불렸는지는 설치기가 붙인 --settings로 안다 — 설정마다 원래 명령이 다를 수 있다.
     const i = process.argv.indexOf("--settings");
-    const key = i > 0 ? process.argv[i + 1] : null;
+    const arg = i > 0 ? process.argv[i + 1] : null;
     const origFile = join(dir, "statusline-orig.json");
-    if (key && existsSync(origFile)) {
-      const command = JSON.parse(readFileSync(origFile, "utf8"))?.[key]?.statusLine?.command;
-      if (typeof command === "string" && command && !command.includes("statusline-tee.mjs")) process.stdout.write(runOriginal(command, input));
+    if (arg && existsSync(origFile)) {
+      const command = originalCommand(JSON.parse(readFileSync(origFile, "utf8")), arg);
+      if (command) process.stdout.write(runOriginal(command, input));
     }
   } catch {}
 }
