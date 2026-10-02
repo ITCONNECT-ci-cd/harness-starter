@@ -28,8 +28,9 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
    - Windows PowerShell: `./scripts/doctor.ps1`와 `./scripts/phase-a/preflight.ps1 -Epic <N>`도 실행
 3. `_bmad-output/planning-artifacts/architecture.md`, 대상 Epic의 Story 목록, `_bmad-output/implementation-artifacts/sprint-status.yaml`을 확인한다.
 4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
-5. Story별 모델 배정안(구현·리뷰 모델과 effort, 대체 모델, 이유)을 `docs/agents/model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인본을 계획 파일에 기록·커밋한 뒤에만 워커를 띄운다.
+5. Story별 모델 배정안(구현·리뷰 모델과 effort, 대체 모델, 이유)을 `docs/agents/model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인본을 계획 파일에 기록·커밋한 뒤에만 워커를 띄운다. 시작 프롬프트의 진행 방식이 **무인**이면 OK를 기다리지 않고 적용해 `reviews/epic-<N>/owner-digest.md`에 남기고, 질문으로 턴을 끝내지 않는다(`docs/agents/orca-rules.md` §4.2).
 6. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다. 시작 프롬프트의 진행 범위가 일부 Story면 거기까지 하고 보고한 뒤 멈춘다(시험 운영).
+   - Story 경계마다 멈춤 파일과 사용량 가드(켰으면)를 확인하고(§8.1), 계획의 인계 주기가 찼으면 새 코디네이터 세션에 인계한다(§11, `scripts/orca/session-rollover.mjs`). 인계받은 코디네이터는 인계문부터 읽는다.
 7. 모든 Story가 통합되면 `epic/<N>`에서 현재 OS/셸에 맞는 전체 검증을 실행한다.
    - bash/WSL/macOS/Linux: `./scripts/validate.sh` + `./scripts/smoke.sh`
    - Windows PowerShell: `./scripts/validate.ps1` + `./scripts/smoke.ps1`

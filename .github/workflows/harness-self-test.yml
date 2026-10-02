@@ -29,6 +29,12 @@ jobs:
             echo "skill dirs missing — skip"
           fi
 
+      - name: Orca coordinator scripts (node --test)
+        run: |
+          # scripts/orca/의 판정 함수 시험 — Orca·Claude·Codex 없이 돈다 (docs/agents/orca-rules.md §8.1·§11)
+          node --version
+          node --test scripts/tests/orca-scripts.test.mjs
+
       - name: Template validate
         run: ./scripts/validate.sh
 
