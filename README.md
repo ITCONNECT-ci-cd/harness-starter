@@ -24,6 +24,8 @@ AI가 저장소 규칙, 스크립트, 검증 로그를 읽고 처리하게 합�
 
 ## 최근 변경
 
+2026-10-02: Orca 코디네이터를 보완했습니다. ① **무인 진행**을 고를 수 있습니다 — 코디네이터가 질문으로 멈추지 않고 배정안을 적용하며, 사람 대신 정한 것을 `owner-digest.md`에 남깁니다(기본은 지금처럼 승인 대기). ② **사용량 가드**를 선택으로 켤 수 있습니다 — `~/.orchestrator/limits.json`의 Claude·Codex 주간 사용률 한도와 멈춤 파일. ③ 코디네이터가 Story 몇 개마다 **새 세션에 스스로 인계**합니다 — 한 세션이 Epic 전체를 돌며 비용이 커지는 것을 막습니다. 모델 선택 규칙은 바꾸지 않았습니다. [변경 기록](docs/changelog/2026-10-02-coordinator-autonomy.md), [결정 기록 ADR-003](docs/decisions/ADR-003-coordinator-autonomy.md).
+
 2026-09-30: Phase A(Codex Desktop 구현)와 Phase B(Claude Code 리뷰)를 Orca 개발 흐름으로 교체했습니다. Story마다 구현 워커와 다른 회사 모델의 리뷰 워커가 일하고, 코디네이터가 `epic/<번호>` 브랜치에 통합합니다. 모델 기준은 Gemini 3.8 Flash, Sonnet 5.5, GPT-6.1 Sol, Opus 5.5 네 개로 통일했고, 코디네이터가 Story별 모델 배정안을 먼저 보여 주고 사용자 승인을 받습니다(한도 계산은 하지 않음). [변경 기록](docs/changelog/2026-09-30-orca-orchestration.md), [모델 배정 승인 방식](docs/changelog/2026-09-30-orca-model-approval.md), [Orca 가이드](docs/harness/orca.md)를 확인하세요. 같은 날 OpenAI가 GPT-6.1 Sol을 내놓아 GPT-6 Sol을 교체했습니다([변경 기록](docs/changelog/2026-09-30-gpt-6-1-sol.md)).
 
 이전 변경(Claude 프롬프팅 가이드 반영, Astra 모델 기본값 등)은 [변경 이력](docs/changelog/README.md)에 날짜별로 남아 있습니다. 그 기록에 적힌 모델 설정은 이번 변경으로 대체됐습니다.
@@ -105,7 +107,7 @@ Orca에서 코디네이터 세션을 Sonnet 5.5 / medium으로 열고 입력합�
 | 상향 | Opus 5.5 / medium (Claude Code) | 위험 높음 Story가 Epic의 절반 이상이거나, 코디네이터의 판정·계약 작성 실수가 반복될 때 |
 
 - **최상위 모델이 꼭 필요하지 않습니다.** 코디네이터의 일은 대부분 짧은 보고 읽기, 명령 실행, 계약 작성입니다. 가장 어려운 판단인 모델 배정은 사람이 승인하고, 위험 높음 Story에는 다른 회사 모델의 xhigh 리뷰가 따로 붙습니다.
-- **호출이 가장 많은 역할입니다.** Epic 내내 켜져 있으므로 Opus 5.5는 판단이 어려운 Epic에만 씁니다.
+- **호출이 가장 많은 역할입니다.** Epic 내내 이어지는 역할이므로 Opus 5.5는 판단이 어려운 Epic에만 씁니다. 한 세션이 Epic 전체를 돌지는 않습니다 — Story 3개(인계 주기)마다 같은 모델의 새 세션으로 인계합니다([Orca 개발 규칙](docs/agents/orca-rules.md) §11).
 - **Claude Code에서 엽니다.** 위험 명령 차단 hook이 코디네이터에도 걸립니다. merge와 push를 하는 유일한 역할이라 중요합니다.
 - **GPT-6.1 Sol과 Gemini 3.8 Flash는 쓰지 않습니다.** Sol은 연계·위험 구현과 Sonnet·Opus가 쓴 코드의 리뷰를 맡아 코디네이터까지 맡으면 한 계정에 일이 몰리고, Codex 세션에는 위 hook이 걸리지 않습니다. Flash는 최종 판정 역할에 맞지 않습니다.
 - **effort를 medium으로 직접 지정합니다.** Claude Code의 기본 effort는 xhigh라서, 지정하지 않으면 더 비싼 설정으로 실행됩니다.
@@ -128,7 +130,11 @@ Orca 코디네이터로 Epic <번호>를 진행해줘.
 - GPT-6.1 Sol: <경로 / 계정>
 - Opus 5.5: <경로 / 계정>
 
-워커를 띄우기 전에 docs/agents/model-routing-rules.md의 선택 방법대로 Story별 모델 배정안(위험도, 작업 형태, 구현·리뷰 모델과 effort, 대체 모델, 이유)을 표로 보여 주고 내 OK를 기다려줘.
+워커를 띄우기 전에 docs/agents/model-routing-rules.md의 선택 방법대로 Story별 모델 배정안(위험도, 작업 형태, 구현·리뷰 모델과 effort, 대체 모델, 이유)을 표로 보여 줘.
+
+진행 방식: <승인 대기 — 배정안과 재승인 대상 변경마다 내 OK를 기다려줘 / 무인 — 묻지 말고 orca-rules.md §4.2대로 진행하고 결정은 owner-digest.md에 남겨줘>
+코디네이터 인계: Story <3>개마다 새 세션으로 인계해줘(orca-rules.md §11). 코디네이터 모델 ID: <예: claude-sonnet-5-5>
+사용량 가드: <쓰지 않음 / ~/.orchestrator/limits.json 기준으로 확인해줘(orca-rules.md §8.1)>
 
 승인 범위:
 - 진행 범위: <전체 Story / 처음 N개 Story만 하고 결과와 배정 조정 제안을 보고한 뒤 멈춤>
@@ -141,15 +147,17 @@ Orca 코디네이터로 Epic <번호>를 진행해줘.
 
 ### 이어서 하기
 
-시험 운영(진행 범위를 일부 Story로 둔 경우)으로 멈췄거나, 한도 오류·시간 예산 때문에 멈췄거나, 코디네이터를 바꿀 때 씁니다.
+시험 운영(진행 범위를 일부 Story로 둔 경우)으로 멈췄거나, 한도 오류·시간 예산·사용량 가드·멈춤 파일 때문에 멈췄거나, 코디네이터를 직접 바꿀 때 씁니다. Orca 안에서는 코디네이터가 Story 몇 개마다 스스로 새 세션에 인계하므로(orca-rules.md §11) 평소에는 쓰지 않습니다. 무인 진행이었다면 먼저 `reviews/epic-<번호>/owner-digest.md`를 읽고 뒤집을 항목을 아래에 적습니다.
 
 ```text
 Orca 코디네이터로 Epic <번호> 작업을 이어서 해줘.
 
 AGENTS.md의 Orca 개발 루틴과 docs/agents/orca-rules.md를 따라줘.
+남아 있는 인계문이 있으면 먼저 읽어줘: <state/orca/handoff/epic-<번호>-<k>.md / 없음>
+owner-digest에서 뒤집을 것: <없음 / 항목과 바꿀 내용>
 plans/epic-<번호>-orca.md(승인된 모델 배정안 포함), reviews/epic-<번호>/orca-runs.md, state/epic-<번호>-progress.json, 현재 Git 상태를 대조해서 멈춘 지점부터 진행해줘.
 끝난 Story를 다시 리뷰하거나 검증하지 말고, 멈춘 원인이 해결됐는지 먼저 확인해줘.
-승인된 모델 배정안을 그대로 쓰고, 남은 Story의 배정을 바꿔야 하면 바꿀 행만 보여 주고 내 OK를 기다려줘.
+승인된 모델 배정안을 그대로 쓰고, 남은 Story의 배정을 바꿔야 하면 바꿀 행만 보여 주고 내 OK를 기다려줘(무인 진행이면 orca-rules.md §4.2대로).
 
 직전 보고의 배정 조정 제안 중 승인하는 것: <없음 / 승인할 제안>
 승인 범위는 처음 요청과 같아. <진행 범위 등 바뀐 점이 있으면 적기>

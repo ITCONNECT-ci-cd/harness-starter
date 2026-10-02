@@ -4,6 +4,7 @@
 
 | 날짜 | 변경 내용 | 문서 |
 |---|---|---|
+| 2026-10-02 | 코디네이터 무인 진행·사용량 가드(선택)·세션 인계 (owner-digest, limits.json·STOP, session-rollover) | [변경 기록](2026-10-02-coordinator-autonomy.md) |
 | 2026-09-30 | GPT-6 Sol을 GPT-6.1 Sol로 교체 (Codex 등록 ID 확인, Codex 기본 effort·ultra 주의사항, 워커 우회 금지) | [변경 기록](2026-09-30-gpt-6-1-sol.md) |
 | 2026-09-30 | Orca 모델 배정을 사용자 승인 방식으로 변경 (한도 계산 제거, 선택 표, 위험도별 effort, 코디네이터 기본 모델, 조정 제안 자동화) | [변경 기록](2026-09-30-orca-model-approval.md) |
 | 2026-09-30 | Orca 오케스트레이션 적용 (Phase A·B 교체, 4개 모델 통일) | [변경 기록](2026-09-30-orca-orchestration.md) |

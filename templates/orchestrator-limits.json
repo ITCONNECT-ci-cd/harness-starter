@@ -1,0 +1,7 @@
+{
+  "_설명": "선택 기능 — 코디네이터 사용량 가드(docs/agents/orca-rules.md §8.1). ~/.orchestrator/limits.json으로 복사해 쓴다. 숫자는 주간 사용률(%). 키를 빼면 그 가드만 꺼진다. 파일이 없으면 전부 꺼진다. 이 _설명 키는 무시된다.",
+  "claudeStopAtUsedPercent": 80,
+  "claudeUsageMaxAgeMin": 60,
+  "codexLightAtUsedPercent": 70,
+  "codexExhaustedAtUsedPercent": 95
+}
