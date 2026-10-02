@@ -33,12 +33,11 @@ export function settingsKey(p, platform = process.platform) {
 export function originalCommand(store, settingsArg, platform = process.platform) {
   if (!store || typeof store !== "object" || !settingsArg) return null;
   const want = settingsKey(settingsArg, platform);
-  for (const [k, v] of Object.entries(store)) {
-    if (settingsKey(k, platform) !== want) continue;
-    const c = v?.statusLine?.command;
-    return typeof c === "string" && c && !c.includes("statusline-tee.mjs") ? c : null;
-  }
-  return null;
+  // 정규 키가 있으면 그것을 먼저 쓴다(다른 표기의 옛 키가 함께 남아 있어도 최신 원본을 고른다).
+  const keys = Object.keys(store).filter((k) => settingsKey(k, platform) === want);
+  const k = keys.includes(want) ? want : keys[0];
+  const c = k === undefined ? null : store[k]?.statusLine?.command;
+  return typeof c === "string" && c && !c.includes("statusline-tee.mjs") ? c : null;
 }
 
 /** 원래 statusLine 명령을 Claude Code처럼 셸로 실행한다(Windows는 Git Bash). */

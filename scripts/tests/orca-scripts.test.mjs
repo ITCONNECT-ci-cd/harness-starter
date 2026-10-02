@@ -105,6 +105,9 @@ test("settingsKey·originalCommand — 같은 설정 파일의 다른 표기(역
   assert.equal(originalCommand(store, "C:\\Users\\A\\.claude\\settings.json", "win32"), "echo A");
   assert.equal(originalCommand(store, "C:\\Users\\C\\.claude\\settings.json", "win32"), null);
   assert.equal(originalCommand({ k: { statusLine: { command: 'node "statusline-tee.mjs"' } } }, "k", "linux"), null);
+  // 옛 표기 키와 정규 키가 함께 있으면 정규 키를 고른다
+  const both = { "C:/Users/A/.claude/settings.json": { statusLine: { command: "echo LEGACY" } }, [teeKey("C:/Users/A/.claude/settings.json", "win32")]: { statusLine: { command: "echo CURRENT" } } };
+  assert.equal(originalCommand(both, "C:\\Users\\A\\.claude\\settings.json", "win32"), "echo CURRENT");
 });
 
 test("codexVerdict — 경계와 한쪽 키만 있는 경우, 한도 거부는 exhausted", () => {
@@ -199,6 +202,24 @@ test("install/uninstall — 원래 statusLine을 보존하고 정확히 되돌�
     process.env.CLAUDE_CONFIG_DIR = claudeB;
     uninstall();
     assert.deepEqual(JSON.parse(readFileSync(settingsB, "utf8")), origB);
+
+    // 옛 표기 키(정규화 전 형식)로 남은 원본도 찾아 되돌리고, 재설치하면 키가 하나로 합쳐진다
+    const store = join(orchDir, "statusline-orig.json");
+    process.env.CLAUDE_CONFIG_DIR = claudeDir;
+    writeFileSync(settings, JSON.stringify(origA));
+    install();
+    const canonical = Object.keys(JSON.parse(readFileSync(store, "utf8")))[0];
+    const legacyKey = settings.split("\\").join("/");
+    if (legacyKey !== canonical) {
+      writeFileSync(store, JSON.stringify({ [legacyKey]: { statusLine: origA.statusLine } }));
+      uninstall();
+      assert.deepEqual(JSON.parse(readFileSync(settings, "utf8")), origA);
+      assert.deepEqual(JSON.parse(readFileSync(store, "utf8")), {});
+      writeFileSync(store, JSON.stringify({ [legacyKey]: { statusLine: { command: "echo OLD" } } }));
+      install();
+      assert.deepEqual(Object.keys(JSON.parse(readFileSync(store, "utf8"))), [canonical]);
+    }
+    uninstall();
 
     // Windows: 같은 폴더를 대소문자만 바꿔 가리켜도 제거된다
     if (process.platform === "win32") {

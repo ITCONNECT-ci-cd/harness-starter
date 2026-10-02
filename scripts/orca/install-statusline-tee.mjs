@@ -50,7 +50,12 @@ function writeSettings(file, s) {
   writeAtomic(file, s);
 }
 
-/** 원본 저장소: { "<settings.json 절대 경로(/)>": { statusLine: <원래 값 또는 null> } } */
+/** 저장소에서 key와 같은 설정 파일을 가리키는 키들(표기가 달라도). */
+export function matchingKeys(store, key, platform = process.platform) {
+  return Object.keys(store).filter((k) => settingsKey(k, platform) === key);
+}
+
+/** 원본 저장소: { "<settingsKey(settings.json)>": { statusLine: <원래 값 또는 null> } } */
 function origStore(dir) {
   return join(dir, "statusline-orig.json");
 }
@@ -67,6 +72,8 @@ export function install({ dryRun = false } = {}) {
   mkdirSync(dir, { recursive: true });
   copyFileSync(join(dirname(fileURLToPath(import.meta.url)), MARK), teeDest);
   const store = readJsonObject(origStore(dir), {});
+  // 같은 설정 파일을 가리키는 다른 표기의 키(예전 형식 포함)는 지우고 정규 키 하나만 남긴다.
+  for (const k of matchingKeys(store, key)) delete store[k];
   store[key] = { statusLine: s.statusLine ?? null };
   writeAtomic(origStore(dir), store);
   writeSettings(file, { ...s, statusLine: { ...(s.statusLine ?? {}), type: "command", command: teeCmd } });
@@ -80,14 +87,17 @@ export function uninstall({ dryRun = false } = {}) {
   const s = readJsonObject(file, {});
   if (!(typeof s.statusLine?.command === "string" && s.statusLine.command.includes(MARK))) return "설치돼 있지 않음";
   const store = readJsonObject(origStore(dir), {});
-  if (!Object.hasOwn(store, key)) throw new Error(`${origStore(dir)}에 ${key}의 원래 statusLine이 없다 — 손으로 되돌린다`);
-  const orig = store[key].statusLine ?? null;
+  // 저장된 키도 같은 규칙으로 맞춰 찾는다(다른 표기·예전 형식). 정규 키가 있으면 그것을 쓴다.
+  const keys = matchingKeys(store, key);
+  if (!keys.length) throw new Error(`${origStore(dir)}에 ${key}의 원래 statusLine이 없다 — 손으로 되돌린다`);
+  const use = keys.includes(key) ? key : keys[0];
+  const orig = store[use].statusLine ?? null;
   if (dryRun) return `되돌릴 값: ${orig ? JSON.stringify(orig) : "statusLine 없음"}`;
   const next = { ...s };
   if (orig) next.statusLine = orig;
   else delete next.statusLine;
   writeSettings(file, next);
-  delete store[key];
+  for (const k of keys) delete store[k];
   writeAtomic(origStore(dir), store);
   return `되돌림: ${orig ? JSON.stringify(orig) : "statusLine 제거"}`;
 }
