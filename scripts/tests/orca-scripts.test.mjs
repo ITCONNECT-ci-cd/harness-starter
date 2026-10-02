@@ -1,10 +1,12 @@
 // node --test scripts/tests/orca-scripts.test.mjs
 // Orca 코디네이터 보조 스크립트(scripts/orca/)의 판정 함수 시험. Orca·Claude·Codex 없이 돈다.
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { claudeUsage, claudeVerdict } from "../orca/claude-usage.mjs";
 import { codexVerdict, lastLimits } from "../orca/codex-usage.mjs";
 import { install, uninstall } from "../orca/install-statusline-tee.mjs";
@@ -66,6 +68,29 @@ test("claudeVerdict — 한도 이상은 오래돼도 stop, 한도 미만이 오
   assert.equal(claudeVerdict({ at: "2026-10-01T23:59:00Z", usedPercent: 85, resetsAt: now / 1000 - 1 }, lim, now).verdict, "unknown");
   assert.equal(claudeVerdict({ at: "not-a-date", usedPercent: 50 }, lim, now).verdict, "unknown");
   assert.equal(claudeVerdict({ at: "2026-10-01T23:59:00Z", usedPercent: 80 }, lim, now).verdict, "stop");
+  // 잘못된 기록은 예외나 ok가 아니라 unknown
+  assert.equal(claudeVerdict({ at: "2026-10-01T23:59:00Z", usedPercent: 10, resetsAt: 1e30 }, lim, now).verdict, "unknown");
+  assert.equal(claudeVerdict({ at: "2099-01-01T00:00:00Z", usedPercent: 10 }, lim, now).verdict, "unknown");
+  assert.equal(claudeVerdict({ at: "2026-10-01T23:59:00Z", usedPercent: Number.NaN }, lim, now).verdict, "unknown");
+  assert.equal(claudeVerdict({ at: "2026-10-01T23:59:00Z", usedPercent: "10" }, lim, now).verdict, "unknown");
+});
+
+test("claudeUsage — unknown은 직전 stop을 잇고, 한도 파일이 깨지면 stop", () => {
+  const d = freshDir();
+  const now = Date.parse("2026-10-02T00:00:00Z");
+  writeFileSync(join(d, "limits.json"), JSON.stringify({ claudeStopAtUsedPercent: 80 }));
+  writeFileSync(join(d, "claude-usage.json"), JSON.stringify({ at: "2026-10-01T23:59:00Z", usedPercent: 90 }));
+  assert.equal(claudeUsage(d, now).verdict, "stop");
+  writeFileSync(join(d, "claude-usage.json"), "{");
+  const carried = claudeUsage(d, now);
+  assert.equal(carried.verdict, "stop");
+  assert.equal(carried.carried, true);
+  writeFileSync(join(d, "claude-usage.json"), JSON.stringify({ at: "2026-10-01T23:59:00Z", usedPercent: 50 }));
+  assert.equal(claudeUsage(d, now).verdict, "ok"); // 새 ok가 직전 stop을 바꾼다
+  writeFileSync(join(d, "claude-usage.json"), "{");
+  assert.equal(claudeUsage(d, now).verdict, "unknown"); // 직전이 ok면 unknown 그대로
+  writeFileSync(join(d, "limits.json"), "{");
+  assert.equal(claudeUsage(d, now).verdict, "stop");
 });
 
 test("codexVerdict — 경계와 한쪽 키만 있는 경우, 한도 거부는 exhausted", () => {
@@ -79,12 +104,19 @@ test("codexVerdict — 경계와 한쪽 키만 있는 경우, 한도 거부는 e
   assert.equal(codexVerdict(99, { codexExhaustedAtUsedPercent: 95 }), "exhausted");
 });
 
-test("lastLimits — rollout의 마지막 rate_limits.primary를 읽는다", () => {
-  const ev = (pct, ts) => JSON.stringify({ timestamp: ts, payload: { type: "token_count", rate_limits: { primary: { used_percent: pct, window_minutes: 10080, resets_at: 1 } } } });
-  const text = [ev(10, "a"), "garbage", JSON.stringify({ x: 1 }), ev(42, "b"), ""].join("\n");
-  const l = lastLimits(text);
-  assert.equal(l.primary.used_percent, 42);
-  assert.equal(l.at, "b");
+test("lastLimits — 주간 창(10080분)만 읽는다: primary든 secondary든, 없으면 null", () => {
+  const ev = (rl, ts) => JSON.stringify({ timestamp: ts, payload: { type: "token_count", rate_limits: rl } });
+  const week = (pct) => ({ used_percent: pct, window_minutes: 10080, resets_at: 1 });
+  const text = [ev({ primary: week(10) }, "a"), "garbage", JSON.stringify({ x: 1 }), ev({ primary: week(42) }, "b"), ""].join("\n");
+  assert.equal(lastLimits(text).weekly.used_percent, 42);
+  assert.equal(lastLimits(text).at, "b");
+  // 5시간 창이 primary, 주간이 secondary — 주간 값으로 판정해야 한다(5시간 10%로 ok가 나면 안 된다)
+  const split = ev({ primary: { used_percent: 10, window_minutes: 300 }, secondary: week(99) }, "c");
+  assert.equal(lastLimits(split).weekly.used_percent, 99);
+  assert.equal(codexVerdict(lastLimits(split).weekly.used_percent, { codexExhaustedAtUsedPercent: 95 }), "exhausted");
+  // 주간 창이 없는 기록은 건너뛰고 앞의 주간 기록을 쓴다, 아무 데도 없으면 null
+  assert.equal(lastLimits([ev({ primary: week(30) }, "d"), ev({ primary: { used_percent: 5, window_minutes: 300 } }, "e")].join("\n")).weekly.used_percent, 30);
+  assert.equal(lastLimits(ev({ primary: { used_percent: 5, window_minutes: 300 } }, "f")), null);
   assert.equal(lastLimits("no limits here"), null);
 });
 
@@ -93,6 +125,21 @@ test("usageRecord — statusline 입력에서 주간 사용률만 뽑는다", ()
   assert.deepEqual(r, { at: "1970-01-01T00:00:00.000Z", usedPercent: 33, resetsAt: 9, fiveHour: 5, sessionId: "s" });
   assert.equal(usageRecord(JSON.stringify({ model: {} })), null);
   assert.equal(usageRecord("not json"), null);
+});
+
+test("statusline-tee 실행 — 사용률을 기록하고, --settings로 고른 원래 명령의 출력을 그대로 낸다", () => {
+  const orchDir = freshDir();
+  const key = "/x/settings.json";
+  writeFileSync(join(orchDir, "statusline-orig.json"), JSON.stringify({ [key]: { statusLine: { type: "command", command: "echo ORIG-LINE" } }, "/y/settings.json": { statusLine: { command: "echo WRONG" } } }));
+  const tee = fileURLToPath(new URL("../orca/statusline-tee.mjs", import.meta.url));
+  const r = spawnSync(process.execPath, [tee, "--settings", key], {
+    input: JSON.stringify({ session_id: "s", rate_limits: { seven_day: { used_percentage: 12, resets_at: 9 } } }),
+    encoding: "utf8",
+    env: { ...process.env, HARNESS_ORCHESTRATOR_DIR: orchDir },
+  });
+  assert.match(r.stdout, /ORIG-LINE/);
+  assert.doesNotMatch(r.stdout, /WRONG/);
+  assert.equal(JSON.parse(readFileSync(join(orchDir, "claude-usage.json"), "utf8")).usedPercent, 12);
 });
 
 test("install/uninstall — 원래 statusLine을 보존하고 정확히 되돌린다(없었으면 키를 지운다)", () => {
@@ -120,6 +167,24 @@ test("install/uninstall — 원래 statusLine을 보존하고 정확히 되돌�
     install();
     uninstall();
     assert.deepEqual(JSON.parse(readFileSync(settings, "utf8")), { theme: "light" });
+
+    // 설정 폴더가 둘이어도 원본을 섞지 않는다: A·B에 설치 → A 제거는 A의 원본, B 제거는 B의 원본
+    const claudeB = freshDir();
+    const settingsB = join(claudeB, "settings.json");
+    const origA = { statusLine: { type: "command", command: "echo A" } };
+    const origB = { statusLine: { type: "command", command: "echo B" } };
+    writeFileSync(settings, JSON.stringify(origA));
+    writeFileSync(settingsB, JSON.stringify(origB));
+    install();
+    process.env.CLAUDE_CONFIG_DIR = claudeB;
+    install();
+    assert.match(JSON.parse(readFileSync(settingsB, "utf8")).statusLine.command, /--settings ".*settings\.json"/);
+    process.env.CLAUDE_CONFIG_DIR = claudeDir;
+    uninstall();
+    assert.deepEqual(JSON.parse(readFileSync(settings, "utf8")), origA);
+    process.env.CLAUDE_CONFIG_DIR = claudeB;
+    uninstall();
+    assert.deepEqual(JSON.parse(readFileSync(settingsB, "utf8")), origB);
   } finally {
     if (prev.c === undefined) delete process.env.CLAUDE_CONFIG_DIR;
     else process.env.CLAUDE_CONFIG_DIR = prev.c;
@@ -160,6 +225,9 @@ test("rollover — 인계 줄 상태: 제출됨·입력만·새 세션·불확�
 test("rollover — 체인 형식과 인계 줄", () => {
   assert.deepEqual(parseChain("3/5"), { n: 3, max: 5 });
   assert.equal(parseChain("3"), null);
+  assert.equal(parseChain("0/0"), null);
+  assert.equal(parseChain("1/0"), null);
+  assert.equal(parseChain(`1/${"9".repeat(20)}`), null);
   const line = handoffLine({ relBrief: "state/orca/handoff/epic-1-2.md", unattended: true, runId: "run_1", predecessor: "term_x" });
   assert.match(line, /인계문 state\/orca\/handoff\/epic-1-2\.md/);
   assert.match(line, /run-use --id run_1/);

@@ -47,7 +47,7 @@ tags: [harness, orca, coordinator]
 | `scripts/orca/session-rollover.mjs` | 신규. 후임 탭 생성·준비 판정·모델 대조·멱등 전송·앞 탭 정리 |
 | `scripts/orca/limits.mjs`, `claude-usage.mjs`, `codex-usage.mjs` | 신규. 한도 파일·멈춤 파일·사용률 판정(파일이 없으면 off) |
 | `scripts/orca/statusline-tee.mjs`, `install-statusline-tee.mjs` | 신규. Claude statusline 입력의 주간 사용률 기록 장치와 설치·정확한 되돌리기 |
-| `scripts/tests/orca-scripts.test.mjs` | 신규. 판정 함수·설치 왕복 시험 12개 |
+| `scripts/tests/orca-scripts.test.mjs` | 신규. 판정 함수·tee 실행·설치 왕복 시험 14개 |
 | `.github/workflows/harness-self-test.yml` | Node 시험 단계 추가 |
 | `state/README.md` | 인계문·인계 기록·사용자 폴더 파일 설명 |
 | `docs/decisions/ADR-003-coordinator-autonomy.md` | 신규. 결정 이유와 대안 |
@@ -56,7 +56,14 @@ tags: [harness, orca, coordinator]
 
 ## 실행한 검증
 
-- `node --test scripts/tests/orca-scripts.test.mjs`: 12/12 통과(Windows, Node 24)
+- `node --test scripts/tests/orca-scripts.test.mjs`: 14/14 통과(Windows, Node 24)
+- 독립 리뷰(Codex GPT-6 Astra, high, 읽기 전용): high 3·medium 6·low 1 → 전부 반영
+  - Codex 사용률을 첫 창(primary)이 아니라 주간 창(`window_minutes` 10080)으로 고른다
+  - Codex `light`로 구현 모델이 바뀌면 리뷰 모델을 실제 작성 모델 기준으로 다시 고른다
+  - 터미널 목록을 못 읽으면 인계하지 않는다(중복 코디네이터 방지), 멈춤 파일·사용량을 첫 전송 직전에 다시 본다, 체인 상한 필수
+  - 권한 확인 생략(`--skip-permissions`)을 무인 진행에서 분리했다
+  - Claude `stop`에서 리뷰 전 Story는 보존하고 멈춘다, unknown은 직전 stop을 잇는다, 한도 파일이 깨지면 stop, 잘못된 기록은 unknown
+  - statusline 원본을 설정 파일 경로별로 보관한다(설정 폴더가 둘이어도 섞이지 않게)
 - 실제 Orca(1.4.218)에서 인계 시험 `--dry-run --no-predecessor`: 탭 생성 → Sonnet 5.5 배너 대조 → 한 줄 전송(영수증 accepted) → 후임 응답 `ROLLOVER-5555` 확인 → 탭 닫기, 종료 0
   - 첫 시도에서 결함 발견: Claude Code 2.1.287의 기본 권한 모드가 auto mode로 바뀌어 상태줄 문구가 달라졌고 준비 판정이 실패했다(인계문은 보내지 않음 — 안전한 실패). 상태줄 공통 표시 `⏵⏵`와 `auto mode`를 판정에 넣고 시험을 추가한 뒤 통과
   - Orca에 등록되지 않은 경로에서는 탭을 만들 수 없음을 확인하고 오류 안내를 넣음
@@ -66,5 +73,5 @@ tags: [harness, orca, coordinator]
 ## 남은 확인 항목
 
 - 실제 Epic에서 무인 진행·인계 체인을 끝까지 돌린 기록은 이 저장소에 아직 없다. 첫 Epic은 진행 범위를 「처음 3개 Story」로 두고 인계 1회를 포함해 시험 운영하기를 권한다.
-- 무인 코디네이터는 Claude Code를 `--dangerously-skip-permissions`로 띄운다(질문으로 멈추지 않게). `.claude/hooks`의 위험 명령 차단은 이 모드에서도 돈다. 권한 모드를 더 좁히고 싶으면 `--agent-cmd`로 직접 지정한다.
+- 무인 코디네이터에 권한 확인 창이 뜨면 멈춘다. 허용 목록(`permissions.allow`)을 프로젝트에 맞게 채우는 예시는 아직 없다 — 첫 무인 운영에서 실제로 쓴 명령으로 만든다. `--skip-permissions`는 hook만 남기고 push 승인 범위를 규칙으로만 지킨다.
 - Codex 사용량 탐침은 `codex exec`를 sandbox 없이 임시 폴더에서 한 번 부른다(Windows에서 sandbox 모드가 셸을 막는 문제 때문). 응답만 받는 호출이다.

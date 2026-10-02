@@ -44,10 +44,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     }
   } catch {}
   try {
+    // 어느 설정에서 불렸는지는 설치기가 붙인 --settings로 안다 — 설정마다 원래 명령이 다를 수 있다.
+    const i = process.argv.indexOf("--settings");
+    const key = i > 0 ? process.argv[i + 1] : null;
     const origFile = join(dir, "statusline-orig.json");
-    if (existsSync(origFile)) {
-      const orig = JSON.parse(readFileSync(origFile, "utf8"));
-      if (orig?.statusLine?.command) process.stdout.write(runOriginal(orig.statusLine.command, input));
+    if (key && existsSync(origFile)) {
+      const command = JSON.parse(readFileSync(origFile, "utf8"))?.[key]?.statusLine?.command;
+      if (typeof command === "string" && command && !command.includes("statusline-tee.mjs")) process.stdout.write(runOriginal(command, input));
     }
   } catch {}
 }

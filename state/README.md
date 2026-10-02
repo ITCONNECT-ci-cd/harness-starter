@@ -26,6 +26,8 @@
 # ~/.orchestrator/ (저장소 밖, 사용자 폴더 — 선택 기능)
 #   - limits.json: 사용량 가드 한도 (docs/agents/orca-rules.md §8.1, templates/orchestrator-limits.json)
 #   - claude-usage.json: statusline-tee가 남기는 Claude 주간 사용률
+#   - claude-verdict-last.json: 마지막 Claude 판정(ok/stop) — unknown일 때 직전 stop을 잇는 데 쓰임
+#   - statusline-orig.json: tee를 건 Claude 설정 파일별 원래 statusLine (되돌리기용)
 #   - STOP, STOP-<저장소 이름>: 멈춤 파일
 #
 # validate/

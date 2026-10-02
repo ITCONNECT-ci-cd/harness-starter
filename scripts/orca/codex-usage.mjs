@@ -2,7 +2,8 @@
 // codex-usage.mjs — Codex 주간 사용률로 판정을 낸다(선택 기능, docs/agents/orca-rules.md §8.1).
 //
 // Codex CLI에는 사용량을 묻는 명령이 없다. 대신 대화 기록(rollout) $CODEX_HOME/sessions/YYYY/MM/DD/*.jsonl의
-// token_count 이벤트에 rate_limits.primary(used_percent·window_minutes·resets_at)가 실린다.
+// token_count 이벤트에 rate_limits(primary·secondary 창마다 used_percent·window_minutes·resets_at)가 실린다.
+// 판정은 window_minutes = 10080(주간)인 창으로만 한다 — 주간 창이 어느 칸에 오는지는 Codex 버전마다 다르다.
 //  - 기본은 기록을 남기는 아주 작은 탐침 호출 하나를 하고, **그 탐침의 세션 ID로 찾은 rollout**의, 탐침 뒤 시각 이벤트로만
 //    판정한다(다른 세션의 옛 값을 집지 않는다). 탐침이 사용량 한도로 거부되면 exhausted.
 //  - --no-probe는 가장 새 rollout만 읽는다(누구의·언제 값인지 보장 없음 — 「묵은 값」 표시).
@@ -32,7 +33,20 @@ export function codexVerdict(used, limits, limitHit = false) {
   return "ok";
 }
 
-/** rollout 한 파일의 마지막 rate_limits(primary 포함). */
+export const WEEK_MINUTES = 10080;
+
+/**
+ * rate_limits에서 **주간 창**(window_minutes = 10080)을 고른다. primary·secondary 중 어느 쪽에 올지 Codex 버전마다
+ * 다르다(primary가 5시간 창이고 secondary가 주간일 수 있다). 주간 창이 없으면 null — 다른 창 값으로 판정하지 않는다.
+ */
+export function weeklyWindow(rl) {
+  for (const w of [rl?.primary, rl?.secondary]) {
+    if (w && w.window_minutes === WEEK_MINUTES && typeof w.used_percent === "number" && Number.isFinite(w.used_percent)) return w;
+  }
+  return null;
+}
+
+/** rollout 한 파일에서 주간 창이 있는 마지막 rate_limits. 반환: { at, weekly, raw } 또는 null. */
 export function lastLimits(text) {
   const lines = text.split("\n");
   for (let i = lines.length - 1; i >= 0; i -= 1) {
@@ -40,7 +54,8 @@ export function lastLimits(text) {
     try {
       const o = JSON.parse(lines[i]);
       const rl = o?.payload?.rate_limits ?? o?.rate_limits ?? o?.msg?.rate_limits;
-      if (rl?.primary && typeof rl.primary.used_percent === "number") return { at: o.timestamp ?? null, ...rl };
+      const weekly = weeklyWindow(rl);
+      if (weekly) return { at: o.timestamp ?? null, weekly, raw: rl };
     } catch {}
   }
   return null;
@@ -121,14 +136,15 @@ export function codexUsage({ probe = true } = {}) {
       }
     }
   }
-  const resetsAt = found?.primary?.resets_at ? new Date(found.primary.resets_at * 1000) : null;
+  const resetsSec = found?.weekly?.resets_at;
+  const resetsAt = typeof resetsSec === "number" && Number.isFinite(resetsSec) && Math.abs(resetsSec) < 1e11 ? new Date(resetsSec * 1000) : null;
   const expired = Boolean(found && resetsAt && resetsAt.getTime() < Date.now());
   if (expired) note += " · 기록의 창이 이미 초기화됨(새 창 미측정)";
-  const used = found && !expired ? found.primary.used_percent : null;
+  const used = found && !expired ? found.weekly.used_percent : null;
   if (found) limitHit = false; // 측정값이 있으면 그것이 우선
   return {
     verdict: codexVerdict(used, l.limits, limitHit),
-    usedPercent: found ? found.primary.used_percent : null,
+    usedPercent: found ? found.weekly.used_percent : null,
     stale: Boolean(found?.stale) || expired,
     limitHit,
     resetsAt: resetsAt ? resetsAt.toISOString() : null,

@@ -17,13 +17,17 @@
  * 사용:
  *   인계:  node scripts/orca/session-rollover.mjs --worktree <코디네이터 체크아웃 절대 경로> --brief-file <인계문.md>
  *            --title "<프로젝트> 코디네이터 Epic <N> #<k>" --chain <n>/<max> --model <코디네이터 모델 ID> [--effort medium]
- *            [--run-id <Orca Run ID>] [--unattended] [--agent-cmd "<직접 지정>"] [--stop-name <이름>] [--wait-ms 90000]
+ *            [--run-id <Orca Run ID>] [--unattended] [--skip-permissions] [--agent-cmd "<직접 지정>"] [--stop-name <이름>] [--wait-ms 90000]
  *            [--no-predecessor] [--dry-run]
  *   정리:  node scripts/orca/session-rollover.mjs --close-predecessor <terminal handle> [--wait-ms 1800000]
  *            — 후임이 시작 직후 **백그라운드로** 부른다. 앞 탭 화면에 작업 표시가 없는 상태가 15초 간격 두 번일 때만 닫는다.
  *
- *   --unattended    무인 진행(orca-rules §4.2): 후임을 권한 확인 없이 띄우고(--dangerously-skip-permissions — hook은 그대로
- *                   돈다) templates/orca-unattended-system-prompt.md를 첫 요청부터 시스템 프롬프트에 붙인다.
+ *   --unattended    무인 진행(orca-rules §4.2): templates/orca-unattended-system-prompt.md를 첫 요청부터 시스템 프롬프트에
+ *                   붙이고, 인계 줄에 무인 진행을 적는다. 권한 모드는 바꾸지 않는다.
+ *   --skip-permissions 후임을 `--dangerously-skip-permissions`로 띄운다. **따로 고른다** — 무인 진행에서 권한 확인 창이
+ *                   뜨면 아무도 답하지 않아 멈추므로 필요할 수 있지만, hook(위험 명령 차단)은 돌아도 push·merge·외부 발송의
+ *                   승인 범위는 검사하지 않는다. 대안은 Claude Code 설정의 허용 목록(permissions.allow)을 좁게 두는 것.
+ *   --chain         실제 인계에는 필수(1 이상의 정수 n/max). 시험(--dry-run)만 생략할 수 있다.
  *   --run-id        후임이 `orca orchestration run-use --id <id>`로 같은 Run에 붙도록 인계 줄에 넣는다.
  *   --no-predecessor 사람과의 대화 탭·시험에서 띄울 때 — 후임이 이 탭을 「앞 세션」으로 닫지 않게 한다.
  *   --dry-run       탭을 열고 준비·모델을 확인한 뒤 인계문 대신 계산 문제를 보내 답(ROLLOVER-5555)을 보고 탭을 닫는다.
@@ -72,10 +76,13 @@ export function bannerModel(screen) {
   return (/\b((?:Opus|Sonnet|Fable|Haiku)[^\n·]*?)\s*(?:·|with |$)/m.exec(screen)?.[1] ?? "").trim() || null;
 }
 
-/** "n/max" → {n,max}; 형식이 틀리면 null. */
+/** "n/max" → {n,max}; 형식이 틀리거나 1 미만·안전한 정수 밖이면 null. */
 export function parseChain(s) {
   const m = /^(\d+)\/(\d+)$/.exec(s ?? "");
-  return m ? { n: Number(m[1]), max: Number(m[2]) } : null;
+  if (!m) return null;
+  const n = Number(m[1]);
+  const max = Number(m[2]);
+  return Number.isSafeInteger(n) && Number.isSafeInteger(max) && n >= 1 && max >= 1 ? { n, max } : null;
 }
 
 /**
@@ -125,6 +132,7 @@ function parseArgs(argv) {
       if (!Number.isFinite(a.waitMs) || a.waitMs <= 0) throw new Error("--wait-ms는 양수");
       a.waitMsSet = true;
     } else if (k === "--unattended") a.unattended = true;
+    else if (k === "--skip-permissions") a.skipPermissions = true;
     else if (k === "--no-predecessor") a.noPredecessor = true;
     else if (k === "--dry-run") a.dryRun = true;
     else throw new Error(`알 수 없는 인자: ${k}`);
@@ -157,13 +165,17 @@ function hasTrue(obj, key) {
   return Object.values(obj).some((v) => hasTrue(v, key));
 }
 
+/** 터미널 목록을 훑는다. 목록 조회가 실패했거나 응답이 객체가 아니면 false(호출자는 「없다」로 보면 안 된다). */
 function walkTerminals(fn) {
+  const r = orca(["terminal", "list"]);
+  if (r.status !== 0 || !r.json || typeof r.json !== "object" || r.json.ok === false) return false;
   const walk = (o) => {
     if (!o || typeof o !== "object") return;
     if (typeof o.handle === "string" && o.handle.startsWith("term_")) fn(o);
     for (const v of Object.values(o)) walk(v);
   };
-  walk(orca(["terminal", "list"]).json);
+  walk(r.json);
+  return true;
 }
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -232,31 +244,41 @@ function handoff(a) {
     console.error(`후임이 읽을 규칙(docs/agents/orca-rules.md)이 그 체크아웃에 없다: ${a.worktree}`);
     return 1;
   }
+  // 체인 상한은 폭주를 막는 장치라 실제 인계에는 필수다(시험은 생략 가능).
   const chain = a.chain ? parseChain(a.chain) : null;
-  if (a.chain && !chain) {
-    console.error("--chain은 n/max 형식");
+  if ((a.chain && !chain) || (!a.dryRun && !chain)) {
+    console.error("--chain n/max가 필요하다(1 이상의 정수) — 실제 인계는 체인 상한 없이 하지 않는다");
     return 1;
   }
-  const stop = stopFile(a.stopName ?? repoName(a.worktree));
-  if (stop && !a.dryRun) {
-    console.log(`[rollover] 멈춤 파일이 있다(${stop}) — 인계하지 않는다. 파일을 지우고 「이어서 하기」로 재개한다.`);
-    return 10;
-  }
-  const cu = claudeUsage();
-  if (cu.verdict === "stop" && !a.dryRun) {
-    console.log(`[rollover] Claude 주간 사용 ${cu.usedPercent}% ≥ 멈춤 ${cu.stopAt}% — 인계하지 않는다(${cu.why}). ~/.orchestrator/limits.json을 올리거나 초기화 뒤 재개한다.`);
-    return 11;
-  }
-  if (cu.verdict === "unknown") console.log(`[rollover] Claude 사용량 미확인(${cu.why}) — 인계는 하되 인계문·보고에 적는다.`);
   if (chain && chain.n > chain.max) {
     console.log(`[rollover] 인계 체인 상한 도달(${a.chain}) — 인계하지 않는다. 보고하고 멈춘다.`);
     return 4;
   }
+  const stopName = a.stopName ?? repoName(a.worktree);
+  // 멈춤 파일·사용량은 탭을 만들기 전과 **첫 전송 직전**에 두 번 본다(준비를 기다리는 동안 생길 수 있다).
+  const gate = () => {
+    if (a.dryRun) return 0;
+    const stop = stopFile(stopName);
+    if (stop) {
+      console.log(`[rollover] 멈춤 파일이 있다(${stop}) — 인계하지 않는다. 파일을 지우고 「이어서 하기」로 재개한다.`);
+      return 10;
+    }
+    const cu = claudeUsage();
+    if (cu.verdict === "stop") {
+      console.log(`[rollover] Claude 사용량 멈춤(${cu.usedPercent ?? "?"}% / 한도 ${cu.stopAt ?? "?"}% — ${cu.why}) — 인계하지 않는다. ~/.orchestrator/limits.json을 고치거나 올리고, 또는 초기화 뒤 재개한다.`);
+      return 11;
+    }
+    if (cu.verdict === "unknown") console.log(`[rollover] Claude 사용량 미확인(${cu.why}) — 직전 판정이 stop이 아니어서 인계한다. 인계문·보고에 적는다.`);
+    return 0;
+  };
+  const g0 = gate();
+  if (g0) return g0;
 
   const unattendedPrompt = join(a.worktree, "templates", "orca-unattended-system-prompt.md");
   if (!a.agentCmd) {
     const parts = ["claude"];
-    if (a.unattended) parts.push("--dangerously-skip-permissions");
+    // 권한 확인 생략은 따로 고른다 — 무인 진행과 묶지 않는다(hook은 돌지만 push·merge 승인 범위는 검사하지 않는다).
+    if (a.skipPermissions) parts.push("--dangerously-skip-permissions");
     parts.push("--model", a.model, "--effort", a.effort);
     if (a.unattended && existsSync(unattendedPrompt)) parts.push("--append-system-prompt-file", `"${unattendedPrompt}"`);
     a.agentCmd = parts.join(" ");
@@ -272,10 +294,16 @@ function handoff(a) {
   // 중복 판정은 제목만으로 못 한다 — Claude가 뜨면서 탭 제목을 바꾼다. 같은 인계문으로 이미 띄운 후임이 열려 있는지도 본다.
   const open = new Set();
   const sameTitle = [];
-  walkTerminals((t) => {
-    open.add(t.handle);
-    if (t.title === a.title) sameTitle.push(t.handle);
-  });
+  // 목록을 못 읽으면 「열린 후임이 없다」로 보지 않는다 — 중복 코디네이터가 인계 실패보다 나쁘다.
+  if (
+    !walkTerminals((t) => {
+      open.add(t.handle);
+      if (t.title === a.title) sameTitle.push(t.handle);
+    })
+  ) {
+    console.log("[rollover] Orca 터미널 목록을 읽지 못했다 — 열린 후임을 확인할 수 없어 인계하지 않는다.");
+    return 8;
+  }
   const prior = existsSync(logFile)
     ? readFileSync(logFile, "utf8")
         .split(/\r?\n/)
@@ -300,6 +328,7 @@ function handoff(a) {
 
   const predecessor = a.noPredecessor ? null : (process.env.ORCA_TERMINAL_HANDLE ?? null);
   let handle = unsent.at(-1) ?? null;
+  let createdNow = false;
   if (handle) console.log(`[rollover] 인계문을 아직 받지 못한 후임 탭 ${handle}이 열려 있다 — 그 탭에 이어 보낸다.`);
   else {
     const created = orca(["terminal", "create", "--worktree", `path:${a.worktree}`, "--title", a.title, "--command", a.agentCmd]);
@@ -314,6 +343,7 @@ function handoff(a) {
       console.error(`[rollover] 후임 탭을 만들지 못했다${hint}: ${created.text.slice(0, 300)} ${created.stderr.slice(0, 200)}`);
       return 8;
     }
+    createdNow = true;
     log("created", { worktree: a.worktree, predecessor, successor: handle, agentCmd: a.agentCmd });
   }
 
@@ -369,6 +399,14 @@ function handoff(a) {
     console.log(`[rollover] 후임 ${handle}의 모델이 기대(${expect})와 다르다: ${model ?? "(배너에서 못 읽음)"} — 보내지 않고 탭을 닫는다.`);
     orca(["terminal", "close", "--terminal", handle]);
     return 9;
+  }
+  // 준비를 기다리는 동안 멈춤 파일·사용량 멈춤이 생겼을 수 있다 — 첫 전송 직전에 다시 본다. 아직 아무것도 보내지
+  // 않았으므로, 이번 실행이 만든 탭이면 닫고 끝낸다(남겨 두면 다음 실행이 「미전송 후임」으로 이어 보낸다).
+  const g1 = gate();
+  if (g1) {
+    log("gated", { successor: handle, code: g1 });
+    if (createdNow) orca(["terminal", "close", "--terminal", handle]);
+    return g1;
   }
   // 시험 문장은 기대 답을 글자로 담지 않는다 — 담으면 입력 에코만으로 화면이 일치해 거짓 성공이 된다.
   const line = a.dryRun

@@ -65,6 +65,7 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 사람이 답할 수 없는 동안 질문으로 멈추지 않고, 사람이 나중에 읽고 뒤집을 수 있게 기록하며 진행한다. 위험을 줄이는 장치(다른 회사 리뷰, 검증, 승인 범위)는 그대로 두고, **기다림만** 기록으로 바꾼다.
 
 - **질문으로 턴을 끝내지 않는다.** 선택지가 생기면 이 문서·계획·architecture로 추천안을 골라 적용하고 `reviews/epic-<N>/owner-digest.md`(`templates/orca-owner-digest.md`)에 「결정 — 적용한 안 — 근거 — 뒤집으면」 한 줄을 남긴다. 사람에게 묻는 도구(AskUserQuestion 등)를 쓰지 않는다. 코디네이터 세션은 `templates/orca-unattended-system-prompt.md`를 시스템 프롬프트로 붙여 연다(§11 스크립트의 `--unattended`가 붙인다).
+- **권한 확인 창**: 무인이어도 Claude Code가 도구 사용 허락을 물으면 답할 사람이 없어 멈춘다. 사용자가 둘 중 하나를 고른다 — ① Claude Code 설정의 허용 목록(`permissions.allow`)에 코디네이터가 쓰는 명령(git, orca, node scripts, 검증 스크립트)을 넣어 둔다(권장) ② 인계 스크립트에 `--skip-permissions`를 줘 권한 확인을 생략한다. ②에서도 `.claude/hooks`의 위험 명령 차단은 돌지만, push·merge·외부 발송이 승인 범위 안인지는 hook이 검사하지 않고 이 규칙으로만 지킨다.
 - **배정안**: §4.1과 같은 방법으로 만들고 OK를 기다리지 않고 적용한다. `plans/epic-<N>-orca.md`의 승인 줄에 `무인 적용 <날짜> — 사람 확인 대기`라 적고 digest에 거부권 행을 올린다.
 - **승인 후 변경**: 아래만 기록하고 진행한다. 바꾼 사실은 계획의 「승인 후 변경」 표와 digest에 적는다.
   - §4.1에서 이미 사전 승인인 것: 승인된 대체 모델로의 전환, 위험도가 높게 드러났을 때 리뷰를 위험 높음 기준으로 올리는 것
@@ -147,10 +148,11 @@ orca orchestration check --wait --types worker_done,escalation,question --timeou
 - **읽기**: `node scripts/orca/claude-usage.mjs`(종료 0 off·ok / 3 stop / 2 unknown), `node scripts/orca/codex-usage.mjs`(작은 탐침 호출 1회, 종료 0 off·ok·light·exhausted / 2 unknown). Gemini는 사용량을 읽을 곳이 없어 가드가 없다.
 - **언제 재나**: Epic 시작, 새 워커를 띄우기 전(새 Story·재배정), 인계 전(§11 스크립트가 직접 잰다).
 - **판정에 따라**:
-  - Claude `stop`: 새 워커를 띄우지 않는다. 돌고 있는 워커는 끝까지 받아 통합하고, 계획·기록·진행 파일(무인이면 digest)에 「Claude 사용량 멈춤 — n% ≥ 한도 m%, 재개 지점」을 적어 커밋한 뒤 인계하지 않고 보고로 끝낸다. 사용자가 한도를 올리거나 초기화 뒤 「이어서 하기」로 재개한다.
-  - Codex `light`: 새로 시작하는 Story 중 구현 모델이 GPT-6.1 Sol인 것을 승인된 대체 모델로 바꿔 띄운다(사전 승인된 대체 모델 전환 — 기록). 리뷰 자리는 그대로 둔다. 진행 중인 Story의 구현 워커는 바꾸지 않는다.
-  - Codex `exhausted`: Codex를 부르지 않는다. 구현은 대체 모델로, GPT-6.1 Sol이 리뷰해야 하는 Story는 다른 회사 리뷰를 잃으므로 보류하고 기록한다(리뷰 약화는 승인 대상이다).
-  - `unknown`: 직전 판정을 유지하고 기록에 적는다. `off`: 가드가 꺼져 있다 — 아무것도 바꾸지 않는다.
+  - Claude `stop`: 어떤 새 워커도(다음 Story, 리뷰, 수정) 띄우지 않는다. 이미 돌고 있는 워커는 `worker_done`까지 받아 정산한다. 리뷰 승인까지 끝난 Story만 통합하고, 구현 커밋은 있지만 리뷰를 받지 않은 Story는 브랜치와 상태(`review`)를 그대로 보존한다. 계획·기록·진행 파일(무인이면 digest)에 「Claude 사용량 멈춤 — n% ≥ 한도 m%, 재개 지점(Story와 단계)」을 적어 커밋한 뒤 인계하지 않고 보고로 끝낸다. 사용자가 한도를 올리거나 초기화 뒤 「이어서 하기」로 재개한다.
+  - Codex `light`: 새로 시작하는 Story 중 구현 모델이 GPT-6.1 Sol인 것을 승인된 대체 모델로 바꿔 띄운다(사전 승인된 대체 모델 전환 — 기록). 작성 회사가 바뀌므로 리뷰 모델은 [모델 배정 규칙](model-routing-rules.md) 4번 표에서 **실제 작성 모델 기준으로 다시 고른다**(작성과 리뷰가 같은 회사가 되지 않게). 다시 고른 리뷰 모델이 GPT-6.1 Sol이면 `light`에서는 그대로 쓴다. 진행 중인 Story의 구현 워커는 바꾸지 않는다.
+  - Codex `exhausted`: Codex를 부르지 않는다. 구현은 대체 모델로 바꾸되, 바뀐 작성 모델의 리뷰가 4번 표에서 GPT-6.1 Sol이거나 원래 GPT-6.1 Sol이 리뷰할 Story는 다른 회사 리뷰를 잃으므로 보류하고 기록한다(리뷰 약화는 승인 대상이다). 초기화 뒤 재개한다.
+  - `unknown`: 직전 판정을 잇는다. Claude는 스크립트가 마지막 판정(`~/.orchestrator/claude-verdict-last.json`)을 이어 직전이 stop이면 stop을 낸다. Codex는 코디네이터가 `orca-runs.md`에 적은 직전 판정을 쓴다. 처음부터 unknown이면 가드가 없는 것처럼 진행하고 기록한다.
+  - 한도 파일이 깨졌으면(JSON·값 오류) Claude 판정은 stop이다 — 가드를 켜려 한 것이니 고칠 때까지 멈춘다. `off`: 가드가 꺼져 있다 — 아무것도 바꾸지 않는다.
 - **멈춤 파일**: `~/.orchestrator/STOP`(모든 코디네이터) 또는 `STOP-<저장소 이름>`(그 저장소만)이 있으면 지금 Story의 통합까지 끝내고 인계하지 않고 멈춘다. 한도 파일과 상관없이 동작한다. 사용자가 파일을 지우고 「이어서 하기」로 재개한다.
 - 사용량 값은 계정 전체 값이다. 같은 계정을 다른 PC·세션에서 쓰면 그 사용분도 들어간다. 한 PC에서 여러 Claude 계정을 번갈아 쓰면 마지막으로 statusline을 그린 세션의 계정 값이 남는다.
 
@@ -184,10 +186,10 @@ orca orchestration check --wait --types worker_done,escalation,question --timeou
   ```sh
   node scripts/orca/session-rollover.mjs --worktree <코디네이터 체크아웃 절대 경로> \
     --brief-file state/orca/handoff/epic-<N>-<k>.md --title "<프로젝트> 코디네이터 Epic <N> #<k>" \
-    --chain <n>/<max> --model <코디네이터 모델 ID> --effort medium --run-id <Orca Run ID> [--unattended]
+    --chain <n>/<max> --model <코디네이터 모델 ID> --effort medium --run-id <Orca Run ID> [--unattended] [--skip-permissions]
   ```
 
-  `n`은 이 Epic의 몇 번째 인계인지(인계문에서 이어받아 +1), `max`는 Epic 시작 때 `ceil(Story 수 / 인계 주기) + 2`로 정해 계획에 적는다. 모델은 이 세션과 같은 코디네이터 모델이다(§1). 스크립트는 후임의 배너 모델을 대조하고, 멈춤 파일과 사용량 가드(켰을 때)를 확인한 뒤 인계 줄을 보낸다.
+  `--chain`은 필수다. `n`은 이 Epic의 몇 번째 인계인지(인계문에서 이어받아 +1), `max`는 Epic 시작 때 `ceil(Story 수 / 인계 주기) + 2`로 정해 계획에 적는다. `--unattended`는 무인 시스템 프롬프트를 붙이고, `--skip-permissions`는 권한 확인을 생략한다 — 둘은 따로 고른다(§4.2 「권한 확인 창」). 스크립트는 멈춤 파일과 사용량 가드를 탭을 만들기 전과 첫 전송 직전에 두 번 확인하고, Orca 터미널 목록을 읽지 못하면(열린 후임을 확인할 수 없으면) 인계하지 않는다. 모델은 이 세션과 같은 코디네이터 모델이다(§1). 스크립트는 후임의 배너 모델을 대조하고, 멈춤 파일과 사용량 가드(켰을 때)를 확인한 뒤 인계 줄을 보낸다.
 - **종료 코드에 따라**: 0이면 3줄 보고(끝난 Story, 후임 탭 제목, 체인 n/max — 무인이면 digest 미확인 수)를 쓰고 턴을 끝낸다. 자기 탭은 닫지 않는다(마지막 보고가 화면에 남게 — 후임이 닫는다). 4(체인 상한)·10(멈춤 파일)·11(Claude 사용량)은 다시 시도하지 않고 보고로 끝낸다. 5는 이미 인계된 것이라 다시 띄우지 않는다. 그 밖(6·7·8·9)은 한 번만 다시 시도하고, 또 실패하면 보고로 끝낸다(탭을 여러 개 띄우지 않는다).
 - **후임이 할 첫 일**: 인계문을 끝까지 읽고 → `orca orchestration run-use --id <Run ID>`로 같은 Run에 붙고 → 앞 탭을 `node scripts/orca/session-rollover.mjs --close-predecessor <handle>`로 닫되 이 명령은 **백그라운드로** 띄운다(앞 탭이 끝날 때까지 최대 30분 기다린다) → §10 「이어서 할 때」대로 진행한다. 끝난 Story를 다시 리뷰·검증하지 않는다.
 - **진행 방식은 그대로 넘긴다.** 승인 대기면 후임도 재승인 대상 변경을 사람에게 묻고, 무인이면 `--unattended`로 띄워 §4.2를 잇는다.
