@@ -89,18 +89,62 @@ export function effortProblem(model, effort) {
   return i < EFFORT_ORDER.indexOf(floor) ? `${model}의 effort 하한은 ${floor}다 (받은 값: ${effort})` : null;
 }
 
-/** 직접 준 후임 명령이 --model·--effort를 담고, 그 값이 인자와 같은가. 문제가 없으면 null. */
+/** 셸 명령 문자열을 인자로 나눈다(작은·큰따옴표 안의 공백·옵션은 한 인자). 따옴표가 짝이 안 맞으면 null. */
+export function splitArgs(cmd) {
+  const out = [];
+  let cur = "";
+  let quote = null;
+  let has = false;
+  for (const ch of cmd) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      else cur += ch;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      has = true;
+    } else if (/\s/.test(ch)) {
+      if (has || cur) out.push(cur);
+      cur = "";
+      has = false;
+    } else {
+      cur += ch;
+    }
+  }
+  if (quote) return null;
+  if (has || cur) out.push(cur);
+  return out;
+}
+
+/**
+ * 후임 명령이 --model·--effort를 **한 번씩** 담고, 그 값이 기대와 같은가. 따옴표 안의 글자는 옵션으로 치지 않는다.
+ * 문제가 없으면 null.
+ */
 export function agentCmdProblem(cmd, model, effort) {
-  const m = /--model[=\s]+"?([^\s"]+)"?/.exec(cmd)?.[1];
-  const e = /--effort[=\s]+"?([^\s"]+)"?/.exec(cmd)?.[1];
-  if (!m || !e) return "에 --model과 --effort가 둘 다 있어야 한다(하한을 확인할 수 없다)";
-  if (m !== model || e !== effort) return `의 --model ${m}·--effort ${e}가 인자 --model ${model}·--effort ${effort}와 다르다`;
+  const args = splitArgs(cmd ?? "");
+  if (!args) return "의 따옴표가 짝이 맞지 않는다(해석할 수 없다)";
+  const values = { "--model": [], "--effort": [] };
+  for (let i = 0; i < args.length; i += 1) {
+    for (const k of Object.keys(values)) {
+      if (args[i] === k) values[k].push(args[i + 1]);
+      else if (args[i].startsWith(`${k}=`)) values[k].push(args[i].slice(k.length + 1));
+    }
+  }
+  if (values["--model"].length !== 1 || values["--effort"].length !== 1) return "에 --model과 --effort가 한 번씩 있어야 한다(없거나 중복이면 하한을 확인할 수 없다)";
+  const [m] = values["--model"];
+  const [e] = values["--effort"];
+  if (m !== model || e !== effort) return `의 --model ${m}·--effort ${e}가 기대 --model ${model}·--effort ${effort}와 다르다`;
   return null;
 }
 
-/** 시작 배너의 effort(「Sonnet 5.5 with high effort」). 읽지 못하면 null. */
+/**
+ * 시작 배너의 effort(「Sonnet 5.5 with high effort」). 배너(「Claude Code v…」 줄부터 몇 줄) 안에서만 읽고, 줄바꿈이 끼어도 읽는다.
+ * 배너가 없거나 읽지 못하면 null.
+ */
 export function bannerEffort(screen) {
-  return /\bwith (low|medium|high|xhigh|max) effort\b/i.exec(screen)?.[1]?.toLowerCase() ?? null;
+  const at = screen.search(/Claude Code v\d/);
+  if (at < 0) return null;
+  const banner = screen.slice(at).split("\n").slice(0, 4).join(" ");
+  return /\bwith\s+(low|medium|high|xhigh|max)\s+effort\b/i.exec(banner)?.[1]?.toLowerCase() ?? null;
 }
 
 /** "n/max" → {n,max}; 형식이 틀리거나 1 미만·안전한 정수 밖이면 null. */
@@ -375,8 +419,18 @@ function handoff(a) {
   const predecessor = a.noPredecessor ? null : (process.env.ORCA_TERMINAL_HANDLE ?? null);
   let handle = unsent.at(-1) ?? null;
   let createdNow = false;
-  if (handle) console.log(`[rollover] 인계문을 아직 받지 못한 후임 탭 ${handle}이 열려 있다 — 그 탭에 이어 보낸다.`);
-  else {
+  if (handle) {
+    // 앞선 실행이 만든 탭을 이어 쓴다 — 이번 --effort는 그 탭에 적용되지 않는다. 그 탭을 띄운 명령(기록의 agentCmd)이
+    // 지금 기대하는 모델·effort와 같을 때만 이어 보낸다. 다르거나 기록이 없으면 어떤 전송·제출도 하지 않는다.
+    const createdRec = [...prior].reverse().find((r) => r.event === "created" && r.successor === handle);
+    const reuseWhy = createdRec?.agentCmd ? agentCmdProblem(createdRec.agentCmd, a.model, a.effort) : "을 기록에서 찾지 못했다";
+    if (reuseWhy) {
+      log("reuse-refused", { successor: handle, why: reuseWhy });
+      console.log(`[rollover] 미전송 후임 탭 ${handle}을 띄운 명령${reuseWhy} — 이어 보내지 않는다. 그 탭을 닫고 다시 실행한다.`);
+      return 9;
+    }
+    console.log(`[rollover] 인계문을 아직 받지 못한 후임 탭 ${handle}이 열려 있다(같은 모델·effort로 띄움) — 그 탭에 이어 보낸다.`);
+  } else {
     const created = orca(["terminal", "create", "--worktree", `path:${a.worktree}`, "--title", a.title, "--command", a.agentCmd]);
     handle = findHandle(created.json);
     if (!handle) {
@@ -462,7 +516,8 @@ function handoff(a) {
     orca(["terminal", "close", "--terminal", handle]);
     return 9;
   }
-  if (!effortSeen) console.log(`[rollover] 후임 ${handle}의 effort를 배너에서 읽지 못했다 — 명령 인자(${a.effort})를 믿고 진행한다.`);
+  // 배너를 못 읽어도 띄운 명령은 이미 확인했다(이번에 만든 탭은 우리가 만든 명령, 이어 쓰는 탭은 기록의 명령을 대조했다).
+  if (!effortSeen) console.log(`[rollover] 후임 ${handle}의 effort를 배너에서 읽지 못했다 — 띄운 명령의 --effort ${a.effort}(확인됨)로 진행한다.`);
   // 준비를 기다리는 동안 멈춤 파일·사용량 멈춤이 생겼을 수 있다 — 첫 전송 직전에 다시 본다. 아직 아무것도 보내지
   // 않았으므로, 이번 실행이 만든 탭이면 닫고 끝낸다(남겨 두면 다음 실행이 「미전송 후임」으로 이어 보낸다).
   const g1 = gate();

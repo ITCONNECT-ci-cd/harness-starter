@@ -11,7 +11,7 @@ import { claudeUsage, claudeVerdict } from "../orca/claude-usage.mjs";
 import { codexVerdict, lastLimits } from "../orca/codex-usage.mjs";
 import { install, settingsKey as installKey, uninstall } from "../orca/install-statusline-tee.mjs";
 import { readLimits, stopFile } from "../orca/limits.mjs";
-import { agentCmdProblem, bannerEffort, bannerModel, briefState, effortProblem, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
+import { agentCmdProblem, bannerEffort, bannerModel, briefState, effortProblem, splitArgs, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
 import { originalCommand, settingsKey as teeKey, usageRecord } from "../orca/statusline-tee.mjs";
 
 const TMP = mkdtempSync(join(tmpdir(), "orca-scripts-"));
@@ -279,12 +279,21 @@ test("rollover — 코디네이터 effort 하한: Sonnet은 high 이상, 그 밖
 test("rollover — 직접 준 명령의 --model·--effort, 배너의 effort", () => {
   assert.equal(agentCmdProblem("claude --model claude-sonnet-5-5 --effort high", "claude-sonnet-5-5", "high"), null);
   assert.match(agentCmdProblem("claude --model claude-sonnet-5-5 --effort medium", "claude-sonnet-5-5", "high"), /다르다/);
-  assert.match(agentCmdProblem("claude --model claude-sonnet-5-5", "claude-sonnet-5-5", "high"), /둘 다/);
+  assert.match(agentCmdProblem("claude --model claude-sonnet-5-5", "claude-sonnet-5-5", "high"), /한 번씩/);
   assert.equal(agentCmdProblem('claude --model="claude-opus-5-5" --effort=medium', "claude-opus-5-5", "medium"), null);
-  assert.equal(bannerEffort("▝▜██████▀  Sonnet 5.5 with high effort · Claude Max"), "high");
-  assert.equal(bannerEffort("Opus 5.5 with medium effort"), "medium");
-  assert.equal(bannerEffort("Opus 5.5 · Claude Max"), null);
-  assert.match(effortProblem("claude-sonnet-5-5", bannerEffort("Sonnet 5.5 with medium effort")), /하한은 high/);
+  // 따옴표 안의 글자는 옵션이 아니고, 중복 옵션·짝 안 맞는 따옴표는 거부
+  assert.match(agentCmdProblem('claude --append-system-prompt "use --effort high" --model claude-sonnet-5-5 --effort medium', "claude-sonnet-5-5", "high"), /다르다/);
+  assert.match(agentCmdProblem("claude --model claude-sonnet-5-5 --effort high --effort medium", "claude-sonnet-5-5", "high"), /한 번씩/);
+  assert.match(agentCmdProblem('claude --model claude-sonnet-5-5 --effort "high', "claude-sonnet-5-5", "high"), /따옴표/);
+  assert.equal(agentCmdProblem('claude --dangerously-skip-permissions --model sonnet --effort high --append-system-prompt-file "C:\\x y\\p.md"', "sonnet", "high"), null);
+  assert.deepEqual(splitArgs(`a "b c" 'd e' f=g`), ["a", "b c", "d e", "f=g"]);
+  // 배너 안에서만, 줄바꿈이 끼어도 읽는다
+  const banner = " ▐▛███▛█   Claude Code v2.1.287\n▝▜██████▀  Sonnet 5.5 with high effort · Claude Max";
+  assert.equal(bannerEffort(banner), "high");
+  assert.equal(bannerEffort(" Claude Code v2.1.287\n Opus 5.5 with medium\neffort · Max"), "medium");
+  assert.equal(bannerEffort("Opus 5.5 with high effort"), null); // 배너(Claude Code v…)가 없으면 읽지 않는다
+  assert.equal(bannerEffort(" Claude Code v2.1.287\n Opus 5.5 · Claude Max\n\n\n\n작업 로그: with high effort"), null); // 배너 밖 글자
+  assert.match(effortProblem("claude-sonnet-5-5", bannerEffort(" Claude Code v2\n Sonnet 5.5 with medium effort")), /하한은 high/);
 });
 
 test("rollover — 체인 형식과 인계 줄", () => {

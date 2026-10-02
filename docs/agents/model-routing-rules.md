@@ -13,7 +13,7 @@
 
 - 이 네 모델 외의 모델을 배정하지 않는다. 이전 모델인 GPT-6 Sol은 Codex 목록에 남아 있어도 배정하지 않는다.
 - GPT-6.1 Sol의 Codex 등록 ID는 `gpt-6.1-sol`이다(2026-09-30 Codex 모델 목록에서 확인). 설치된 Codex의 모델 목록에 없으면 Codex CLI를 업데이트한다.
-- Gemini CLI와 Antigravity는 같은 모델을 부르는 경로이지 추가 모델이 아니다. 같은 모델이라도 경로·계정이 다르면 설정이 같다고 가정하지 않는다. Orca의 워커별 `--model` 지정은 에이전트마다 지원 여부가 다르므로(공개 가이드 기준 Antigravity는 지원), Flash를 워커로 부를 경로는 시작 확인에서 정한다.
+- Gemini CLI와 Antigravity는 같은 모델을 부르는 경로이지 추가 모델이 아니다. 같은 모델이라도 경로·계정이 다르면 설정이 같다고 가정하지 않는다. Orca의 워커별 `--model` 지정은 에이전트마다 지원 여부가 다르므로(공개 가이드 기준 Antigravity는 지원), Flash를 워커로 부를 경로는 시작 확인에서 정한다. Antigravity의 Gemini는 effort 수준이 모델 ID에 붙는다(`gemini-3.8-flash-low|medium|high`, 2026-10-02 `agy models` 확인 — xhigh·max 없음).
 - 논리 이름은 실행할 때 확인한 실제 등록 ID로 바꿔 쓰고 `state/orca/env.json`에 기록한다. 확인하지 않은 ID를 추측해서 쓰지 않는다.
 
 ## 선택 방법
@@ -41,11 +41,11 @@
 
 ### 3. 구현 모델과 effort
 
-effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)로 정하고 모델별 하한을 적용한다(아래 「effort 원칙」). 그래서 Sonnet 5.5·GPT-6.1 Sol은 위험 낮음이어도 high이고, 설계 판단은 Opus 5.5라도 high부터다. 모델과 effort는 아래 표로 고른다.
+effort는 위험도(낮음 medium, 보통 high, 높음 xhigh)로 정하고 모델별 하한을 적용한다(아래 「effort 원칙」). 그래서 Sonnet 5.5·GPT-6.1 Sol·Gemini 3.8 Flash 구현은 위험 낮음이어도 high이고, 설계 판단은 Opus 5.5라도 high부터다. 모델과 effort는 아래 표로 고른다.
 
 | 형태 \ 위험도 | 낮음 | 보통 | 높음 |
 |---|---|---|---|
-| 정형 | Gemini 3.8 Flash / medium | Gemini 3.8 Flash / high | GPT-6.1 Sol / xhigh |
+| 정형 | Gemini 3.8 Flash / high | Gemini 3.8 Flash / high | GPT-6.1 Sol / xhigh |
 | 일반 | Sonnet 5.5 / high | Sonnet 5.5 / high | Opus 5.5 / xhigh |
 | 연계 | GPT-6.1 Sol / high | GPT-6.1 Sol / high | GPT-6.1 Sol / xhigh |
 | 설계 판단 | Opus 5.5 / high | Opus 5.5 / high | Opus 5.5 / xhigh |
@@ -103,7 +103,7 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
   | 리뷰·검증(모든 모델) | high, 위험 높음은 xhigh | 놓친 결함은 뒤에서 더 비싸다 |
   | 설계 판단·원인 분석(Opus 5.5) | high | 난이도가 높은 일이다 |
   | Opus 5.5의 그 밖의 일 | medium (Opus 5.5의 기본값) | 조정·명령 실행·기획 대화. 판단이 어려워지면 high |
-  | Gemini 3.8 Flash | 위험도 기준 그대로, 조사는 low | |
+  | Gemini 3.8 Flash | 구현 high (Flash의 최상위), 조사·로그 분석 low | Antigravity에서 수준은 모델 ID에 붙는다 — `gemini-3.8-flash-low` · `-medium` · `-high`, xhigh·max는 없다. 리뷰·검증에는 쓰지 않는다(운영 기록: Flash high로 돌린 검증 렌즈가 「발견 0건인데 14행 중 13행 검증」 같은 자체 모순 결과를 내 기각) |
 
 - 모델이 스스로 effort 수준을 올리지 않는다. 같은 수준 안에서 생각의 깊이만 조절하므로, 어려운 일·검증에 높은 수준을 쓰려면 배정안에 그 값을 적어 띄워야 한다.
 - low는 Flash의 조사 작업에만 쓴다.
@@ -140,7 +140,7 @@ Epic에 위험 높음 Story가 있으면 배정안에 "Epic 통합 리뷰" 행(O
 
 | 대상 | 모델을 정하는 곳 |
 |---|---|
-| Orca 워커 | `worker-start --model <ID> --effort <수준>`으로 매번 명시 |
+| Orca 워커 | `worker-start --model <ID> --effort <수준>`으로 매번 명시. Gemini(Antigravity)는 수준이 모델 ID에 붙으므로 `--model gemini-3.8-flash-high`처럼 ID로 고르고, `--effort`를 함께 받는지는 시작 확인에서 `worker-start --help`·가이드로 정해 `state/orca/env.json`에 적는다 |
 | Codex를 직접 열 때 | `.codex/config.toml` (GPT-6.1 Sol / medium) |
 | Claude Code를 직접 열 때 | `/model`과 effort를 사람이 지정 (프로젝트 설정 파일 없음) |
 
