@@ -89,6 +89,20 @@ export function effortProblem(model, effort) {
   return i < EFFORT_ORDER.indexOf(floor) ? `${model}의 effort 하한은 ${floor}다 (받은 값: ${effort})` : null;
 }
 
+/** 직접 준 후임 명령이 --model·--effort를 담고, 그 값이 인자와 같은가. 문제가 없으면 null. */
+export function agentCmdProblem(cmd, model, effort) {
+  const m = /--model[=\s]+"?([^\s"]+)"?/.exec(cmd)?.[1];
+  const e = /--effort[=\s]+"?([^\s"]+)"?/.exec(cmd)?.[1];
+  if (!m || !e) return "에 --model과 --effort가 둘 다 있어야 한다(하한을 확인할 수 없다)";
+  if (m !== model || e !== effort) return `의 --model ${m}·--effort ${e}가 인자 --model ${model}·--effort ${effort}와 다르다`;
+  return null;
+}
+
+/** 시작 배너의 effort(「Sonnet 5.5 with high effort」). 읽지 못하면 null. */
+export function bannerEffort(screen) {
+  return /\bwith (low|medium|high|xhigh|max) effort\b/i.exec(screen)?.[1]?.toLowerCase() ?? null;
+}
+
 /** "n/max" → {n,max}; 형식이 틀리거나 1 미만·안전한 정수 밖이면 null. */
 export function parseChain(s) {
   const m = /^(\d+)\/(\d+)$/.exec(s ?? "");
@@ -247,15 +261,23 @@ function handoff(a) {
     return 1;
   }
   // effort는 기본값을 두지 않는다 — 모델마다 하한이 달라(Sonnet high, Opus medium) 하나의 기본값이 틀린 쪽이 된다.
-  // 시험(--dry-run)은 아무 값이나 받는다(계산 문제만 보낸다).
+  // 시험(--dry-run)도 실제 모델을 띄우므로 같은 하한을 지킨다.
   if (!a.effort) {
     console.error("--effort가 필요하다(코디네이터 모델의 하한 이상 — Sonnet 5.5는 high, Opus 5.5는 medium)");
     return 1;
   }
-  const effortWhy = a.dryRun ? null : effortProblem(a.model, a.effort);
+  const effortWhy = effortProblem(a.model, a.effort);
   if (effortWhy) {
     console.error(`[rollover] ${effortWhy} — docs/agents/model-routing-rules.md 「effort 원칙」`);
     return 1;
+  }
+  // --agent-cmd로 명령을 직접 주면 그 명령의 --model·--effort가 실제 값이다 — 빠졌거나 --model·--effort 인자와 다르면 거부한다.
+  if (a.agentCmd) {
+    const cmdWhy = agentCmdProblem(a.agentCmd, a.model, a.effort);
+    if (cmdWhy) {
+      console.error(`[rollover] --agent-cmd ${cmdWhy}`);
+      return 1;
+    }
   }
   a.worktree = resolve(a.worktree);
   a.briefFile = resolve(a.briefFile);
@@ -430,6 +452,17 @@ function handoff(a) {
     orca(["terminal", "close", "--terminal", handle]);
     return 9;
   }
+  // 실제로 뜬 effort도 배너로 본다(미전송 후임 탭을 이어 쓸 때·직접 준 명령에도 걸린다). 배너에서 읽히는데 하한 아래면
+  // 보내지 않고 닫는다. 배너 형식이 바뀌어 못 읽으면 막지 않고 기록만 한다(명령 인자 검사는 이미 통과했다).
+  const effortSeen = bannerEffort(ready);
+  const effortSeenWhy = effortSeen ? effortProblem(a.model, effortSeen) : null;
+  if (effortSeenWhy) {
+    log("effort-below-floor", { successor: handle, model, effort: effortSeen });
+    console.log(`[rollover] 후임 ${handle}의 effort가 하한 아래다(${effortSeenWhy}) — 보내지 않고 탭을 닫는다.`);
+    orca(["terminal", "close", "--terminal", handle]);
+    return 9;
+  }
+  if (!effortSeen) console.log(`[rollover] 후임 ${handle}의 effort를 배너에서 읽지 못했다 — 명령 인자(${a.effort})를 믿고 진행한다.`);
   // 준비를 기다리는 동안 멈춤 파일·사용량 멈춤이 생겼을 수 있다 — 첫 전송 직전에 다시 본다. 아직 아무것도 보내지
   // 않았으므로, 이번 실행이 만든 탭이면 닫고 끝낸다(남겨 두면 다음 실행이 「미전송 후임」으로 이어 보낸다).
   const g1 = gate();

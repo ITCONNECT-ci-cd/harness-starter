@@ -11,7 +11,7 @@ import { claudeUsage, claudeVerdict } from "../orca/claude-usage.mjs";
 import { codexVerdict, lastLimits } from "../orca/codex-usage.mjs";
 import { install, settingsKey as installKey, uninstall } from "../orca/install-statusline-tee.mjs";
 import { readLimits, stopFile } from "../orca/limits.mjs";
-import { bannerModel, briefState, effortProblem, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
+import { agentCmdProblem, bannerEffort, bannerModel, briefState, effortProblem, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
 import { originalCommand, settingsKey as teeKey, usageRecord } from "../orca/statusline-tee.mjs";
 
 const TMP = mkdtempSync(join(tmpdir(), "orca-scripts-"));
@@ -274,6 +274,17 @@ test("rollover — 코디네이터 effort 하한: Sonnet은 high 이상, 그 밖
   assert.equal(effortProblem("claude-opus-5-5", "medium"), null);
   assert.match(effortProblem("claude-opus-5-5", "low"), /하한은 medium/);
   assert.match(effortProblem("claude-opus-5-5", "ultra"), /중 하나/);
+});
+
+test("rollover — 직접 준 명령의 --model·--effort, 배너의 effort", () => {
+  assert.equal(agentCmdProblem("claude --model claude-sonnet-5-5 --effort high", "claude-sonnet-5-5", "high"), null);
+  assert.match(agentCmdProblem("claude --model claude-sonnet-5-5 --effort medium", "claude-sonnet-5-5", "high"), /다르다/);
+  assert.match(agentCmdProblem("claude --model claude-sonnet-5-5", "claude-sonnet-5-5", "high"), /둘 다/);
+  assert.equal(agentCmdProblem('claude --model="claude-opus-5-5" --effort=medium', "claude-opus-5-5", "medium"), null);
+  assert.equal(bannerEffort("▝▜██████▀  Sonnet 5.5 with high effort · Claude Max"), "high");
+  assert.equal(bannerEffort("Opus 5.5 with medium effort"), "medium");
+  assert.equal(bannerEffort("Opus 5.5 · Claude Max"), null);
+  assert.match(effortProblem("claude-sonnet-5-5", bannerEffort("Sonnet 5.5 with medium effort")), /하한은 high/);
 });
 
 test("rollover — 체인 형식과 인계 줄", () => {

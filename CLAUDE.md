@@ -26,7 +26,7 @@ BMAD agent를 실행할 때의 규칙:
 
 ## 역할 2: Orca 개발 (Phase A 구현 · Phase B 리뷰·통합)
 
-Epic·Story 개발은 Orca 코디네이터가 Story마다 워커에게 맡긴다. Claude Code는 코디네이터(Sonnet 5.5 / medium, 위험 높음 Story가 많은 Epic은 Opus 5.5)나 워커(Sonnet 5.5·Opus 5.5)로 실행된다.
+Epic·Story 개발은 Orca 코디네이터가 Story마다 워커에게 맡긴다. Claude Code는 코디네이터(Sonnet 5.5 / high, 위험 높음 Story가 많은 Epic은 Opus 5.5 / medium — effort 하한은 `docs/agents/model-routing-rules.md` 「effort 원칙」)나 워커(Sonnet 5.5·Opus 5.5)로 실행된다.
 
 - 코디네이터: `docs/agents/orca-rules.md`를 따른다. 워커를 띄우기 전에 Story별 모델 배정안을 사용자에게 승인받고, 조정·통합·최종 판정을 맡는다. 작은 수정 외의 구현은 워커에게 맡긴다.
 - 구현 워커: `AGENTS.md`의 「Orca 워커 규칙」과 계약을 따른다. 편집하면 Hooks가 lint를 자동 실행하고, 커밋 전에 현재 OS/셸에 맞는 validate-quick으로 확인한다.

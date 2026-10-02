@@ -41,14 +41,17 @@ tags: [harness, model-routing, effort]
 |---|---|
 | `docs/agents/model-routing-rules.md` | 구현 표에 칸별 effort, 리뷰 최소 high, 대체 모델 하한, 「effort 원칙」 하한 표, 코디네이터·그 밖의 역할 effort, 재승인 문구 |
 | `docs/agents/orca-rules.md` | 코디네이터 Sonnet high, `worker-start` 하한 확인, 인계 명령의 effort |
-| `AGENTS.md`, `README.md`, `docs/harness/orca.md`, `templates/orca-epic-plan.md` | 코디네이터·effort 설명 |
+| `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/harness/orca.md`, `templates/orca-epic-plan.md` | 코디네이터·effort 설명 |
+| `docs/decisions/ADR-002-orca-orchestration.md` | 결정 2·4의 effort가 이번 하한으로 바뀌었다는 보완 표시(본문은 당시 기록으로 보존) |
 | `.codex/config.toml` | 주석: 직접 사용 최소 medium, Orca 워커는 high 이상 명시 |
-| `scripts/orca/session-rollover.mjs` | `--effort` 필수, `effortProblem` 하한 검사(Sonnet high, 그 밖 medium) |
-| `scripts/tests/orca-scripts.test.mjs` | 하한 검사 시험 추가(16개) |
+| `scripts/orca/session-rollover.mjs` | `--effort` 필수, `effortProblem` 하한 검사(Sonnet high, 그 밖 medium — 시험 모드 포함), `--agent-cmd`의 `--model`·`--effort` 대조, 후임 배너의 실제 effort 대조(하한 아래면 보내지 않고 닫음) |
+| `scripts/tests/orca-scripts.test.mjs` | 하한·명령·배너 effort 시험 2개 추가(전체 17개) |
 
 ## 실행한 검증
 
-- `node --test scripts/tests/orca-scripts.test.mjs` 16/16
+- `node --test scripts/tests/orca-scripts.test.mjs` 17/17
+- 실제 Orca 인계 시험(`--dry-run`, Sonnet / high): 배너에서 effort를 읽어 하한 통과, 응답 `ROLLOVER-5555`
+- 독립 리뷰(Codex GPT-6 Astra, high): medium 4·low 2 — `--agent-cmd`·`--dry-run` 우회, `CLAUDE.md` 잔재, 재승인 기준 문구, ADR-002 보완 표시, 시험 수 표기 → 전부 반영
 - `session-rollover.mjs`에 Sonnet / medium을 주면 종료 1과 하한 안내, `--effort`를 빼면 종료 1
 - template mode `validate.sh`·`validate-quick.sh`, `git diff --check`, 바뀐 문서 상대 링크
 

@@ -15,6 +15,8 @@
 
 ## 결정
 
+> 2026-10-02 보완: 결정 2·4의 effort(위험도만으로 정함, 코디네이터 Sonnet 5.5 / medium)는 모델·역할별 하한으로 바뀌었다 — Sonnet 5.5·GPT-6.1 Sol·리뷰는 최소 high, 코디네이터 기본 Sonnet 5.5 / high. [변경 기록](../changelog/2026-10-02-effort-floors.md). 아래 본문은 2026-09-30 당시의 결정으로 보존한다.
+
 1. **Phase A·B를 Orca 흐름으로 교체한다** (사용자 선택: 전면 교체). Story마다 구현 워커(create-story, dev-story, validate-quick, 로컬 커밋), 작성자와 다른 회사 모델의 읽기 전용 리뷰 워커(bmad-code-review), 같은 구현 워커의 수정, 코디네이터의 `epic/<N>` 통합 순서로 진행한다. Epic 끝에 validate + smoke를 한 번 실행한다.
 2. **모델은 네 개로 통일한다** (사용자 선택: Orca 기준). 기준은 `docs/agents/model-routing-rules.md` 한 곳이다. Codex 역할 프로필 5개를 삭제하고 `.codex/config.toml`을 GPT-6.1 Sol / medium으로 바꾼다(처음에는 GPT-6 Sol이었고, 같은 날 GPT-6.1 Sol이 나와 교체했다. [변경 기록](../changelog/2026-09-30-gpt-6-1-sol.md)). Orca 워커는 `--model`과 `--effort`를 매번 명시한다. 코디네이터는 기본 Sonnet 5.5 / medium, 위험 높음 Story가 절반 이상인 Epic은 Opus 5.5 / medium으로 연다.
 3. **프롬프트를 README에 통째로 넣지 않는다.** 규칙은 `docs/agents/orca-rules.md`(코디네이터)와 `AGENTS.md`의 「Orca 워커 규칙」(모든 워커)으로 옮기고, README에는 빈칸을 채우는 시작·이어서 하기·Epic 통합 프롬프트만 둔다. 워커는 채팅에 붙인 프롬프트를 보지 못하고 저장소 파일만 읽기 때문이다.
