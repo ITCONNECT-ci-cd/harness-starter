@@ -12,7 +12,9 @@
 - 모델과 effort는 `docs/agents/model-routing-rules.md`를 따른다. Claude Code 기본 effort는 xhigh이므로 세션을 열 때 effort를 명시한다.
 - **프로젝트 이해 문서(`docs/PROJECT_MAP.md` 등)는 project-map 스킬로만 만든다.**
   `bmad-document-project`·`bmad-generate-project-context`는 호출하지 않는다 — 트리거가 겹치지만
-  산출물 체계가 달라, 둘 다 돌면 문서가 이원화된다. 생성·갱신 시점은 Phase C 8단계를 따른다.
+  산출물 체계가 달라, 둘 다 돌면 문서가 이원화된다. 두 스킬을 합친 6.12의 `bmad-project-context`도
+  호출하지 않는다 — `AGENTS.md`의 지침 블록을 만들고 `CLAUDE.md`를 `@AGENTS.md`로 줄이자고 제안하는
+  스킬이라, 하네스가 직접 관리하는 두 파일과 충돌한다. 생성·갱신 시점은 Phase C 8단계를 따른다.
 
 ## 역할 1: BMAD 기획/설계
 
