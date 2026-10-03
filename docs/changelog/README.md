@@ -4,6 +4,7 @@
 
 | 날짜 | 변경 내용 | 문서 |
 |---|---|---|
+| 2026-10-03 | 워커의 의존성 추가를 절대 금지에서 계약의 허용 목록으로 변경 (첫 Story 차단 해소, 목록 밖은 ask, 리뷰 CRITICAL, ADR-005) | [변경 기록](2026-10-03-worker-dependency-allowlist.md) |
 | 2026-10-03 | 구현 워커를 bmad-build-auto로 교체 (create-story·dev-story 폐기 대응, spec 파일, 오버라이드 `_bmad/custom/bmad-build-auto.toml`, preflight 검사 확장, ADR-004) | [변경 기록](2026-10-03-bmad-build-auto.md) |
 | 2026-10-02 | effort 하한 (Sonnet 5.5·GPT-6.1 Sol·리뷰 최소 high, 코디네이터 Sonnet high, Codex 직접 사용 Sol medium 고정) | [변경 기록](2026-10-02-effort-floors.md) |
 | 2026-10-02 | 코디네이터 무인 진행·사용량 가드(선택)·세션 인계 (owner-digest, limits.json·STOP, session-rollover) | [변경 기록](2026-10-02-coordinator-autonomy.md) |

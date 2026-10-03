@@ -17,6 +17,7 @@
 - 읽을 자료: <architecture.md의 관련 절, 직접 의존 Story의 spec 파일, 관련 코드·테스트 경로. epic-<N>-context.md는 기준 커밋에 있음>
 - 수정 가능: <파일·디렉터리. 리뷰 워커는 없음>
 - 수정 금지: <범위 밖 모듈>, sprint-status.yaml, deferred-work.md, 공용 설정
+- 허용 추가 의존성: <epics.md의 해당 Story `추가 의존성` 줄 그대로. 없으면 "없음". 목록 밖 의존성은 추가 금지, 필요하면 Orca ask>
 - 공유 상태: <DB·외부 서비스·환경변수 사용 여부와 소유자>
 
 [계약]

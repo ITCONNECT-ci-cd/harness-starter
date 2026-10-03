@@ -9,6 +9,7 @@ bmad-code-review 스킬과 함께 사용됩니다.
 
 - Orca 리뷰 워커는 계약의 기준 커밋 대비 diff만 리뷰. 그 밖의 리뷰는 현재 브랜치의 main 대비 diff만 리뷰
 - story 범위를 벗어난 변경이 있으면 지적
+- 계약의 「허용 추가 의존성」 목록 밖의 의존성이 추가됐으면 CRITICAL로 지적 (`package.json`, `pyproject.toml`, lockfile의 diff 확인). 목록 안이어도 커밋 메시지에 이유가 없거나 같은 기능의 기존 의존성이 있으면 지적
 - 기존 코드의 문제는 리뷰하지 않음 (pre-existing 이슈 무시)
 
 ## 필수 확인 항목

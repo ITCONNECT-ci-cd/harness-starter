@@ -13,6 +13,7 @@ persistent_facts = [
   "file:docs/agents/agent-execution-rules.md",
   "이 실행은 Orca 구현 워커다. 호출 프롬프트에는 Story 키(sprint-status.yaml의 키)와 epics 파일 경로만 있다. spec 파일의 slug는 Story 키 전체로 시작해야 한다. 예: spec-1-1-repository-initial-setup.md. spec 폴더와 stories.yaml은 없다.",
   "_bmad-output/implementation-artifacts/sprint-status.yaml과 deferred-work.md는 읽기만 하고 고치지 않는다. 미룬 항목은 spec 파일의 deferred 목록에만 적는다.",
+  "새 의존성은 계약의 「허용 추가 의존성」 목록에 있는 것만 추가한다. 목록의 기본값은 epics.md의 해당 Story `추가 의존성` 줄이고, 코디네이터가 ask 답변으로 늘릴 수 있다. 추가하는 과제는 spec의 Tasks에 쓰고, spec의 Boundaries & Constraints Never에 '이 목록 밖 의존성 추가 금지'와 목록을 적는다. 구현 서브에이전트는 spec만 읽기 때문이다. 목록 밖이 필요하면 구현하지 말고 blocking condition 'dependency not allowed: <이름>'으로 blocked 처리한다.",
   "구현은 TDD로 한다. 새 동작과 버그 수정은 실패하는 테스트를 먼저 쓰고(RED) 통과시킨다(GREEN). spec의 Tasks에서 테스트 작성 과제를 해당 구현 과제보다 앞에 둔다. 구현 서브에이전트는 spec만 읽으므로 이 순서를 spec에 적어야 한다.",
   "spec 파일의 ## Verification에는 validate-quick 명령을 반드시 넣는다. Windows PowerShell은 $env:VALIDATE_BASE_REF='<값>'; ./scripts/validate-quick.ps1, bash는 VALIDATE_BASE_REF=<값> ./scripts/validate-quick.sh다. <값>은 spec 파일 frontmatter의 baseline_revision이다. 이 명령이 통과하기 전에는 커밋하지 않는다.",
   "커밋 메시지는 Conventional Commits 형식 type(scope): 설명이고 scope는 Story 키다. 예: feat(1-1-repository-initial-setup): add monorepo skeleton. BMAD가 만드는 커밋에도 적용한다. push하지 않는다.",

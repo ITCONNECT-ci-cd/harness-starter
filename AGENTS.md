@@ -49,7 +49,8 @@ Orca 코디네이터가 띄운 워커로 실행될 때 적용한다. 코디네�
 - 권한·sandbox·hook에 막힌 동작을 다른 명령이나 경로로 우회하지 않는다. 하네스 문서가 정한 대체 경로(`docs/agents/feedback-rules.md`의 Windows/Codex 규칙)가 없으면 그 동작을 멈추고 Orca `ask`로 원인과 필요한 권한을 보낸다.
 - BMAD 스킬은 이 저장소 번들 `.agents/skills/<스킬>/SKILL.md`를 읽고 그 지시대로 따른다. 전역 설치본(`~/.claude/skills`)은 버전이 달라 층 구성이 다르므로 쓰지 않는다. Claude Code는 이 경로를 스킬로 호출할 수 없으므로 파일을 직접 읽는다. SKILL.md가 렌더 명령(`uv run _bmad/scripts/render_skill.py ...`)을 지시하는 스킬(`bmad-build-auto`)은 그 명령을 실행해 출력된 `workflow.md`를 따르고, 스킬 폴더의 `workflow.md` 원본을 직접 실행하지 않는다. 렌더가 실패하면(`uv` 없음 포함) 그 동작을 멈추고 실패 출력을 보고한다. 이 경우 보고에 "스킬 문서를 읽고 수행"이라고 적는다.
 - `sprint-status.yaml`, `deferred-work.md` 같은 공유 상태 파일은 BMAD 단계가 요구해도 고치지 않는다. 바뀌어야 할 상태는 보고에 적는다.
-- push·merge·배포를 하지 않는다. 의존성을 추가하거나 설치 명령을 바꾸지 않는다. 워크트리의 의존성 설치는 `orca.yaml`이 맡는다.
+- push·merge·배포를 하지 않는다. 설치 명령(`orca.yaml`, 검증 스크립트)을 바꾸지 않는다. 워크트리의 의존성 설치는 `orca.yaml`이 맡는다.
+- 의존성은 계약의 「허용 추가 의존성」에 적힌 것만 추가한다. 패키지 매니저의 추가 명령(`pnpm add`, `uv add` 등)으로 추가하고 매니페스트와 lockfile을 함께 커밋하며 이유를 커밋 메시지에 적는다. 목록 밖 의존성이 필요하면 추가하지 말고 Orca `ask`로 이름·이유·대안을 보낸다. 계약에 목록 칸이 없거나 비어 있으면 허용된 의존성이 없는 것이다.
 - 긴 로그와 코드는 파일에 두고 경로를 보고한다.
 - `worker_done`은 계약의 Task·Dispatch로 정확히 한 번 보낸다. 끝냈으면 `--outcome succeeded`, 끝내지 못했으면 `--outcome failed`. 보고에는 커밋, 검증 결과와 로그 경로, 남은 위험을 적는다. 구현 워커는 spec 파일의 실제 경로도 적는다(리뷰 계약에 들어간다).
 
