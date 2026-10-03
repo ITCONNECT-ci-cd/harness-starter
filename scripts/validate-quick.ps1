@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(ValueFromRemainingArguments = $true)]
   [string[]]$ScriptArgs = @()
 )
@@ -25,7 +25,7 @@ try {
   $baseRef = $env:VALIDATE_BASE_REF
   if ([string]::IsNullOrWhiteSpace($baseRef)) {
     foreach ($ref in @("origin/develop", "develop", "origin/main", "main")) {
-      & git rev-parse --verify $ref *> $null
+      & git rev-parse --verify --quiet $ref *> $null
       if ($LASTEXITCODE -eq 0) {
         $baseRef = $ref
         break

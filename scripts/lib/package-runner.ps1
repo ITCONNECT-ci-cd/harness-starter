@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 
 function Test-HarnessPackageJson {
   return (Test-Path -LiteralPath "package.json" -PathType Leaf)

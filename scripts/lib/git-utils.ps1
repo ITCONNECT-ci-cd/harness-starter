@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 
 function Test-HarnessWindows {
   $isWindowsVariable = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue

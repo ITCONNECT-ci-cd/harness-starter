@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$DryRun
 )
 
@@ -47,7 +47,7 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($skipReason)) {
-  & git remote get-url origin *> $null
+  & git config --get remote.origin.url *> $null
   if ($LASTEXITCODE -ne 0) {
     $skipReason = "git origin 미설정 (GitHub repo 생성 + 'git remote add origin' 필요)"
   }

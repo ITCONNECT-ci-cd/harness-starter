@@ -36,7 +36,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $current = (& git rev-parse --abbrev-ref HEAD).Trim()
 if ($current -ne $BranchName) {
-  & git rev-parse --verify $BranchName *> $null
+  & git rev-parse --verify --quiet $BranchName *> $null
   if ($LASTEXITCODE -eq 0) {
     & git checkout $BranchName
   } else {
