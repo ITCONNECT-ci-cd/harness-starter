@@ -78,6 +78,7 @@ ESSENTIAL_PATHS=(
   "docs/future-upgrades"
   "docs/decisions/README.md"
   "docs/decisions/ADR-004-bmad-build-auto.md"
+  "docs/decisions/ADR-005-worker-dependency-allowlist.md"
   "docs/org/docker-port-registry.template.md"
   # BMAD 오버라이드: 구현 워커(bmad-build-auto)에 하네스 규칙을 넣는다. BMAD를 먼저 설치한 뒤 적용한다
   "_bmad/custom/bmad-build-auto.toml"

@@ -42,7 +42,7 @@ Accepted
 - `bmad-build-auto`가 일찍 멈추면(더러운 작업 트리, `unclear intent`, `epic context missing`) spec이 아니라 `bmad-build-auto-result-*.md`를 남긴다. `blocked` spec은 영구적이다. 재시도 전에 워크트리를 정리해야 한다(`orca-rules.md` §5).
 - `bmad-build-auto`가 직접 커밋한다. 하네스의 `finalize-story.ps1 -NoPush`는 "커밋할 변경 없음"을 정상 처리하므로 `validate-quick` 재확인 관문으로 남는다.
 - v7이 나오면 `bmad-sprint-planning`과 `bmad-create-epics-and-stories`가 `bmad-ticket`으로 대체되고 `sprint-status.yaml`이 폐지될 예정이다(`main` 브랜치, 미릴리스). 이 하네스는 v6.x에서 고정한다. v7로 올릴 때는 `bmad migrate method`와 이 ADR을 다시 평가한다. v7 출시일은 확인하지 못했다.
-- 이 ADR의 범위 밖: 워커가 의존성을 추가하지 못하게 하는 `AGENTS.md` 규칙은 Story 1.1(`package.json`, lockfile 생성)과 부딪힌다. `epics.md`의 S-2가 이미 "결정 필요"로 올려 둔 쟁점이다. 이 ADR은 바꾸지 않았다.
+- 이 ADR의 범위 밖: 워커가 의존성을 추가하지 못하게 하는 `AGENTS.md` 규칙은 Story 1.1(`package.json`, lockfile 생성)과 부딪혔다. `epics.md`의 S-2가 "결정 필요"로 올려 둔 쟁점이다. [ADR-005](ADR-005-worker-dependency-allowlist.md)가 계약의 허용 목록으로 해결했다.
 - 확인하지 못한 것:
   - Codex(GPT-6.1 Sol)와 Gemini 3.8 Flash 워커가 서브에이전트를 쓸 수 있는지.
   - 이 설치에서 `bmad-build-auto`를 끝까지 실행한 결과. 렌더와 오버라이드 주입만 확인했다.

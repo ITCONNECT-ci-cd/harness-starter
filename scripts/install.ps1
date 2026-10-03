@@ -37,6 +37,7 @@ $essentialPaths = @(
   "docs/future-upgrades",
   "docs/decisions/README.md",
   "docs/decisions/ADR-004-bmad-build-auto.md",
+  "docs/decisions/ADR-005-worker-dependency-allowlist.md",
   "docs/org/docker-port-registry.template.md",
   "_bmad/custom/bmad-build-auto.toml",
   "templates",
