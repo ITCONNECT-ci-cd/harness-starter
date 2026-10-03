@@ -2,7 +2,7 @@
 
 <!--
 코디네이터가 Epic 시작 시 plans/epic-<N>-orca.md로 만든다 (docs/agents/orca-rules.md §3~4).
-BMAD story 파일에 없는 실행 정보만 적는다. 수락 기준·작업 목록·참고 자료는 story 파일에 두고 복사하지 않는다.
+epics.md와 spec 파일에 없는 실행 정보만 적는다. 수락 기준·작업 목록·참고 자료는 epics.md와 spec 파일(spec-<story-key>*.md)에 두고 복사하지 않는다.
 모델 배정안은 사용자 승인을 받은 뒤에만 워커를 띄운다(무인 진행이면 적용하고 owner-digest에 남긴다). 바뀐 행만 고치고, 바뀌지 않은 계획을 다시 만들지 않는다.
 -->
 

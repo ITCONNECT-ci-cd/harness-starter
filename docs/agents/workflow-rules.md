@@ -9,8 +9,8 @@
 
 | 단계 | 실행 | 역할 | BMAD 스킬 |
 |---|---|---|---|
-| 기획/설계 | Claude Code (Opus 5.5) | PRD, Architecture, Epics 생성 | bmad-create-prd, bmad-create-architecture, bmad-create-epics-and-stories, bmad-sprint-planning |
-| Phase A: 구현 | Orca 구현 워커 | Story 생성 + TDD 구현 + validate-quick + 로컬 커밋 | bmad-create-story, bmad-dev-story |
+| 기획/설계 | Claude Code (Opus 5.5) | PRD, Architecture, Epics 생성 | bmad-prd, bmad-architecture, bmad-create-epics-and-stories, bmad-sprint-planning |
+| Phase A: 구현 | Orca 구현 워커 | spec 생성 + TDD 구현 + 내장 리뷰 + validate-quick + 로컬 커밋 | bmad-build-auto |
 | Phase B: 리뷰·통합 | Orca 리뷰 워커 + 코디네이터 | 다른 회사 모델의 독립 리뷰, 수정, `epic/<N>` 통합, Epic 검증 | bmad-code-review |
 | Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | 리뷰/검증/Orca 실행 기록 분석, feedback-rules, incident, regression |
 
@@ -20,22 +20,22 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 코디�
 
 Epic 시작 전 (코디네이터):
 1. `orca-rules.md`의 시작 확인을 한다. `state/orca/env.json`이 있고 도구 버전이 같으면 재사용한다.
-2. Windows PowerShell이면 `./scripts/doctor.ps1`로 Windows 런타임을 점검하고 `./scripts/phase-a/preflight.ps1 -Epic <N>`을 실행한다. bash/WSL/macOS/Linux에서는 같은 사전 조건(`develop` 원격 브랜치, BMAD 스킬, Epic 산출물, `sprint-status.yaml`)을 직접 확인한다.
+2. Windows PowerShell이면 `./scripts/doctor.ps1`로 Windows 런타임을 점검하고 `./scripts/phase-a/preflight.ps1 -Epic <N>`을 실행한다. bash/WSL/macOS/Linux에서는 같은 사전 조건(`develop` 원격 브랜치, BMAD 스킬 `bmad-build-auto`·`bmad-code-review`·`bmad-sprint-planning`, `uv`, Epic 산출물, `sprint-status.yaml`)을 직접 확인한다.
 3. Windows/Codex에서 GitHub 원격 브랜치 존재 여부는 raw `git fetch origin develop`가 아니라 `gh api repos/<owner>/<repo>/git/ref/heads/develop` 경로로 확인한다.
-4. `develop`에서 Epic 통합 브랜치 `epic/<N>`을 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
+4. `develop`에서 Epic 통합 브랜치 `epic/<N>`을 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다. 이어서 `epic-<N>-context.md`를 만들어 `epic/<N>`에 커밋한다(`orca-rules.md` §3). 워커를 띄우기 전에 끝낸다.
 5. Story별 모델 배정안을 `model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인 전에는 워커를 띄우지 않는다. 승인본을 계획 파일에 기록하고, `sprint-status.yaml`의 `epic-<N>`을 `in-progress`로 바꿔 함께 커밋한다.
 
 BMAD Epic 산출물은 `_bmad-output/planning-artifacts/epics.md`를 기본으로 한다. 프로젝트가 Epic을 sharding한 경우 `_bmad-output/planning-artifacts/epics/` 아래 markdown 파일도 허용한다.
 
 각 Story마다 순서대로:
 1. 코디네이터가 선행 Story의 해제 조건을 실제 커밋·검증 결과로 확인하고, 승인된 배정안의 모델·effort로 계약(`templates/orca-worker-contract.md`)을 채운다. `sprint-status.yaml`을 `in-progress`로 바꾼다.
-2. 구현 워커가 `bmad-create-story`로 story 파일을 만들고 `bmad-dev-story`로 구현한다 (TDD: red-green-refactor).
-3. 구현 워커가 계약의 기준 커밋으로 quick validate를 실행한다 (lint + typecheck + 변경 관련 테스트만).
+2. 구현 워커가 `bmad-build-auto`로 spec 파일을 만들고 TDD(red-green-refactor)로 구현하고 내장 리뷰와 수정까지 거쳐 커밋한다. 끝나면 spec의 `status`를 확인한다(`done` 또는 `blocked`).
+3. 구현 워커가 계약의 기준 커밋으로 quick validate를 실행한다 (lint + typecheck + 변경 관련 테스트만). 같은 명령을 `bmad-build-auto`가 커밋 전에 spec의 `## Verification`으로 이미 한 번 실행한다.
    - Windows PowerShell: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/validate-quick.ps1`
    - bash/WSL/macOS/Linux: `VALIDATE_BASE_REF=<기준 커밋> ./scripts/validate-quick.sh`
 4. 통과하면 구현 워커가 자기 브랜치에 **로컬 commit**한다. push는 하지 않는다. Windows PowerShell/Codex에서는 raw git 대신:
    `./scripts/phase-a/finalize-story.ps1 -StoryName <story-이름> -NoPush` (현재 브랜치에 커밋하고 push하지 않음)
-   이 스크립트가 quick 검증과 커밋을 함께 처리하므로 호출 직전에 수동 quick을 추가하지 않는다. BMAD Step 9의 완료 전 검증은 별도 필수 게이트이며, 현재 finalizer가 그 결과를 재사용하지는 않는다. 기존 사용자 변경이 있는 작업 트리에서 실행하지 않도록 `agent-execution-rules.md`의 분리 기준을 먼저 적용한다.
+   이 스크립트가 quick 검증과 커밋을 함께 처리하므로 호출 직전에 수동 quick을 추가하지 않는다. `bmad-build-auto`가 이미 커밋했으면 이 스크립트는 커밋 없이 검증만 한다. `bmad-build-auto`의 커밋 전 검증은 별도 필수 게이트이며, 현재 finalizer가 그 결과를 재사용하지는 않는다. 기존 사용자 변경이 있는 작업 트리에서 실행하지 않도록 `agent-execution-rules.md`의 분리 기준을 먼저 적용한다.
 5. 코디네이터가 워커 보고와 커밋을 확인하고 `sprint-status.yaml`을 `review`로 바꾼다. 워커는 `sprint-status.yaml`을 고치지 않는다.
 6. 리뷰 워커(작성자와 다른 회사 모델)가 구현 커밋을 읽기 전용으로 `bmad-code-review`한다. 판정은 `REVIEW.md` 형식이다.
 7. REJECTED면 같은 구현 워커가 후속 Dispatch로 고치고 quick 검증과 커밋을 다시 한다. 재확인 범위는 `orca-rules.md` §5를 따른다.
@@ -139,8 +139,8 @@ feedback-rules.md 운영 규칙:
 ## Quick Flow (가벼운 작업)
 
 BMAD 풀코스가 필요 없는 간단한 작업:
-- Claude Code에서 `bmad-quick-dev` 스킬 사용
-- 또는 `bmad-agent-quick-flow-solo-dev` (Barry) 호출
+- Claude Code에서 `bmad-build` 스킬 사용 (6.11 이전 번들은 `bmad-quick-dev`)
+- 구버전 번들에서는 `bmad-agent-quick-flow-solo-dev` (Barry)도 호출할 수 있다. 설치된 스킬 목록에 있을 때만 쓴다
 - spec → implement → review → present를 한 세션에서 처리
 
 ## 브랜치 규칙

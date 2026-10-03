@@ -11,8 +11,8 @@
 
 | 단계 | 실행 | 역할 | BMAD 스킬 |
 |---|---|---|---|
-| 기획 | Claude Code (Opus 5.5) | PRD, architecture, epics, sprint-status 생성 | bmad-create-prd, bmad-create-architecture, bmad-create-epics-and-stories, bmad-sprint-planning |
-| Phase A: 구현 | Orca 구현 워커 | Story 생성 + TDD 구현 + validate-quick + 로컬 커밋 | bmad-create-story, bmad-dev-story |
+| 기획 | Claude Code (Opus 5.5) | PRD, architecture, epics, sprint-status 생성 | bmad-prd, bmad-architecture, bmad-create-epics-and-stories, bmad-sprint-planning |
+| Phase A: 구현 | Orca 구현 워커 | spec 생성 + TDD 구현 + 내장 리뷰 + validate-quick + 로컬 커밋 | bmad-build-auto |
 | Phase B: 리뷰·통합 | Orca 리뷰 워커 + 코디네이터 | 다른 회사 모델의 독립 리뷰, 수정, `epic/<N>` 통합, Epic 검증 | bmad-code-review |
 | Phase C: 회고 | Claude Code | Epic 회고 + Harness 강화 | incident, regression, feedback-rules |
 
@@ -27,7 +27,7 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
 2. 시작 확인: `state/orca/env.json`이 있으면 재사용하고, 없거나 도구 버전이 바뀌었으면 다시 확인한다 (orca-rules §2).
    - Windows PowerShell: `./scripts/doctor.ps1`와 `./scripts/phase-a/preflight.ps1 -Epic <N>`도 실행
 3. `_bmad-output/planning-artifacts/architecture.md`, 대상 Epic의 Story 목록, `_bmad-output/implementation-artifacts/sprint-status.yaml`을 확인한다.
-4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다.
+4. `develop`에서 `epic/<N>` 브랜치를 만들고(이미 있으면 사용) `plans/epic-<N>-orca.md`를 작성한다. 이어서 `epic-<N>-context.md`를 만들어 `epic/<N>`에 커밋한다(orca-rules §3). 워커를 띄우기 전에 끝낸다.
 5. Story별 모델 배정안(구현·리뷰 모델과 effort, 대체 모델, 이유)을 `docs/agents/model-routing-rules.md`의 선택 방법으로 만들어 사용자에게 표로 보여 주고 OK를 받는다. 승인본을 계획 파일에 기록·커밋한 뒤에만 워커를 띄운다. 시작 프롬프트의 진행 방식이 **무인**이면 OK를 기다리지 않고 적용해 `reviews/epic-<N>/owner-digest.md`에 남기고, 질문으로 턴을 끝내지 않는다(`docs/agents/orca-rules.md` §4.2).
 6. Story마다 구현 워커, 리뷰 워커, (필요하면) 수정, 통합 순서로 진행한다. 코디네이터는 조정과 통합을 맡고, 작은 수정 외의 구현은 워커에게 맡긴다. 시작 프롬프트의 진행 범위가 일부 Story면 거기까지 하고 보고한 뒤 멈춘다(시험 운영).
    - Story 경계마다 멈춤 파일과 사용량 가드(켰으면)를 확인하고(§8.1), 계획의 인계 주기가 찼으면 새 코디네이터 세션에 인계한다(§11, `scripts/orca/session-rollover.mjs`). 인계받은 코디네이터는 인계문부터 읽는다.
@@ -44,26 +44,27 @@ Phase A와 B는 한 Orca 실행 안에서 Story마다 이어서 돈다. 사용�
 Orca 코디네이터가 띄운 워커로 실행될 때 적용한다. 코디네이터가 보낸 계약이 이 규칙보다 구체적이면 계약을 따른다.
 
 공통:
-- 계약의 work_id 하나만 처리한다. 다음 Story를 시작하거나 다른 워커·에이전트를 띄우지 않는다. 예외는 선택한 BMAD 워크플로가 요구하는 내부 리뷰 서브에이전트뿐이다.
+- 계약의 work_id 하나만 처리한다. 다음 Story를 시작하거나 다른 워커·에이전트를 띄우지 않는다. 예외는 선택한 BMAD 워크플로가 요구하는 내부 서브에이전트(구현·리뷰)뿐이다.
 - 비대화형 실행이다. BMAD 스킬의 확인 메뉴와 체크포인트는 승인된 것으로 보고 진행한다. 계약에 없는 제품 결정이나 권한이 필요할 때만 Orca `ask`로 원인·필요한 결정·선택지를 보낸다.
 - 권한·sandbox·hook에 막힌 동작을 다른 명령이나 경로로 우회하지 않는다. 하네스 문서가 정한 대체 경로(`docs/agents/feedback-rules.md`의 Windows/Codex 규칙)가 없으면 그 동작을 멈추고 Orca `ask`로 원인과 필요한 권한을 보낸다.
-- BMAD 스킬을 스킬로 호출할 수 없는 에이전트는 `.agents/skills/<스킬>/SKILL.md`와 `workflow.md`를 직접 읽고 따른다. 이 경우 보고에 "스킬 문서를 읽고 수행"이라고 적는다.
+- BMAD 스킬은 이 저장소 번들 `.agents/skills/<스킬>/SKILL.md`를 읽고 그 지시대로 따른다. 전역 설치본(`~/.claude/skills`)은 버전이 달라 층 구성이 다르므로 쓰지 않는다. Claude Code는 이 경로를 스킬로 호출할 수 없으므로 파일을 직접 읽는다. SKILL.md가 렌더 명령(`uv run _bmad/scripts/render_skill.py ...`)을 지시하는 스킬(`bmad-build-auto`)은 그 명령을 실행해 출력된 `workflow.md`를 따르고, 스킬 폴더의 `workflow.md` 원본을 직접 실행하지 않는다. 렌더가 실패하면(`uv` 없음 포함) 그 동작을 멈추고 실패 출력을 보고한다. 이 경우 보고에 "스킬 문서를 읽고 수행"이라고 적는다.
 - `sprint-status.yaml`, `deferred-work.md` 같은 공유 상태 파일은 BMAD 단계가 요구해도 고치지 않는다. 바뀌어야 할 상태는 보고에 적는다.
 - push·merge·배포를 하지 않는다. 의존성을 추가하거나 설치 명령을 바꾸지 않는다. 워크트리의 의존성 설치는 `orca.yaml`이 맡는다.
 - 긴 로그와 코드는 파일에 두고 경로를 보고한다.
-- `worker_done`은 계약의 Task·Dispatch로 정확히 한 번 보낸다. 끝냈으면 `--outcome succeeded`, 끝내지 못했으면 `--outcome failed`. 보고에는 커밋, 검증 결과와 로그 경로, 남은 위험을 적는다.
+- `worker_done`은 계약의 Task·Dispatch로 정확히 한 번 보낸다. 끝냈으면 `--outcome succeeded`, 끝내지 못했으면 `--outcome failed`. 보고에는 커밋, 검증 결과와 로그 경로, 남은 위험을 적는다. 구현 워커는 spec 파일의 실제 경로도 적는다(리뷰 계약에 들어간다).
 
 구현 워커:
-- 계약의 story 키로 `bmad-create-story`를 실행하고(story 파일이 이미 있으면 건너뜀), 만든 story 파일 경로를 `bmad-dev-story`에 직접 넘긴다.
-- 계약의 기준 커밋을 `VALIDATE_BASE_REF`로 지정해 validate-quick을 통과시킨 뒤 자기 브랜치에 Conventional Commits 형식으로 커밋한다.
+- 계약의 story 키로 `bmad-build-auto`를 실행한다. 호출 프롬프트에는 story 키와 `epics.md` 경로만 적는다. 검증 명령은 `_bmad/custom/bmad-build-auto.toml`이 spec의 `## Verification`에 넣게 한다. `Halt after planning.`은 적지 않는다. `blocked`가 아닌 spec 파일(`_bmad-output/implementation-artifacts/spec-<story-key>*.md`)이 이미 있으면 그 경로를 넘겨 이어서 한다. spec 파일 이름은 story 키로 시작하는 slug이고 정확한 이름은 스킬이 정한다.
+- `bmad-build-auto`가 끝나면 채팅 출력이 아니라 spec 파일의 `status`를 읽는다. `done`이면 다음 단계로 간다. `blocked`이면 blocking condition 원문(예: `no subagents`)과 spec 경로(spec 없이 일찍 멈췄으면 `bmad-build-auto-result-*.md` 경로)를 적어 `--outcome failed`로 보고하고 끝낸다. 같은 워크트리에서 다시 실행하지 않는다. 서브에이전트를 쓸 수 없어도 우회하지 않는다.
+- 계약의 기준 커밋을 `VALIDATE_BASE_REF`로 지정해 validate-quick을 통과시킨 뒤 자기 브랜치에 Conventional Commits 형식으로 커밋한다. `bmad-build-auto`가 이미 커밋을 만들었으면 아래 명령은 최종 상태를 다시 검증하는 관문이다. 남은 변경이 없으면 커밋 없이 통과한다.
   - bash/WSL/macOS/Linux: `VALIDATE_BASE_REF=<기준 커밋> ./scripts/validate-quick.sh` 통과 후 `git add` + `git commit`
   - Windows PowerShell/Codex: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/phase-a/finalize-story.ps1 -StoryName <story-key> -NoPush` (현재 브랜치에 커밋하고 push하지 않음)
-- 같은 원인으로 수정 후 3번 실패하면(TDD RED 제외) 멈추고 failed로 보고한다.
-- REJECTED 수정은 같은 워크트리에서 후속 Dispatch로 받는다. 고친 지적 항목은 story 파일의 Review Findings에 기록·체크해 함께 커밋한다.
+- 같은 원인으로 수정 후 3번 실패하면(TDD RED 제외) 멈추고 failed로 보고한다. `bmad-build-auto` 안의 수정 루프(스킬이 정한 한도, 최대 5회)는 이 횟수에 세지 않는다. 스킬이 `blocked`로 끝난 것이 실패 1회다.
+- REJECTED 수정은 같은 워크트리에서 후속 Dispatch로 받는다. `bmad-build-auto`를 다시 실행하지 않고 지적 항목만 고친다(`done`인 spec에 다시 실행하면 후속 리뷰만 돈다). 고친 항목은 spec 파일 끝에 `### Review Findings` 절을 두고 기록·체크해 함께 커밋한다.
 
 리뷰 워커:
-- 계약의 리뷰 대상 커밋을 `git checkout --detach <커밋>`으로 받아 읽기 전용으로 `bmad-code-review`를 실행한다. 비교 기준은 계약의 기준 커밋, spec은 story 파일이다.
-- 코드, story 파일, 상태 파일을 고치지 않는다. BMAD 4단계가 파일에 기록하거나 수정 방식을 묻는 부분은 "고치지 않고 보고"로 처리하고, 같은 내용을 보고 파일로 넘긴다. decision-needed 항목은 선택지와 함께 보고한다.
+- 계약의 리뷰 대상 커밋을 `git checkout --detach <커밋>`으로 받아 읽기 전용으로 `bmad-code-review`를 실행한다(저장소 번들 `.agents/skills/bmad-code-review/SKILL.md`를 따른다). 비교 기준은 계약의 기준 커밋, spec은 계약에 적힌 구현 워커의 spec 파일이다.
+- 코드, spec 파일, 상태 파일을 고치지 않는다. BMAD 4단계가 파일에 기록하거나 수정 방식을 묻는 부분은 "고치지 않고 보고"로 처리하고, 같은 내용을 보고 파일로 넘긴다. decision-needed 항목은 선택지와 함께 보고한다.
 - 판정은 `REVIEW.md` 형식(APPROVED 또는 REJECTED와 항목)을 따른다.
 
 ## Phase C: Epic 회고 시작 루틴
@@ -77,8 +78,9 @@ Phase C는 출시 전 배포 준비가 아니라 Epic 회고와 Harness 강화 �
 | 경로 | 역할 |
 |---|---|
 | `_bmad-output/planning-artifacts/` | PRD, architecture, epics, stories (공식 제품 문서) |
-| `_bmad-output/implementation-artifacts/` | sprint-status, story 파일, 구현 산출물 |
-| `.agents/skills/` | Codex용 BMAD 스킬 (create-story, dev-story 등) — `.claude/skills/`와 byte 동기 유지 (harness-self-test가 검증) |
+| `_bmad-output/implementation-artifacts/` | sprint-status, spec 파일(`spec-<story-key>*.md`), `epic-<N>-context.md`, 구현 산출물 |
+| `_bmad/custom/bmad-build-auto.toml` | 구현 워커에 하네스 규칙을 넣는 BMAD 오버라이드 (ADR-004) |
+| `.agents/skills/` | Codex용 BMAD 스킬 (build-auto, code-review 등) — `.claude/skills/`가 있으면 byte 동기 유지 (harness-self-test가 검증) |
 | `.claude/skills/` | Claude Code용 BMAD 스킬 (code-review 등) |
 | `.codex/config.toml` | Codex를 직접 열 때의 모델 기본값 (GPT-6.1 Sol / medium) |
 | `GEMINI.md` | Gemini 워커가 이 파일을 읽도록 연결 |

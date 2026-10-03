@@ -12,6 +12,11 @@
 #   pip:  pip install -r requirements.txt
 #
 # 설정 형식은 설치된 Orca 버전의 문서로 확인하세요.
+#
+# 마지막 줄은 남겨 두세요. epic-<N>-context.md의 수정 시각을 올립니다. bmad-build-auto가 이 파일을
+# "기획 문서보다 새것"일 때만 유효한 캐시로 보는데, 새 워크트리는 checkout 순서 때문에 낡게 보일 수 있습니다.
+# 낡게 보이면 워커가 컨텍스트를 다시 만들어 병합이 충돌합니다 (docs/decisions/ADR-004-bmad-build-auto.md).
 scripts:
   setup: |
     npm ci
+    node scripts/orca/touch-epic-context.mjs

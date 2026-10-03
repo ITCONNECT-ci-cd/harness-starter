@@ -2,7 +2,7 @@
 // Orca 코디네이터 보조 스크립트(scripts/orca/)의 판정 함수 시험. Orca·Claude·Codex 없이 돈다.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -13,6 +13,7 @@ import { install, settingsKey as installKey, uninstall } from "../orca/install-s
 import { readLimits, stopFile } from "../orca/limits.mjs";
 import { bannerEffort, bannerModel, briefState, effortProblem, expectModelOf, handoffLine, modelMatches, parseChain, predecessorDone, READY } from "../orca/session-rollover.mjs";
 import { originalCommand, settingsKey as teeKey, usageRecord } from "../orca/statusline-tee.mjs";
+import { touchEpicContext } from "../orca/touch-epic-context.mjs";
 
 const TMP = mkdtempSync(join(tmpdir(), "orca-scripts-"));
 after(() => rmSync(TMP, { recursive: true, force: true }));
@@ -312,4 +313,27 @@ test("rollover — 체인 형식과 인계 줄", () => {
   assert.match(line, /--close-predecessor term_x/);
   assert.ok(!/\n/.test(line));
   assert.doesNotMatch(handoffLine({ relBrief: "b.md" }), /무인|run-use|close-predecessor/);
+});
+
+test("touch-epic-context — epic 컨텍스트 파일의 수정 시각만 올리고 다른 파일은 건드리지 않는다", () => {
+  const d = freshDir();
+  const old = new Date("2026-01-01T00:00:00Z");
+  const now = new Date("2026-10-03T00:00:00Z");
+  for (const f of ["epic-1-context.md", "epic-12-context.md", "epic-1-context.md.bak", "spec-1-1-x.md", "sprint-status.yaml"]) {
+    writeFileSync(join(d, f), "x");
+    utimesSync(join(d, f), old, old);
+  }
+  const touched = touchEpicContext(d, now).sort();
+  assert.deepEqual(touched, ["epic-1-context.md", "epic-12-context.md"]);
+  assert.equal(statSync(join(d, "epic-1-context.md")).mtimeMs, now.getTime());
+  assert.equal(statSync(join(d, "epic-12-context.md")).mtimeMs, now.getTime());
+  for (const f of ["epic-1-context.md.bak", "spec-1-1-x.md", "sprint-status.yaml"]) {
+    assert.equal(statSync(join(d, f)).mtimeMs, old.getTime(), f);
+  }
+  assert.equal(readFileSync(join(d, "epic-1-context.md"), "utf8"), "x");
+});
+
+test("touch-epic-context — 디렉터리나 컨텍스트 파일이 없어도 실패하지 않는다", () => {
+  assert.deepEqual(touchEpicContext(join(TMP, "no-such-dir")), []);
+  assert.deepEqual(touchEpicContext(freshDir()), []);
 });
