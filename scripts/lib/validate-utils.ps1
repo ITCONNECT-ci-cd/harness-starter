@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 
 $script:ValidateOutputMode = if ([string]::IsNullOrWhiteSpace($env:VALIDATE_OUTPUT_MODE)) { "summary" } else { $env:VALIDATE_OUTPUT_MODE }
 $script:ValidateLogDir = ""

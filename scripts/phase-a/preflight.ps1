@@ -25,10 +25,10 @@ if ($LASTEXITCODE -ne 0) { Stop-Setup2 }
 $branch = (& git rev-parse --abbrev-ref HEAD 2>$null).Trim()
 if ($branch -notin @("main", "develop")) { Stop-Setup2 }
 
-& git rev-parse --verify develop *> $null
+& git rev-parse --verify --quiet develop *> $null
 if ($LASTEXITCODE -ne 0) { Stop-Setup2 }
 
-& git remote get-url origin *> $null
+& git config --get remote.origin.url *> $null
 if ($LASTEXITCODE -ne 0) { Stop-Setup2 }
 
 $remoteDevelop = Test-HarnessGitHubRemoteRef -Ref "develop"

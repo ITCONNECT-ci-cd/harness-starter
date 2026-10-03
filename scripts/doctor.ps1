@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$Strict
 )
 
@@ -59,7 +59,7 @@ if ($git) {
   $sslBackend = & git config --global --get http.sslBackend 2>$null
   Write-Check "git ssl backend" $true $(if ($sslBackend) { $sslBackend } else { "default (fallback uses openssl when needed)" })
 
-  $origin = & git remote get-url origin 2>$null
+  $origin = & git config --get remote.origin.url 2>$null
   Write-Check "origin remote" ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($origin)) $(if ($origin) { Format-SafeUrl -Value $origin } else { "not configured" })
 }
 

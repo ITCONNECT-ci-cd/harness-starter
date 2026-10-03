@@ -1,4 +1,4 @@
-# scripts/install.ps1
+﻿# scripts/install.ps1
 #
 # Harness Engineering Starter Kit의 필수 파일을 Windows PowerShell에서 native로 설치합니다.
 # Git Bash는 필요하지 않습니다.
