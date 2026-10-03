@@ -9,12 +9,12 @@
 [작업]
 - work_id: <story-key> / 역할: <구현 | 리뷰>
 - 목표: <이 Story가 끝나면 무엇이 가능해지는지 한 줄>
-- 원본 요구: <epics.md의 Story 항목 또는 story 파일 경로, 요구 ID>
+- 원본 요구: <epics.md의 Story 항목, 요구 ID. 리뷰 워커는 구현 워커가 만든 spec 파일 경로도>
 - 기준 커밋: <epic/<N>의 커밋 해시>
 - 리뷰 대상 커밋: <리뷰 워커만. 구현 워커의 커밋 해시>
 
 [범위]
-- 읽을 자료: <architecture.md의 관련 절, 직접 의존 Story 파일, 관련 코드·테스트 경로>
+- 읽을 자료: <architecture.md의 관련 절, 직접 의존 Story의 spec 파일, 관련 코드·테스트 경로. epic-<N>-context.md는 기준 커밋에 있음>
 - 수정 가능: <파일·디렉터리. 리뷰 워커는 없음>
 - 수정 금지: <범위 밖 모듈>, sprint-status.yaml, deferred-work.md, 공용 설정
 - 공유 상태: <DB·외부 서비스·환경변수 사용 여부와 소유자>
@@ -24,7 +24,7 @@
 - 지켜야 할 API·타입·권한·데이터 불변 조건: <목록>
 
 [인수]
-- 수락 기준: story 파일의 Acceptance Criteria (여기에 복사하지 않는다)
+- 수락 기준: epics.md의 해당 Story 수락 기준. 구현 워커가 만든 spec 파일의 Tasks & Acceptance가 이를 구체화한다 (여기에 복사하지 않는다)
 - 특히 확인할 정상·예외·회귀 동작: <목록>
 - 검증: `VALIDATE_BASE_REF=<기준 커밋> ./scripts/validate-quick.sh`
   (Windows: `$env:VALIDATE_BASE_REF='<기준 커밋>'; ./scripts/validate-quick.ps1`)
@@ -32,8 +32,8 @@
 
 [실행]
 - 모델·effort: <승인된 배정안의 모델 ID> / <effort>
-- 방식: <구현: bmad-create-story 후 bmad-dev-story | 리뷰: 리뷰 대상 커밋을 detached로 받아 bmad-code-review (기준 커밋 대비 branch diff, spec은 story 파일)>
-- 예산: 시간 <분>, 같은 원인 수정 3회, BMAD 내부 리뷰어 <3 | 해당 없음>
+- 방식: <구현: .agents/skills/bmad-build-auto/SKILL.md (호출 프롬프트에는 story 키와 epics.md 경로만 적고 Halt after planning은 쓰지 않음. 검증 명령은 _bmad/custom/bmad-build-auto.toml이 정함) | 리뷰: 리뷰 대상 커밋을 detached로 받아 .agents/skills/bmad-code-review/SKILL.md (기준 커밋 대비 branch diff, spec은 위 원본 요구에 적은 spec 파일)>
+- 예산: 시간 <분>, 같은 원인 수정 3회(build-auto 내부 수정 루프는 세지 않음, blocked 종료가 1회), BMAD 서브에이전트 <구현 5(구현 1·내장 리뷰 4) | 리뷰 4>
 
 [차단]
 - 계약에 없는 제품 결정이나 권한이 필요하면 Orca ask로 원인, 필요한 결정, 선택지를 보낸다.

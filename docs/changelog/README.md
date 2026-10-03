@@ -4,6 +4,7 @@
 
 | 날짜 | 변경 내용 | 문서 |
 |---|---|---|
+| 2026-10-03 | 구현 워커를 bmad-build-auto로 교체 (create-story·dev-story 폐기 대응, spec 파일, 오버라이드 `_bmad/custom/bmad-build-auto.toml`, preflight 검사 확장, ADR-004) | [변경 기록](2026-10-03-bmad-build-auto.md) |
 | 2026-10-02 | effort 하한 (Sonnet 5.5·GPT-6.1 Sol·리뷰 최소 high, 코디네이터 Sonnet high, Codex 직접 사용 Sol medium 고정) | [변경 기록](2026-10-02-effort-floors.md) |
 | 2026-10-02 | 코디네이터 무인 진행·사용량 가드(선택)·세션 인계 (owner-digest, limits.json·STOP, session-rollover) | [변경 기록](2026-10-02-coordinator-autonomy.md) |
 | 2026-09-30 | GPT-6 Sol을 GPT-6.1 Sol로 교체 (Codex 등록 ID 확인, Codex 기본 effort·ultra 주의사항, 워커 우회 금지) | [변경 기록](2026-09-30-gpt-6-1-sol.md) |

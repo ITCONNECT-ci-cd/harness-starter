@@ -1,0 +1,21 @@
+# Harness override for bmad-build-auto (Orca 구현 워커). 팀 공용이라 Git에 커밋한다.
+# 개인 설정은 bmad-build-auto.user.toml에 둔다(Git 제외).
+# 병합 규칙: 리스트는 BMAD 기본값 뒤에 덧붙는다. 근거: docs/decisions/ADR-004-bmad-build-auto.md
+#
+# persistent_facts는 배경 지식이다. 스킬의 절차 문장과 부딪히면 절차가 이길 수 있으므로,
+# 반드시 지켜야 하는 것은 이 파일에만 두지 않고 설정이나 스크립트로도 막는다.
+#   - epic 컨텍스트 캐시의 수정 시각: orca.yaml의 scripts.setup이 scripts/orca/touch-epic-context.mjs를 실행한다.
+#   - 커밋 전 검증과 커밋 형식: scripts/phase-a/finalize-story.ps1이 두 번째 관문이다.
+
+[workflow]
+
+persistent_facts = [
+  "file:docs/agents/agent-execution-rules.md",
+  "이 실행은 Orca 구현 워커다. 호출 프롬프트에는 Story 키(sprint-status.yaml의 키)와 epics 파일 경로만 있다. spec 파일의 slug는 Story 키 전체로 시작해야 한다. 예: spec-1-1-repository-initial-setup.md. spec 폴더와 stories.yaml은 없다.",
+  "_bmad-output/implementation-artifacts/sprint-status.yaml과 deferred-work.md는 읽기만 하고 고치지 않는다. 미룬 항목은 spec 파일의 deferred 목록에만 적는다.",
+  "구현은 TDD로 한다. 새 동작과 버그 수정은 실패하는 테스트를 먼저 쓰고(RED) 통과시킨다(GREEN). spec의 Tasks에서 테스트 작성 과제를 해당 구현 과제보다 앞에 둔다. 구현 서브에이전트는 spec만 읽으므로 이 순서를 spec에 적어야 한다.",
+  "spec 파일의 ## Verification에는 validate-quick 명령을 반드시 넣는다. Windows PowerShell은 $env:VALIDATE_BASE_REF='<값>'; ./scripts/validate-quick.ps1, bash는 VALIDATE_BASE_REF=<값> ./scripts/validate-quick.sh다. <값>은 spec 파일 frontmatter의 baseline_revision이다. 이 명령이 통과하기 전에는 커밋하지 않는다.",
+  "커밋 메시지는 Conventional Commits 형식 type(scope): 설명이고 scope는 Story 키다. 예: feat(1-1-repository-initial-setup): add monorepo skeleton. BMAD가 만드는 커밋에도 적용한다. push하지 않는다.",
+  "현재 Orca 워크트리 브랜치가 이 Story의 브랜치다. 브랜치 이름이 Story와 다르다는 이유로 HALT하지 않는다. 작업 트리는 깨끗하게 시작한다. 시작할 때 더러우면 이 스킬의 규칙대로 blocked로 끝낸다. agent-execution-rules.md의 '변경이 있다는 이유만으로 중단하지 않는다'는 이 스킬의 시작 검사에는 적용하지 않는다.",
+  "epic-<N>-context.md는 코디네이터가 만들어 커밋했다. 유효한 캐시로 쓰고 다시 만들거나 고치지 않는다. 파일이 없거나 '# Epic <N> Context:'로 시작하지 않으면 새로 만들지 말고 blocking condition 'epic context missing'으로 blocked 처리한다.",
+]

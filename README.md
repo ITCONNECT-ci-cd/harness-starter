@@ -58,7 +58,8 @@ BMAD 산출물이 이미 있다면 아래 프롬프트로 바로 시작합니다
 
 AGENTS.md와 docs/agents/ 규칙을 먼저 읽어줘.
 _bmad-output/planning-artifacts/ 아래의 PRD, architecture, epics 산출물을 확인해줘.
-BMAD 스킬 경로가 있는지 확인해줘.
+BMAD 스킬 경로(.agents/skills의 bmad-build-auto, bmad-code-review, bmad-sprint-planning)와 uv가 있는지, BMAD가 6.11 이상 6.x인지 확인해줘.
+하네스 오버라이드 _bmad/custom/bmad-build-auto.toml이 있는지도 확인해줘.
 docs/agents/project-map-rules.md에 따라 Phase C에서 사용할 project-map의 실제 경로·출처도 확인해줘.
 현재 프로젝트의 기술 스택을 감지하고, 필요한 scaffold와 harness 파일을 적용해줘.
 templates/orca.yaml을 참고해서 루트 orca.yaml의 워크트리 준비 명령을 이 프로젝트의 의존성 설치 명령으로 만들어줘.

@@ -26,13 +26,13 @@
 
 | 상황 | Harness 적용 기준 |
 |---|---|
-| create-story의 개선안 선택 메뉴 | 승인된 Epic/Story 범위의 오류 수정·누락 보완은 자동 적용. 요구사항 변경만 확인 |
-| dev-story의 전체 테스트 요구 | Story는 관련 테스트 + native validate-quick. 전체 검증은 Epic 완료·Harness 변경 시 실행 |
-| dev-story의 완료 단계 | 구현 완료 판정은 Step 9. Step 10의 설명 제안은 다음 Story 진행의 승인 조건이 아님 |
-| dev-story의 모호함·의존성·설정 누락 HALT | 기존 문서·설정·의존성을 먼저 확인. 범위 안의 가역적 보완은 진행하고 중요한 결정·자격증명 누락만 확인 |
-| Orca 워커의 `sprint-status.yaml`·`deferred-work.md` 갱신 | 워커는 고치지 않고 보고에 적는다. 코디네이터가 갱신 |
+| build-auto의 사람 확인·승인 | 무인 스킬이라 승인 지점이 없다. 사람 승인 체크포인트가 있는 대화형 `bmad-build`는 Orca 워커에 쓰지 않는다 |
+| build-auto의 전체 테스트 요구 | Story는 관련 테스트 + native validate-quick(spec `## Verification`). 전체 검증은 Epic 완료·Harness 변경 시 실행 |
+| build-auto의 완료 판정 | spec 파일 `status: done`과 깨끗한 작업 트리. 채팅 출력만 보고 성공으로 판단하지 않는다 |
+| build-auto의 `blocked`(`intent gap`, `unclear intent`, `no subagents` 등) | 우회하지 않는다. blocking condition 원문과 spec 경로를 `failed`로 보고한다. 계약에 답이 없는 제품 결정이면 Orca `ask`. `no subagents`는 승인된 대체 모델로 재배정. 범위 안의 가역적 보완은 진행하고 중요한 결정·자격증명 누락만 확인 |
+| Orca 워커의 `sprint-status.yaml`·`deferred-work.md` 갱신 | 워커는 고치지 않고 보고에 적는다. 코디네이터가 갱신. `bmad-build-auto`는 `sprint-status.yaml`을 건드리지 않고, 미룬 항목은 spec의 `deferred`에만 적는다 |
 | Orca 리뷰 워커의 code-review 결과 기록·수정 방식 선택 | 파일에 쓰거나 코드를 고치지 않고 결과를 보고로 넘긴다. 수정은 구현 워커가 한다 |
-| Orca 워커의 dev-story 완료 뒤 다음 Story | 배정된 Story에서 끝낸다. 다음 Story 배정은 코디네이터가 한다 |
+| Orca 워커의 build-auto 완료 뒤 다음 Story | 배정된 Story에서 끝낸다. 다음 Story 배정은 코디네이터가 한다 |
 | Quick Flow의 확인 단계 | 사용자가 계획 승인만 요청하면 승인 대기. 구현까지 승인했고 중요한 미확정 사항이 없으면 계획을 제시한 뒤 진행 |
 | Quick Flow의 미응답·dirty tree·분량 제한 | 선택적 미응답·기존 변경·권장 토큰 수 초과만으로 중단하지 않음. 사용자 목표와 변경 보존 기준으로 판단 |
 | 서브에이전트 부재 | 허용된 범위에서 순차 리뷰 후 독립성 한계를 보고. 독립 리뷰가 필수인 계약이면 그 승인만 미완료로 표시 |

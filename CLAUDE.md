@@ -29,8 +29,8 @@ BMAD agent를 실행할 때의 규칙:
 Epic·Story 개발은 Orca 코디네이터가 Story마다 워커에게 맡긴다. Claude Code는 코디네이터(Sonnet 5.5 / high, 위험 높음 Story가 많은 Epic은 Opus 5.5 / medium — effort 하한은 `docs/agents/model-routing-rules.md` 「effort 원칙」)나 워커(Sonnet 5.5·Opus 5.5)로 실행된다.
 
 - 코디네이터: `docs/agents/orca-rules.md`를 따른다. 워커를 띄우기 전에 Story별 모델 배정안을 사용자에게 승인받고, 조정·통합·최종 판정을 맡는다. 작은 수정 외의 구현은 워커에게 맡긴다.
-- 구현 워커: `AGENTS.md`의 「Orca 워커 규칙」과 계약을 따른다. 편집하면 Hooks가 lint를 자동 실행하고, 커밋 전에 현재 OS/셸에 맞는 validate-quick으로 확인한다.
-- 리뷰 워커: `bmad-code-review`로 3층 병렬 리뷰를 실행하고 `REVIEW.md`의 기준과 `docs/agents/architecture-rules.md`의 경계 규칙을 확인한다. 변경된 파일은 직접 Read/Grep으로 확인한다 (텍스트 diff만 보지 않음). 코드는 고치지 않고 결과를 보고한다.
+- 구현 워커: `AGENTS.md`의 「Orca 워커 규칙」과 계약을 따른다. `bmad-build-auto`로 구현한다(ADR-004). 편집하면 Hooks가 lint를 자동 실행하고, 커밋 전에 현재 OS/셸에 맞는 validate-quick으로 확인한다.
+- 리뷰 워커: `bmad-code-review`로 4층 병렬 리뷰(spec이 있을 때 acceptance-auditor 포함)를 실행하고 `REVIEW.md`의 기준과 `docs/agents/architecture-rules.md`의 경계 규칙을 확인한다. 변경된 파일은 직접 Read/Grep으로 확인한다 (텍스트 diff만 보지 않음). 코드는 고치지 않고 결과를 보고한다.
 - Epic 통합 검증(validate + smoke), `develop` 병합, `sprint-status.yaml` 갱신은 코디네이터가 한다 (회사 표준: develop → CI → main → 자동 배포). `develop` 병합은 사용자가 승인한 경우에만 한다.
 - 이 통합/배포 흐름은 Phase C가 아님. Phase C는 아래 회고 단계임
 
@@ -50,7 +50,7 @@ Epic 통합이 끝난 뒤 반복 실수와 검증 실패를 학습할 때의 규
 
 BMAD 풀코스 없이 간단한 작업을 할 때:
 
-- `bmad-quick-dev` 스킬 사용 (spec → implement → review → present)
+- `bmad-build` 스킬 사용 (clarify → plan → implement → review → present). 사람이 곁에서 승인하는 대화형 흐름이라 Orca 워커에는 쓰지 않는다(워커는 `bmad-build-auto`). 6.11 이전 번들에서는 `bmad-quick-dev`가 같은 역할이다.
 - 구버전 BMAD 번들에서는 `bmad-agent-quick-flow-solo-dev`(Barry)도 있음 —
   설치된 BMAD 버전의 스킬 목록을 먼저 확인하고 존재하는 스킬만 호출
 

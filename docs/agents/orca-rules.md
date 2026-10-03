@@ -10,8 +10,8 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 |---|---|---|
 | 사용자 | 목표, 걱정되는 위험, 모델별 계정, push·merge 승인 범위를 주고 모델 배정안을 승인한다 | 워커 기동·감독 |
 | 코디네이터 | 시작 확인, 계획과 모델 배정안 작성, 워커 기동, 질문 처리, 증거 확인, 통합(병합·상태 갱신·기록), 최종 판정 | 일상적인 조사·구현·수정, 승인 없는 배정 변경 |
-| 구현 워커 | Story 하나의 story 파일 생성, TDD 구현, validate-quick, 자기 브랜치에 커밋 | push·merge, 다음 Story 시작 |
-| 리뷰 워커 | 작성자와 다른 회사 모델로 `bmad-code-review` 실행 | 코드·story 파일·상태 파일 수정 |
+| 구현 워커 | Story 하나를 `bmad-build-auto`로 spec 생성·TDD 구현·내장 리뷰, validate-quick, 자기 브랜치에 커밋 | push·merge, 다음 Story 시작 |
+| 리뷰 워커 | 작성자와 다른 회사 모델로 `bmad-code-review` 실행 | 코드·spec 파일·상태 파일 수정 |
 
 - 코디네이터 세션은 Sonnet 5.5 / high로 연다. 위험 높음 Story가 Epic의 절반 이상이면 Opus 5.5 / medium으로 연다 (모델 배정 규칙의 「코디네이터」).
 - 코디네이터는 다음 조건을 모두 만족하는 수정만 직접 한다: 위험 영역(인증·권한·결제·DB 마이그레이션·트랜잭션·동시성) 밖이고, 한 파일 안의 작은 수정(대략 20줄 이내)이며, 새 동작을 추가하지 않는다. 문서·설정·상태 파일 갱신, 기계적인 병합 충돌 해결, 오타 수준의 리뷰 지적이 여기에 해당한다. 직접 수정한 뒤에는 validate-quick을 실행한다.
@@ -28,8 +28,9 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 4. **저장소**:
    - 루트 `orca.yaml`이 없거나 `scripts.setup`이 현재 스택의 의존성 설치와 맞지 않으면 `templates/orca.yaml`을 바탕으로 만들고 커밋한다. 새 워크트리에는 설치된 패키지가 없어서 이 설정이 없으면 워커의 검증이 바로 실패한다.
    - `git config core.hooksPath`가 `.githooks`가 아니면 `scripts/setup/install-git-hooks.sh`(Windows는 `.ps1`)를 실행한다. git hook은 Claude가 아닌 워커의 커밋에도 걸리는 유일한 검사다.
-   - BMAD 스킬(`bmad-create-story`, `bmad-dev-story`, `bmad-code-review`)과 기획 산출물(architecture, epics, `sprint-status.yaml`)이 있는지 확인한다. 이 문서에 맞추려고 BMAD를 업그레이드하거나 상태 파일 체계를 옮기지 않는다.
+   - BMAD 스킬(`bmad-build-auto`, `bmad-code-review`, `bmad-sprint-planning`), `uv`, 하네스 오버라이드 `_bmad/custom/bmad-build-auto.toml`, 기획 산출물(architecture, epics, `sprint-status.yaml`)이 있는지 확인한다. BMAD는 6.11 이상 6.x여야 한다(ADR-004). 6.10 이하이거나 v7이면 멈추고 사용자에게 알린다. 이 문서에 맞추려고 BMAD를 직접 업그레이드하거나 상태 파일 체계를 옮기지 않는다.
    - Windows PowerShell이면 `./scripts/doctor.ps1`과 `./scripts/phase-a/preflight.ps1 -Epic <N>`을 실행한다.
+5. **서브에이전트**: `bmad-build-auto`는 서브에이전트가 필수이고 못 쓰면 `blocked`로 끝난다. 구현 모델로 쓸 에이전트(Claude Code·Codex·Antigravity)마다 서브에이전트를 띄울 수 있는지 확인하고 결과를 `env.json`에 적는다. 확인하지 못했거나 못 띄우면 그 에이전트를 구현 워커 후보에서 빼고 배정안에 이유를 적는다. 추측하지 않는다.
 
 `env.json`에는 확인 시각, 도구 버전, 논리 모델별 실제 ID·에이전트·계정 별칭·지원 effort만 적는다. 토큰·비밀값·이메일은 적지 않는다.
 
@@ -37,7 +38,8 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 
 - 기존 PRD·architecture·epics·`sprint-status.yaml`을 재사용한다. 실행할 때마다 전체 문서와 저장소를 다시 읽거나 새 전체 계획을 만들지 않는다. 대상 Story와 직접 의존하는 Story의 문서·코드만 확인한다.
 - Epic을 시작할 때 `templates/orca-epic-plan.md`로 `plans/epic-<N>-orca.md`를 만든다. 이미 있으면 바뀐 행만 고친다.
-- 계획에는 BMAD story 파일에 없는 실행 정보만 적는다: 승인된 모델 배정안(§4), 의존 Story와 해제 조건, 수정 범위와 금지 범위, 예산. 수락 기준·작업 목록·참고 자료는 story 파일에 두고 복사하지 않는다.
+- 계획에는 `epics.md`와 spec 파일에 없는 실행 정보만 적는다: 승인된 모델 배정안(§4), 의존 Story와 해제 조건, 수정 범위와 금지 범위, 예산. 수락 기준·작업 목록·참고 자료는 `epics.md`와 spec 파일(`spec-<story-key>*.md`)에 두고 복사하지 않는다.
+- Epic을 시작할 때 `epic-<N>-context.md`를 한 번 만든다. `.agents/skills/bmad-build-auto/compile-epic-context.md`를 서브에이전트의 프롬프트로 실행한다. 인자는 Epic 번호, epics 파일 경로, `_bmad-output/planning-artifacts`, 출력 경로 `_bmad-output/implementation-artifacts/epic-<N>-context.md`다. 서브에이전트를 쓸 수 없으면 코디네이터가 그 문서를 읽고 직접 만든다. 파일이 비어 있지 않고 `# Epic <N> Context:`로 시작하는지 확인한 뒤 `epic/<N>`에 커밋한다. 워커마다 `epics.md` 전체를 읽고 요약하는 비용과, 병렬 워커가 같은 파일을 각자 만들어 병합이 충돌하는 문제를 막기 위해서다. `epics.md`나 architecture를 고쳤으면 다시 만든다.
 - 제품 의도나 필수 설계가 정해지지 않았으면 그 Story와 의존 Story만 보류하고 필요한 결정을 사용자에게 묻는다. 독립 Story는 계속 진행한다. BMAD의 네이티브 상태 스키마를 배정 변경용으로 편집하지 않는다.
 
 ## 4. 모델 배정과 승인
@@ -54,7 +56,7 @@ Orca 코디네이터가 BMAD Epic을 Story 단위로 워커에게 맡겨 개발�
 - Epic 계획을 만들 때 Story마다 [모델 배정 규칙](model-routing-rules.md)의 선택 방법으로 위험도와 작업 형태를 판정하고, 구현 모델·effort, 리뷰 모델·effort, 대체 모델을 정한다. 사용량은 계산하지 않는다(사용자가 사용량 가드를 켰으면 §8.1을 따른다).
 - 워커를 띄우기 전에 배정안을 모델 배정 규칙 6번 형식의 표로 보여 주고 사용자의 OK를 기다린다. 답이 없으면 승인으로 보지 않는다. 기다리는 동안에도 워커 없이 할 수 있는 준비(시작 확인, `orca.yaml` 점검)는 진행한다.
 - 승인된 배정안을 `plans/epic-<N>-orca.md`에 승인 날짜와 함께 기록하고 커밋한다. 이후 워커는 배정안의 모델·effort로만 기동한다.
-- 승인 후 배정안과 다르게 해도 되는 경우는 두 가지뿐이다. 한도·접근 오류나 같은 원인 3회 실패로 승인된 대체 모델로 바꿀 때, 위험도가 계획보다 높게 드러나 리뷰를 위험 높음 기준으로 올릴 때다. 이때는 바꾼 사실과 이유를 `orca-runs.md`와 최종 보고에 적는다. 그 밖의 변경(배정안에 없는 모델, effort를 「위험도 + 모델·역할별 하한」 기준(모델 배정 규칙 「effort 원칙」)보다 올리거나 내리는 것 — 하한 아래로는 승인으로도 내리지 않는다, 리뷰 생략·약화, Story 추가·분할)은 다시 승인받는다.
+- 승인 후 배정안과 다르게 해도 되는 경우는 두 가지뿐이다. 한도·접근 오류(서브에이전트를 못 쓰는 `no subagents` 포함)나 같은 원인 3회 실패로 승인된 대체 모델로 바꿀 때, 위험도가 계획보다 높게 드러나 리뷰를 위험 높음 기준으로 올릴 때다. 이때는 바꾼 사실과 이유를 `orca-runs.md`와 최종 보고에 적는다. 그 밖의 변경(배정안에 없는 모델, effort를 「위험도 + 모델·역할별 하한」 기준(모델 배정 규칙 「effort 원칙」)보다 올리거나 내리는 것 — 하한 아래로는 승인으로도 내리지 않는다, 리뷰 생략·약화, Story 추가·분할)은 다시 승인받는다.
 - `worker-start`에는 항상 `--agent`, `--model`, `--effort`를 명시한다. 생략하면 `.codex/config.toml`이나 Claude Code 기본값(xhigh)으로 실행된다. 예외: Gemini(Antigravity)는 수준이 모델 ID에 붙으므로(`--model gemini-3.8-flash-high`) `--effort`를 따로 줄지는 시작 확인에서 정한 대로 한다(모델 배정 규칙 「설정 위치」) — 어느 쪽이든 수준은 모델 ID로 하한을 지킨다. effort가 모델 배정 규칙 「effort 원칙」의 하한(Sonnet 5.5·GPT-6.1 Sol·리뷰는 high)보다 낮으면 띄우지 않고 배정안을 고친다.
 - 기동한 뒤 `launch.requested`와 `launch.effective`를 대조해 둘 다 `orca-runs.md`에 적는다. `/model` 메시지를 보낸 것만으로 모델이 바뀌었다고 보지 않는다. 실제 적용값이 배정안과 다르면 그 워커에게 일을 맡기기 전에 원인을 확인한다.
 - 새 유료 API나 자동 초과 과금을 켜지 않는다. 대체 모델까지 막히면 그 Story만 보류하고 독립 Story를 진행한다.
@@ -90,27 +92,28 @@ orca orchestration worker-start --task <task-id> --worktree <새 워크트리 �
 orca orchestration check --wait --types worker_done,escalation,question --timeout-ms 540000 --json
 ```
 
-1. **준비**: 선행 Story가 해제 조건을 충족했는지 실제 커밋과 검증 결과로 확인한다. `sprint-status.yaml`의 표시만 믿지 않는다. `templates/orca-worker-contract.md` 형식으로 계약을 채운다.
-2. **구현**: 구현 워커 1명이 `bmad-create-story`로 story 파일을 만들고, 그 경로를 `bmad-dev-story`에 넘겨 TDD로 구현한다. 계약의 `VALIDATE_BASE_REF`로 validate-quick을 통과시킨 뒤 자기 브랜치에 커밋한다. story 생성과 구현을 한 워커에 묶는 이유는 create-story가 조사한 맥락을 구현에서 그대로 쓰기 때문이다.
-3. **리뷰**: 리뷰 워커 1명이 작성자와 다른 회사의 모델로 `bmad-code-review`를 실행한다. 읽기만 하므로 가능하면 `--setup skip`으로 기동한다. BMAD가 띄우는 내부 리뷰어 3개는 이 Story의 세션 예산에 넣는다. 서브에이전트를 띄울 수 없으면 세 관점을 순서대로 검토하고 독립성 한계를 보고한다.
+1. **준비**: 선행 Story가 해제 조건을 충족했는지 실제 커밋과 검증 결과로 확인한다. `sprint-status.yaml`의 표시만 믿지 않는다. `templates/orca-worker-contract.md` 형식으로 계약을 채운다. 리뷰 계약에는 구현 워커가 보고한 spec 파일의 실제 경로를 넣는다.
+   - 스택이나 lockfile을 처음 만드는 Story(모노레포 초기화 등)는 계약에 "`.gitignore`를 가장 먼저 만든다. `node_modules`·빌드 결과는 커밋하지 않는다"를 적는다. `bmad-build-auto`는 추적되지 않은 파일까지 diff 파일에 넣어 리뷰어 4개가 읽고, 시작과 끝에 깨끗한 작업 트리를 요구한다. lockfile이 크면 리뷰 diff도 커지므로 결과를 보고 판단한다.
+2. **구현**: 구현 워커 1명이 `bmad-build-auto`를 실행한다. 호출 프롬프트에는 story 키와 `epics.md` 경로만 넣는다. 검증 명령은 `_bmad/custom/bmad-build-auto.toml`이 spec의 `## Verification`에 넣게 한다. 이 스킬이 spec 파일을 만들고, 서브에이전트로 구현하고, 내장 리뷰 4층(blind-hunter, edge-case-hunter, verification-gap, intent-alignment)과 수정을 거쳐 자기 브랜치에 커밋한다. spec 파일 이름은 story 키로 시작하는 slug이고 정확한 경로는 워커의 `worker_done` 보고로 받는다. 코디네이터는 경로를 짐작하지 않는다. 워커는 끝난 뒤 spec의 `status`가 `done`인지 확인하고 `finalize-story`로 한 번 더 검증한다. `blocked`이면 blocking condition 원문과 spec 경로와 함께 failed로 보고한다. 일찍 멈추면(더러운 작업 트리, `unclear intent`, `epic context missing` 등) spec이 아니라 `bmad-build-auto-result-*.md`가 남는다. `no subagents`이면 접근 오류와 같은 종류로 보고 서브에이전트를 쓸 수 있는 승인된 대체 모델로 재배정한다(§4.1의 사전 승인 범위, 같은 원인 재시도에는 세지 않는다). 대체 모델도 서브에이전트를 쓸 수 없으면 그 Story를 보류한다. 재시도하거나 재배정하기 전에 코디네이터가 구현 워크트리를 정리한다. 새 워크트리에서 시작하는 것이 가장 안전하다. 같은 워크트리를 쓰려면 기준 커밋으로 되돌려 부분 구현 코드를 버리고 blocked spec과 `bmad-build-auto-result-*.md`를 지운다. 이유: `blocked` spec은 영구적이어서 그 경로를 넘기면 즉시 멈추고, 경로 없이 다시 호출하면 `-2` 접미사의 새 spec이 생기고, 부분 구현이나 결과 파일이 남은 작업 트리는 시작 검사에서 다시 멈춘다.
+3. **리뷰**: 리뷰 워커 1명이 작성자와 다른 회사의 모델로 `bmad-code-review`를 실행한다. 읽기만 하므로 가능하면 `--setup skip`으로 기동한다. 저장소 번들 `.agents/skills/bmad-code-review`를 쓴다(전역 설치본은 층 구성이 다르다). BMAD가 띄우는 내부 리뷰어는 blind-hunter, edge-case-hunter, verification-gap, acceptance-auditor 4개이고(spec 없이 돌리면 3개), 이 Story의 세션 예산에 넣는다. 서브에이전트를 띄울 수 없으면 네 관점을 순서대로 검토하고 독립성 한계를 보고한다.
 4. **수정**: REJECTED 항목은 같은 구현 워커에게 후속 Dispatch로 맡긴다. 모델이나 effort를 바꿔야 할 때만 정산·정리 후 새로 기동한다. 수정이 지적 항목에 한정되면 리뷰 워커의 후속 Dispatch로 그 항목만 다시 확인하고, 동작이 크게 바뀌었으면 다시 리뷰한다.
 5. **통합**: 코디네이터가 워커 브랜치를 `epic/<N>`에 `--no-ff`로 병합하고 다음을 남긴다.
    - 워커 워크트리의 `state/validate/latest/*.log`를 `reviews/epic-<N>/logs/<story-key>-*.log`로 복사
-   - 리뷰 결과를 `reviews/epic-<N>/<story-key>-review.md`에 저장하고, defer 항목은 `_bmad-output/implementation-artifacts/deferred-work.md`에 추가
+   - 리뷰 결과를 `reviews/epic-<N>/<story-key>-review.md`에 저장하고, 리뷰 워커의 defer 항목과 spec 파일 frontmatter의 `deferred` 항목을 `_bmad-output/implementation-artifacts/deferred-work.md`에 추가
    - `sprint-status.yaml`의 Story 상태를 `done`으로 갱신
    - `reviews/epic-<N>/orca-runs.md`에 실행 기록 추가
    - 사용자가 push를 허용했으면 Story 브랜치와 `epic/<N>`을 push
 6. **정리**: `worker_done`을 정산한 뒤 같은 터미널을 다음 Dispatch에 재사용하거나 `worker-release`한다. 워크트리는 로그를 옮긴 뒤 Orca가 지원하는 방법으로 정리한다.
 7. **경계 확인**: 다음 Story를 띄우기 전에 멈춤 파일과 사용량 가드(켰으면)를 확인하고(§8.1), 인계 주기가 찼으면 새 Story를 띄우지 않고 인계한다(§11).
 
-`sprint-status.yaml`은 코디네이터만 고친다. Epic을 시작할 때 `epic-<N>`을 `in-progress`로 바꾼다. Story 상태는 구현 워커를 띄울 때 `in-progress`, 구현 워커가 성공을 보고하면 `review`, 리뷰 승인 후 `epic/<N>`에 병합하면 `done`으로 바꾼다.
+`sprint-status.yaml`은 코디네이터만 고친다. `bmad-build-auto`는 이 파일을 건드리지 않는다. Epic을 시작할 때 `epic-<N>`을 `in-progress`로 바꾼다. Story 상태는 구현 워커를 띄울 때 `in-progress`, 구현 워커가 성공을 보고하면 `review`, 리뷰 승인 후 `epic/<N>`에 병합하면 `done`으로 바꾼다.
 
 시작 프롬프트의 진행 범위가 "처음 N개 Story"처럼 일부로 정해져 있으면 그 Story들을 통합한 뒤 멈추고 §10 형식으로 보고한다(시험 운영). Epic의 모든 Story가 통합되면 `epic/<N>`에서 전체 validate와 smoke를 실행한다. 통과하고 failed·skipped·보류 Story가 없을 때만 Epic 완료로 보고한다. `develop` 병합과 `epic-<N>` 키의 done 처리는 사용자가 승인한 경우에만 하며, 판정 기준은 `workflow-rules.md`를 따른다.
 
 ## 6. 병렬과 소유권
 
 - 기본 동시 워커는 1명이다. 서로 독립된 작업이면 최대 2명까지 두며, 리뷰 워커도 이 수에 들어간다.
-- 같은 Epic 안의 연쇄 Story는 순서대로 진행한다. create-story가 직전 Story의 결과와 리뷰 피드백을 읽기 때문이다. 위험도가 낮은 연쇄 Story는 해제 조건을 "선행 Story 커밋 + validate-quick 통과"로 두어, 선행 Story의 리뷰와 다음 Story의 구현을 겹칠 수 있다. 위험도가 높으면 선행 Story가 통합된 뒤 시작한다.
+- 같은 Epic 안의 연쇄 Story는 순서대로 진행한다. `bmad-build-auto`가 같은 Epic에서 `status: done`인 직전 spec의 Code Map·Design Notes·Spec Change Log를 읽기 때문이다. 위험도가 낮은 연쇄 Story는 해제 조건을 "선행 Story 커밋 + validate-quick 통과"로 두어, 선행 Story의 리뷰와 다음 Story의 구현을 겹칠 수 있다. 위험도가 높으면 선행 Story가 통합된 뒤 시작한다.
 - 병렬 작성자는 별도 워크트리와 겹치지 않는 수정 범위를 갖는다. `sprint-status.yaml`, 공용 설정, DB·외부 서비스 같은 공유 상태는 코디네이터가 소유한다.
 - 워커 워크트리에서 필요한 명세와 기준 커밋이 실제로 보이는지 확인한다. 사용자의 기존 변경을 지우거나 임의로 커밋·stash하지 않는다.
 - 워커 수를 채우려고 작업을 만들지 않는다. 비율을 맞추려고 구현 중간에 모델을 바꾸거나 같은 범위를 경쟁 구현시키지 않는다.
@@ -131,10 +134,11 @@ orca orchestration check --wait --types worker_done,escalation,question --timeou
 | 항목 | 기본값 |
 |---|---|
 | 동시 워커 | 1명. 독립 작업이면 최대 2명 (리뷰 워커 포함) |
-| Story당 추가 세션 | 6개 (구현 1 + 리뷰 1 + BMAD 내부 리뷰 3 + 예비 1). 같은 터미널의 후속 Dispatch는 세지 않음 |
+| Story당 추가 세션 | 12개 (구현 1 + build-auto 서브에이전트 5[구현 1·내장 리뷰 4] + 리뷰 1 + code-review 내부 리뷰어 4 + 예비 1). 한 번에 통과한 경우의 값이다. 같은 터미널의 후속 Dispatch는 세지 않음. 초기 가설이며 첫 Epic의 `orca-runs.md`로 측정해 조정한다 |
 | Story당 시간 | 90분. 연속 무진전 확인 기준 10분 |
 | 같은 원인 재시도 | 워커 안에서 수정 시도 3회(TDD RED 제외) + 승인된 대체 모델로 재배정 1회 |
 
+- `bmad-build-auto`는 안에서 수정 루프를 최대 5회까지 돈다. 이 루프는 스킬이 정한 한도라 워커의 「같은 원인 3회」에 세지 않고, 스킬이 `blocked`로 끝난 것이 실패 1회다. 루프를 다 쓰면 구현 서브에이전트 6회와 내장 리뷰어 24개까지 늘 수 있으므로 위 세션 수는 최악의 값이 아니다. 이때는 Story당 시간 예산(90분)이 먼저 막는다.
 - 예산을 넘을 것 같으면 그 Story만 멈추고 진행 상태와 근거를 보고한다. 새 Run이나 작업 분할로 Story 예산과 재시도 횟수를 초기화하지 않는다.
 - 실패는 명세 / 환경·도구 / 컨텍스트 / 추론 / 한도로 분류한다. 환경·권한 오류에 모델이나 effort를 올려 재시도하지 않는다. 재배정할 때는 실패 근거와 바뀐 부분을 넘기고 처음부터 다시 조사시키지 않는다.
 - 재배정도 실패하면 `agent-execution-rules.md`의 실패 처리대로 `state/epic-<N>-progress.json`에 기록하고, 그 Story와 의존 Story를 보류한다.

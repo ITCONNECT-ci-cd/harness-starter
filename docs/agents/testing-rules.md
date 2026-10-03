@@ -70,8 +70,8 @@
   - CI만 하는 것: coverage 수집, npm audit, Dockerfile 검증
   - Deploy만 하는 것: 실제 서버 적용
 - Story 단위에서는 전체 테스트를 돌리지 않음 (아직 구현 안 된 Story의 테스트 실패 방지)
-- BMAD dev-story의 Step 7·8·9와 DoD에서 요구하는 회귀 검증도 Story에서는 관련 테스트와 native validate-quick으로 충족한다. 전체 검증은 Epic 완료 시 수행한다.
-- Windows 구현 워커에서 BMAD Step 9는 완료 표시 전에 quick 검증을 요구한다. 이후 `finalize-story.ps1 -NoPush`는 커밋할 최종 상태를 다시 검증한다. 현재 두 게이트는 모두 필수이며 자동으로 결과를 재사용하지 않는다. finalizer 직전에 별도 수동 quick을 추가해 세 번째로 실행하지 않는다. 구현 중 관련 테스트 실행은 별도다.
+- `bmad-build-auto`의 Verify 단계(spec `## Verification`)와 리뷰의 회귀 검증도 Story에서는 관련 테스트와 native validate-quick으로 충족한다. 전체 검증은 Epic 완료 시 수행한다. `_bmad/custom/bmad-build-auto.toml`이 이 명령을 Verification에 넣게 한다.
+- Windows 구현 워커에서 `bmad-build-auto`는 커밋 전에 spec의 `## Verification`(validate-quick)을 실행한다. 이후 `finalize-story.ps1 -NoPush`는 최종 상태를 다시 검증한다. 이미 커밋돼 있으면 커밋 없이 검증만 한다. 현재 두 게이트는 모두 필수이며 자동으로 결과를 재사용하지 않는다. finalizer 직전에 별도 수동 quick을 추가해 세 번째로 실행하지 않는다. 구현 중 관련 테스트 실행은 별도다.
 - 같은 변경 상태에서 통과한 검증은 새 변경·실패·미해결 우려가 없으면 반복하지 않는다. Epic 통합 검증과 CI의 독립 환경 검증은 유지한다.
 - Epic 단위에서 전체 테스트를 순차 실행하여 병렬 충돌 없이 통합 검증
 - validate 실패 시 `--from=실패단계`로 해당 단계부터 재개 가능

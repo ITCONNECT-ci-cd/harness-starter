@@ -4,6 +4,7 @@
 - 상태: 적용
 - 범위: Phase A·B 실행 흐름, 모델 기준, Codex 설정, 브랜치 흐름, 설치 매니페스트
 - 대체: [ADR-001](ADR-001-astra-harness-instructions.md)의 결정 5(모델 기본값을 `.codex/config.toml`로 통일)와 Codex Desktop 기반 Phase A 흐름
+- 일부 대체됨(2026-10-03): 구현 워커의 스킬 선택(`bmad-create-story`·`bmad-dev-story`)은 [ADR-004](ADR-004-bmad-build-auto.md)가 `bmad-build-auto`로 대체한다. 이 문서의 해당 기술은 결정 당시의 기록이다.
 
 ## 배경
 

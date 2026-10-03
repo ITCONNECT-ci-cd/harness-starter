@@ -8,6 +8,10 @@
 
 BMAD 기획이 먼저 끝나 있어야 합니다.
 
+BMAD는 **6.11 이상 6.x**를 먼저 설치한 뒤 하네스를 적용합니다. 구현 워커가 `bmad-build-auto`를 쓰고
+`uv`가 필요합니다. 구버전 스킬 `bmad-create-story`·`bmad-dev-story`는 deprecated이고 6.12 설치기가
+기본으로 넣지 않으므로 쓰지 않습니다. 근거는 [ADR-004](../decisions/ADR-004-bmad-build-auto.md)입니다.
+
 필수 산출물:
 
 - `_bmad-output/planning-artifacts/PRD.md`
@@ -23,7 +27,7 @@ BMAD 기획이 먼저 끝나 있어야 합니다.
 
 ## 설치 흐름
 
-1. BMAD 산출물과 스킬 경로를 확인합니다.
+1. BMAD 산출물과 스킬 경로(`bmad-build-auto`, `bmad-code-review`, `bmad-sprint-planning`), `uv`를 확인합니다.
 2. 기술 스택을 감지합니다.
 3. 프로젝트 scaffold를 만듭니다.
 4. harness 파일과 git hook을 적용합니다.
